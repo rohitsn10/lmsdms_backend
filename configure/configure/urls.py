@@ -21,4 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('user_profile/',include('user_profile.urls')),
     path('lms_module/',include('lms_module.urls')),
+    path('dms_module/',include('dms_module.urls')),
 ]
