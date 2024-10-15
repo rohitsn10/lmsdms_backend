@@ -42,7 +42,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id','email','first_name','last_name','phone','address','is_active','is_staff','is_superuser','profile_image','groups_list','user_permissions']
+        fields = ['id','email','first_name','last_name','phone','is_active','is_staff','is_superuser','profile_image','groups_list','user_permissions']
 
     def get_groups_list(self, obj):
         groups_data = [{'id': group.id, 'name': group.name} for group in obj.groups.all()]
@@ -74,3 +74,5 @@ class CustomUserSerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             return request.build_absolute_uri(obj.profile_image.url)
         return None
+    
+
