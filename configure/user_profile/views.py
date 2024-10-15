@@ -19,6 +19,10 @@ from rest_framework import status
 from django.contrib.auth import logout
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from django.contrib.auth.models import Group, Permission
+from django_filters.rest_framework import DjangoFilterBackend
+from user_profile.function_call import *
+from django.core.mail import send_mail
+
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -248,3 +252,110 @@ class UpdateGroupWithPermissionViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False,"message": str(e),"data":[]})
         
+
+
+class CreateUserViewSet(viewsets.ModelViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = CustomUserSerializer
+
+    def create(self, request, *args, **kwargs):
+        try:
+            email = request.data.get('email')
+            username = request.data.get('username')
+            first_name = request.data.get('first_name')
+            last_name = request.data.get('last_name')
+            phone = request.data.get('phone')
+            
+            if not email:
+                return Response({"status": False, 'message': 'Email is required', 'data': []})
+            if not username:
+                return Response({"status": False, 'message': 'Username is required', 'data': []})
+
+            # Use the imported function to generate a random password
+            password = generate_random_password()
+
+            user = CustomUser.objects.create(
+                email=email,
+                username=username,
+                first_name=first_name,
+                last_name=last_name,
+                phone=phone
+            )
+            user.set_password(password)
+            user.save()
+
+            # Send email with username and password
+            send_mail(
+                'Your account has been created',
+                f'Username: {username}\nPassword: {password}',
+                'kalpesh.g@n10tech.com',  # Replace with your sender email
+                [email],
+                fail_silently=False,
+            )
+
+            serializer = CustomUserSerializer(user)
+            data = serializer.data
+
+            return Response({"status": True, "message": "User created successfully! Check your email for credentials.", "data": data})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": []})
+        
+
+class ListUserViewSet(viewsets.ModelViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = CustomUserSerializer
+    search_fields = ['email','username','first_name','last_name','phone']
+    ordering_fields = ['email','username','first_name','last_name','phone']
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            if queryset.exists():
+                page = self.paginate_queryset(queryset)
+                if page is not None:
+                    serializer = CustomUserSerializer(page, many=True)
+                    serializer = self.get_paginated_response(serializer.data)
+                else:
+                    serializer = CustomUserSerializer(queryset, many=True)
+                count = serializer.data['count']
+                limit = int(request.GET.get('page_size', 10))
+                return Response({"status": True, "message": "User List Successfully", 
+                                'total_page': (count + limit - 1) // limit,
+                                'count':count,
+                                'data': serializer.data['results']})
+            else:
+                return Response({"status": False,"message":"No data found!","data":[]})
+        except Exception as e:
+            return Response({"status": False,"message": str(e),"data":[]})
+
+class UpdateUserViewSet(viewsets.ModelViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = CustomUserSerializer
+
+    def update(self, request, *args, **kwargs):
+        try:
+            user_id = kwargs.get('user_id')
+            first_name = request.data.get('first_name')
+            last_name = request.data.get('last_name')
+            phone = request.data.get('phone')
+            
+            if not user_id:
+                return Response({"status": False, 'message': 'User id is required', 'data': []})
+
+            user = CustomUser.objects.filter(id = user_id).first()   # get user by id
+            if not user:
+                return Response({"status": False,"message": "User not found!","data":[]})
+            
+            user.first_name = first_name
+            user.last_name = last_name
+            user.phone = phone
+            user.save()
+            serializer = CustomUserSerializer(user)
+            data = serializer.data
+            return Response({"status": True, "message": "User updated successfully!", "data": data})
+        except Exception as e:
+            return Response({"status": False,"message": str(e),"data":[]})
+        
+
+
+            

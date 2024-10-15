@@ -9,5 +9,8 @@ urlpatterns = [
     path('group_update_with_permissions/<int:group_id>', UpdateGroupWithPermissionViewSet.as_view({'put':'update','get':'list'}), name='group_update_with_permissions'),
     path('group_delete/<int:group_id>', UpdateGroupWithPermissionViewSet.as_view({'delete':'destroy'}), name='group_delete'),
 
+    path('user_create', CreateUserViewSet.as_view({'post':'create'}), name='user_create'),
+    path('user_list', ListUserViewSet.as_view({'get':'list'}), name='user_list'),
+    path('user_update/<int:user_id>', UpdateUserViewSet.as_view({'put':'update'}), name='user_update'),
 
 ]
