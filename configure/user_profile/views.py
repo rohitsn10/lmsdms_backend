@@ -338,23 +338,32 @@ class UpdateUserViewSet(viewsets.ModelViewSet):
             first_name = request.data.get('first_name')
             last_name = request.data.get('last_name')
             phone = request.data.get('phone')
-            
+            is_active = request.data.get('is_active')
             if not user_id:
-                return Response({"status": False, 'message': 'User id is required', 'data': []})
+                return Response({"status": False, 'message': 'User ID is required', 'data': []})
 
-            user = CustomUser.objects.filter(id = user_id).first()   # get user by id
+            user = CustomUser.objects.filter(id=user_id).first()  # Get user by ID
             if not user:
-                return Response({"status": False,"message": "User not found!","data":[]})
-            
-            user.first_name = first_name
-            user.last_name = last_name
-            user.phone = phone
+                return Response({"status": False, "message": "User not found!", "data": []})
+
+            if first_name is not None:
+                user.first_name = first_name
+            if last_name is not None:
+                user.last_name = last_name
+            if phone is not None:
+                user.phone = phone
+            if is_active is not None:
+                if isinstance(is_active, str):
+                    is_active = is_active.lower() in ('true', '1')
+                user.is_active = is_active
+
             user.save()
             serializer = CustomUserSerializer(user)
             data = serializer.data
             return Response({"status": True, "message": "User updated successfully!", "data": data})
         except Exception as e:
-            return Response({"status": False,"message": str(e),"data":[]})
+            return Response({"status": False, "message": str(e), "data": []})
+
         
 
 
