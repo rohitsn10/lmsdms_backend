@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'user_profile.apps.UserProfileConfig',
     'lms_module.apps.LmsModuleConfig',
+    'dms_module.apps.DmsModuleConfig',
     
 ]
 
