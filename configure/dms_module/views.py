@@ -1,12 +1,18 @@
 from django.shortcuts import render
 from rest_framework import viewsets, filters
 from rest_framework.response import Response
-from .models import WorkFlowModel
+from .models import *
+from rest_framework.pagination import PageNumberPagination
 from .serializers import *
 from rest_framework import permissions
 
+class CustomPagination(PageNumberPagination):
+    page_size = 10  # Number of items per page
+    page_size_query_param = 'page_size'  # Allow users to set page size
+    max_page_size = 100  # Maximum page size
 
 class WorkFlowViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = WorkFlowSerializer
     queryset = WorkFlowModel.objects.all().order_by('-id')
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -35,10 +41,7 @@ class WorkFlowViewSet(viewsets.ModelViewSet):
     # List all workflows
     def list(self, request):
         queryset = WorkFlowModel.objects.all().order_by('-id')
-        search = request.query_params.get('search', None)
-        if search:
-            queryset = queryset.filter(workflow_name__icontains=search)
-
+        
         try:
             if queryset.exists():
                 serializer = WorkFlowSerializer(queryset, many=True)
@@ -97,3 +100,121 @@ class WorkFlowUpdateSet(viewsets.ViewSet):
             return Response({"status":True, "message":"Workflow deleted succesfully"})
         except Exception as e:
                 return Response({"status": False,'message': 'Something went wrong','error': str(e)})
+        
+
+        
+class PrintRequest(viewsets.ModelViewSet):
+    # permission_classes = [permissions.IsAuthenticated]
+    queryset = PrintRequest.objects.all().order_by('-id')
+
+    def create(self, request):
+        try:
+            user = self.request.user
+            no_of_print = request.data.get('no_of_print')
+            issue_type = request.data.get('issue_type')
+            reason_for_print = request.data.get('reason_for_print')
+
+            if not no_of_print:
+                return Response({'status': False, 'message': 'NO of print is required'})
+            if not issue_type:
+                return Response({'status': False, 'message': 'Issue type is required'})
+            if not reason_for_print:
+                return Response({'status': False, 'message': 'Reason is required'})
+
+            printrequest_obj = PrintRequest.objects.create(
+                user = user,
+                no_of_print=no_of_print,
+                issue_type=issue_type,
+                reason_for_print=reason_for_print
+            )
+            return Response({'status': True, 'message': 'Print requested successfully'})
+        except Exception as e:
+            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+        
+
+class PrintApproval(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = PrintRequestApproval.objects.all().order_by('-id')
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            print_request_id = request.data.get('print_request_id')
+            no_of_request_by_admin = request.data.get('no_of_request_by_admin')
+            status = request.data.get('status')
+
+            # Validate that the print_request_id is provided
+            if not print_request_id:
+                return Response({'status': False, 'message': 'Print request ID is required'})
+            
+            # Fetch the associated PrintRequest object
+            try:
+                print_request = PrintRequest.objects.get(id=print_request_id)
+            except PrintRequest.DoesNotExist:
+                return Response({'status': False, 'message': 'Invalid Print Request ID'})
+            
+            # Validate the status field
+            if not status or status not in ['approved', 'rejected']:
+                return Response({'status': False, 'message': 'Status must be either "approved" or "rejected"'})
+            
+            # If status is 'approved', no_of_request_by_admin is mandatory
+            if status == 'approved':
+                if not no_of_request_by_admin:
+                    return Response({'status': False, 'message': 'No of request by admin is required when approving'})
+                
+                # Ensure no_of_request_by_admin does not exceed no_of_print from PrintRequest
+                if int(no_of_request_by_admin) > print_request.no_of_print:
+                    return Response({'status': False, 'message': f'No of request by admin cannot exceed {print_request.no_of_print}'})
+            
+            # Create PrintRequestApproval object
+            print_request_approval = PrintRequestApproval.objects.create(
+                user=user,
+                print_request=print_request,
+                no_of_request_by_admin=no_of_request_by_admin if status == 'approved' else None,
+                status=status
+            )
+            
+            return Response({'status': True, 'message': f'Print request {status} successfully', 'data': {'approval_id': print_request_approval.id}})
+        
+        except Exception as e:
+            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+        
+
+class PrintRequestUpdateAPI(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def update(self, request, *args, **kwargs):
+        try:
+            # Get request data
+            print_request_id = self.kwargs.get('print_request_id')
+            status = request.data.get('status')
+
+            # Validate that the print_request_id is provided
+            if not print_request_id:
+                return Response({'status': False, 'message': 'Print request ID is required'})
+
+            # Fetch the associated PrintRequest object
+            try:
+                print_request = PrintRequest.objects.get(id=print_request_id)
+            except PrintRequest.DoesNotExist:
+                return Response({'status': False, 'message': 'Invalid Print Request ID'})
+
+            # Fetch the PrintRequestApproval for the associated PrintRequest
+            try:
+                print_request_approval = PrintRequestApproval.objects.get(print_request=print_request, status='approved')
+            except PrintRequestApproval.DoesNotExist:
+                return Response({'status': False, 'message': 'No approved PrintRequestApproval found for this PrintRequest'})
+
+            # Check if the status of the PrintRequest is 'print_is_pending'
+            if print_request.status != 'print_is_pending':
+                return Response({'status': False, 'message': 'This PrintRequest is not in a pending state'})
+
+            # Update the no_of_print and status fields in PrintRequest
+            print_request.status = status
+            print_request.save()
+
+            return Response({'status': True, 'message': 'Data Printing started successfully'})
+        
+        except Exception as e:
+            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+
