@@ -62,7 +62,7 @@ class WorkFlowViewSet(viewsets.ModelViewSet):
             return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
 
 
-class WorkFlowUpdateSet(viewsets.ViewSet):
+class WorkFlowUpdateSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = WorkFlowSerializer
     lookup_field = 'workflow_id'
@@ -103,7 +103,7 @@ class WorkFlowUpdateSet(viewsets.ViewSet):
         
 
         
-class PrintRequest(viewsets.ModelViewSet):
+class PrintRequestViewSet(viewsets.ModelViewSet):
     # permission_classes = [permissions.IsAuthenticated]
     queryset = PrintRequest.objects.all().order_by('-id')
 
@@ -132,7 +132,7 @@ class PrintRequest(viewsets.ModelViewSet):
             return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
         
 
-class PrintApproval(viewsets.ModelViewSet):
+class PrintApprovalViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = PrintRequestApproval.objects.all().order_by('-id')
 
@@ -180,7 +180,7 @@ class PrintApproval(viewsets.ModelViewSet):
             return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
         
 
-class PrintRequestUpdateAPI(viewsets.ViewSet):
+class PrintRequestUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def update(self, request, *args, **kwargs):
