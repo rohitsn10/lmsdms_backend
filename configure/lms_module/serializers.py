@@ -23,3 +23,13 @@ class GetAreaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Area
         fields = ['id', 'area_name', 'department', 'area_description', 'area_created_at']
+
+class AssessmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Assessment
+        fields = '__all__' 
+
+class AssessmentQuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssessmentQuestion
+        fields = '__all__'

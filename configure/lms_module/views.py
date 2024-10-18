@@ -449,7 +449,208 @@ class AreaUpdatesViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
+class AssessmentViewSet(viewsets.ModelViewSet):
+    serializer_class = AssessmentSerializer
+    queryset = Assessment.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    ordering_fields = ['title']
+    search_fields = ['title', 'sop_selection', 'assign']  # You can add more fields for searching if needed
 
+    def create(self, request):
+        try:
+            title = request.data.get('title')
+            time_limit = request.data.get('time_limit')
+            sop_selection = request.data.get('sop_selection')
+            assign = request.data.get('assign')
+            pass_percentage = request.data.get('pass_percentage')
+            number_of_attempts = request.data.get('number_of_attempts')
+
+            # Validation
+            if not title:
+                return Response({'status': False, 'message': 'Title is required'})
+            if not time_limit:
+                return Response({'status': False, 'message': 'Time limit is required'})
+            if not sop_selection:
+                return Response({'status': False, 'message': 'SOP selection is required'})
+            if not assign:
+                return Response({'status': False, 'message': 'Assignment (Department/User) is required'})
+            if not pass_percentage:
+                return Response({'status': False, 'message': 'Pass percentage is required'})
+            if not number_of_attempts:
+                return Response({'status': False, 'message': 'Number of attempts is required'})
+
+            # Create Assessment
+            assessment_obj = Assessment.objects.create(
+                title=title,
+                time_limit=time_limit,
+                sop_selection=sop_selection,
+                assign=assign,
+                pass_percentage=pass_percentage,
+                number_of_attempts=number_of_attempts,
+                created_at=timezone.now()
+            )
+            assessment_obj.save()
+
+            return Response({'status': True, 'message': 'Assessment created successfully'})
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+
+    def list(self, request):
+        queryset = Assessment.objects.all().order_by('-id')  # Fetching all assessments and ordering them by '-id'
+        
+        try:
+            if queryset.exists():
+                serializer = AssessmentSerializer(queryset, many=True)  # Serializing the queryset
+                return Response({
+                    "status": True,
+                    "message": "Assessments fetched successfully",
+                    'total': queryset.count(),  # Total number of assessments
+                    'data': serializer.data
+                })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "No Assessments found",
+                    "total": 0,
+                    "data": []
+                })
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+
+class AssessmentUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'assessment_id'  # Use this to specify the field used for lookup (e.g., 'assessment_id')
+
+    def update(self, request, *args, **kwargs):
+        # Check if the user has the permission to change assessments
+        if not request.user.has_perm('app_name.change_assessment'):  # Replace 'app_name' with your app's name
+            return Response({"status": False, "message": "You are not authorized to update assessment!", "data": []})
+
+        try:
+            # Get the assessment ID from the URL
+            assessment_id = self.kwargs.get("assessment_id")
+            
+            # Get data from the request
+            title = request.data.get('title')
+            time_limit = request.data.get('time_limit')
+            sop_selection = request.data.get('sop_selection')
+            assign = request.data.get('assign')
+            pass_percentage = request.data.get('pass_percentage')
+            number_of_attempts = request.data.get('number_of_attempts')
+
+            # Check if the assessment exists
+            if not Assessment.objects.filter(id=assessment_id).exists():
+                return Response({"status": False, "message": "Assessment ID not found"})
+
+            # Fetch the assessment object
+            assessment_object = Assessment.objects.get(id=assessment_id)
+
+            # Update the assessment details if provided
+            if title:
+                assessment_object.title = title
+            if time_limit:
+                assessment_object.time_limit = time_limit
+            if sop_selection:
+                assessment_object.sop_selection = sop_selection
+            if assign:
+                assessment_object.assign = assign
+            if pass_percentage:
+                assessment_object.pass_percentage = pass_percentage
+            if number_of_attempts:
+                assessment_object.number_of_attempts = number_of_attempts
+            
+            # Save the updated assessment object
+            assessment_object.save()
+
+            return Response({"status": True, "message": "Assessment updated successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+class AssessmentQuestionViewSet(viewsets.ModelViewSet):
+    serializer_class = AssessmentQuestionSerializer
+    queryset = AssessmentQuestion.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    ordering_fields = ['created_at']
+    search_fields = ['sop', 'created_by__full_name', 'department__name']
+
+    def create(self, request):
+        try:
+            department = request.data.get('department')
+            sop = request.data.get('sop')
+            questions_data = request.data.get('questions_data')
+            marks = request.data.get('marks')
+            created_by = request.user  # Assuming user is authenticated
+
+            # Validation
+            if not department:
+                return Response({'status': False, 'message': 'Department is required'})
+            if not questions_data:
+                return Response({'status': False, 'message': 'Questions data is required'})
+
+            # Create AssessmentQuestion
+            assessment_question = AssessmentQuestion.objects.create(
+                department_id=department,
+                sop=sop,
+                questions_data=questions_data,  # This is a JSON field
+                marks=marks,
+                created_by=created_by,
+                created_at=timezone.now()
+            )
+
+            return Response({
+                'status': True,
+                'message': 'Assessment question created successfully',
+                'data': AssessmentQuestionSerializer(assessment_question).data
+            })
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+
+class AssessmentQuestionUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'assessment_question_id'  # Using a custom lookup field like 'assessment_question_id'
+
+    def update(self, request, *args, **kwargs):
+        # Check if the user has the permission to change assessment questions
+        if not request.user.has_perm('app_name.change_assessmentquestion'):  # Replace 'app_name' with your app's name
+            return Response({"status": False, "message": "You are not authorized to update this assessment question!", "data": []})
+
+        try:
+            # Get the assessment question ID from the URL
+            assessment_question_id = self.kwargs.get("assessment_question_id")
+            
+            # Check if the assessment question exists
+            if not AssessmentQuestion.objects.filter(id=assessment_question_id).exists():
+                return Response({"status": False, "message": "Assessment Question ID not found"})
+
+            # Fetch the assessment question object
+            assessment_question = AssessmentQuestion.objects.get(id=assessment_question_id)
+
+            # Get data from the request
+            department = request.data.get('department')
+            sop = request.data.get('sop')
+            questions_data = request.data.get('questions_data')
+            marks = request.data.get('marks')
+
+            # Update the assessment question details if provided
+            if department:
+                assessment_question.department_id = department
+            if sop:
+                assessment_question.sop = sop
+            if questions_data:
+                assessment_question.questions_data = questions_data  # Updating the JSON field
+            if marks:
+                assessment_question.marks = marks
+            
+            # Save the updated assessment question
+            assessment_question.save()
+
+            return Response({
+                "status": True,
+                "message": "Assessment question updated successfully",
+                "data": AssessmentQuestionSerializer(assessment_question).data
+            })
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
 
