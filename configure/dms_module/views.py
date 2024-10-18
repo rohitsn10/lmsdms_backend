@@ -99,9 +99,35 @@ class WorkFlowUpdateSet(viewsets.ViewSet):
             department_object.delete()
             return Response({"status":True, "message":"Workflow deleted succesfully"})
         except Exception as e:
-                return Response({"status": False,'message': 'Something went wrong','error': str(e)})
-        
+                return Response({"status": False,'message': 'Something went wrong','error': str(e)}
 
+
+
+class DocumentTypeCreateViewSet(viewsets.ModelViewSet):
+    serializer_class = DocumentTypeSerializer
+    queryset = DocumentType.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            document_name = request.data.get('document_name')
+            if not document_name:
+                return Response({"status": False, "message": "Document name is required", "data": []})
+            document_type = DocumentType.objects.create(user = user, document_name=document_name)
+            serializer = DocumentTypeSerializer(document_type)
+            return Response({"status": True, "message": "Document type created successfully", "data": serializer.data})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": []})
+        
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = DocumentType.objects.all()
+            serializer = DocumentTypeSerializer(queryset, many=True)
+            return Response({"status": True, "message": "Document type list fetched successfully", "data": serializer.data})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": []})
+        
         
 class PrintRequest(viewsets.ModelViewSet):
     # permission_classes = [permissions.IsAuthenticated]
