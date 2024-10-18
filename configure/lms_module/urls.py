@@ -15,5 +15,11 @@ urlpatterns = [
     path('CreateGetArea', AreaAddView.as_view({'post': 'create', 'get': 'list'}), name='CreateGetArea'),
     path('UpdateDeleteArea/<int:area_id>', AreaUpdatesViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='UpdateDeleteArea'),
 
+    path('CreateGetAssessment', AssessmentViewSet.as_view({'post': 'create', 'get': 'list'}), name='CreateGetAssessment'),
+    path('UpdateAssessment/<int:assessment_id>', AssessmentUpdateViewSet.as_view({'put': 'update'}), name='UpdateAssessment'),
+
+    path('CreateGetAssessmentQuestion',AssessmentQuestionViewSet.as_view({'post': 'create', 'get': 'list'}),name='CreateGetAssessmentQuestion'),
+    path('UpdateAssessmentQuestion/<int:assessment_question_id>',AssessmentQuestionUpdateViewSet.as_view({'put': 'update'}),name='UpdateAssessmentQuestion'),
+
 
 ]

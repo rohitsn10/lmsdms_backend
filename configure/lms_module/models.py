@@ -1,4 +1,6 @@
 from django.db import models
+from django.utils import timezone
+from user_profile.models import CustomUser
 
 class Plant(models.Model):
     plant_name = models.TextField()
@@ -20,3 +22,26 @@ class Area(models.Model):
 class JobRole(models.Model):
     job_role_name = models.TextField()
     job_role_description = models.TextField()
+
+class Assessment(models.Model):
+    title = models.TextField(blank=True, null=True)
+    time_limit = models.TextField(blank=True, null=True)
+    sop_selection = models.TextField(blank=True, null=True)
+    assign = models.TextField(blank=True, null=True)  # For Department/Any user
+    pass_percentage = models.TextField(blank=True, null=True)
+    number_of_attempts = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.title
+
+class AssessmentQuestion(models.Model):
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='questions')
+    sop = models.TextField(blank=True, null=True)  # Text field for SOP (Standard Operating Procedure)
+    questions_data = models.JSONField()  # JSON field to store question, type, answers, etc.
+    marks = models.TextField(blank=True, null=True)  # Text field for marks (e.g., "10 marks", "Pass/Fail", etc.)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Assessment created by {self.created_by.full_name} on {self.created_at}"
