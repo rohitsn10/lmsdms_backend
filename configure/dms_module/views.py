@@ -99,7 +99,7 @@ class WorkFlowUpdateSet(viewsets.ViewSet):
             department_object.delete()
             return Response({"status":True, "message":"Workflow deleted succesfully"})
         except Exception as e:
-                return Response({"status": False,'message': 'Something went wrong','error': str(e)}
+                return Response({"status": False,'message': 'Something went wrong','error': str(e)})
 
 
 
