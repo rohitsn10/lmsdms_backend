@@ -11,3 +11,13 @@ class DocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentType
         fields = ['id', 'user', 'document_name', 'created_at']
+
+class DocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Document
+        fields = '__all__'
+
+class DynamicStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DynamicStatus
+        fields = ['id', 'user', 'status_name', 'status', 'created_at', 'updated_at']
