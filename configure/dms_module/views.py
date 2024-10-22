@@ -103,7 +103,7 @@ class WorkFlowUpdateSet(viewsets.ModelViewSet):
 class DocumentTypeCreateViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentTypeSerializer
     queryset = DocumentType.objects.all()
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
     
     def create(self, request, *args, **kwargs):
         try:
@@ -319,12 +319,29 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             # Extract fields from the request data
             document_title = request.data.get('document_title')
             document_number = request.data.get('document_number')
-            document_type = request.data.get('document_type')
+            document_type_id = request.data.get('document_type')
             document_description = request.data.get('document_description')
             revision_time = request.data.get('revision_time')
             document_operation = request.data.get('document_operation')
-            # select_template = request.data.get('select_template')
-            workflow = request.data.get('workflow')
+            workflow_id = request.data.get('workflow')
+
+            if not document_title:
+                return Response({"status": False, "message": "Document title is required", "data": []})
+            if not document_type_id:
+                return Response({"status": False, "message": "Document type is required", "data": []})
+            if not workflow_id:
+                return Response({"status": False, "message": "Workflow is required", "data": []})
+
+            try:
+                document_type = DocumentType.objects.get(id=document_type_id)
+            except DocumentType.DoesNotExist:
+                return Response({'status': False, 'message': 'Document type not found'})
+            
+            try:
+                workflow = WorkFlowModel.objects.get(id=workflow_id)
+            except WorkFlowModel.DoesNotExist:
+                return Response({'status': False, 'message': 'Workflow not found'}, status=400)
+
 
       
             if document_operation == 'upload_file':
@@ -479,17 +496,14 @@ class DynamicStatusCreateViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             user = request.user
-            status_name = request.data.get('status_name')
             status_value = request.data.get('status')
 
-            if not status_name:
-                return Response({"status": False, "message": "Status name is required"}, status=status.HTTP_400_BAD_REQUEST)
+          
             if not status_value:
-                return Response({"status": False, "message": "Status is required"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"status": False, "message": "Status is required"})
 
             dynamic_status = DynamicStatus.objects.create(
                 user=user,
-                status_name=status_name,
                 status=status_value
             )
 
@@ -509,22 +523,21 @@ class DynamicStatusListViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response({"status": True, "message": "Dynamic statuses fetched successfully", "data": serializer.data})
 
+
 class DynamicStatusUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DynamicStatusSerializer
     queryset = DynamicStatus.objects.all()
-    lookup_field = 'id'  # Assuming you want to look up by primary key
+    lookup_field = 'dynamic_status_id'  # Assuming you want to look up by primary key
 
     def update(self, request, *args, **kwargs):
         try:
-            dynamic_status_id = self.kwargs.get('id')
-            dynamic_status = self.get_object()
+            dynamic_status_id = self.kwargs.get('dynamic_status_id')
+            dynamic_status = DynamicStatus.objects.get(id=dynamic_status_id)
 
-            status_name = request.data.get('status_name')
             status_value = request.data.get('status')
 
-            if status_name is not None:
-                dynamic_status.status_name = status_name
+          
             if status_value is not None:
                 dynamic_status.status = status_value
             
@@ -541,11 +554,12 @@ class DynamicStatusDeleteViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = DynamicStatus.objects.all()
     serializer_class = DynamicStatusSerializer
-    lookup_field = 'id'  # Assuming you want to look up by primary key
+    lookup_field = 'dynamic_status_id'  # Assuming you want to look up by primary key
 
     def destroy(self, request, *args, **kwargs):
         try:
-            dynamic_status = self.get_object()
+            dynamic_status_id = self.kwargs.get('dynamic_status_id')
+            dynamic_status = DynamicStatus.objects.get(id=dynamic_status_id)      
             dynamic_status.delete()
             return Response({"status": True, "message": "Dynamic status deleted successfully"})
 
