@@ -45,3 +45,5 @@ class PrintRequestApproval(models.Model):
 
     def __str__(self):
         return f"Approval for Print Request ID {self.print_request.id} by {self.user.username} on {self.created_at}"
+
+
