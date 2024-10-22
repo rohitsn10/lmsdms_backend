@@ -94,3 +94,4 @@ class DocumentDetails(models.Model):
 
     def __str__(self):
         return f"Document for {self.user.username} at {self.created_at}"
+

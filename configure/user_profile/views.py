@@ -22,7 +22,8 @@ from django.contrib.auth.models import Group, Permission
 from django_filters.rest_framework import DjangoFilterBackend
 from user_profile.function_call import *
 from django.core.mail import send_mail
-
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.hashers import make_password
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -366,5 +367,52 @@ class UpdateUserViewSet(viewsets.ModelViewSet):
 
         
 
+class LoginAPIView(viewsets.ModelViewSet):
+    def create(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data
+            if not user.is_reset_password:
+                user.increment_login_count()
+                if user.login_count >= 3:
+                    return Response({"message": "Your account is blocked."}, status=status.HTTP_403_FORBIDDEN)
+            login(request, user)
+            refresh = RefreshToken.for_user(user)
+            serializer = CustomUserSerializer(user)
+            data = serializer.data
+            data['token'] = str(refresh.access_token)
+            return Response({"message": "Login successfully", "data": data})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class ResetPasswordAPIView(viewsets.ModelViewSet):
+    def create(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        if not username or not password:
+            return Response({"status": False,"message": "Username and password are required", "data": []})
+        try:
+            user = CustomUser.objects.get(username=username)
+            user.password = make_password(password)
+            user.is_reset_password = True
+            user.login_count = 0  # Reset login count on password reset
+            user.save()
+            return Response({"message": "Password reset successfully"})
+        except CustomUser.DoesNotExist:
+            return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class AdminResetLoginCountAPIView(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]  
+    # if we want to give admin so give that
+
+    def create(self, request):
+        username = request.data.get('username')
+        try:
+            user = CustomUser.objects.get(username=username)
+            serializer = ResetLoginCountSerializer(user, data=request.data)
+            if serializer.is_valid():
+                serializer.reset_login_count()
+                return Response({"message": "Login count reset successful"})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except CustomUser.DoesNotExist:
+            return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
             
