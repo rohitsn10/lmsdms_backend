@@ -9,9 +9,9 @@ urlpatterns = [
     path('group_update_with_permissions/<int:group_id>', UpdateGroupWithPermissionViewSet.as_view({'put':'update','get':'list'}), name='group_update_with_permissions'),
     path('group_delete/<int:group_id>', UpdateGroupWithPermissionViewSet.as_view({'delete':'destroy'}), name='group_delete'),
 
-    path('login/', LoginAPIView.as_view(), name='login'),
-    path('reset-password/', ResetPasswordAPIView.as_view(), name='reset_password'),
-    path('admin/reset-login-count/', AdminResetLoginCountAPIView.as_view(), name='admin_reset_login_count'),
+    path('login', LoginAPIView.as_view({'post':'create'}), name='login'),
+    path('reset_password', ResetPasswordAPIView.as_view({'post':'create'}), name='reset_password'),
+    path('admin/reset_login_count', AdminResetLoginCountAPIView.as_view({'post':'create'}), name='admin_reset_login_count'),
 
     path('user_create', CreateUserViewSet.as_view({'post':'create'}), name='user_create'),
     path('user_list', ListUserViewSet.as_view({'get':'list'}), name='user_list'),
