@@ -17,4 +17,18 @@ urlpatterns = [
     path('UpdatePrintRequest/<int:print_request_id>', PrintRequestUpdateViewSet.as_view({'post': 'update'}), name='UpdatePrintRequest'),
 
 
+   path('CreateDocument', DocumentCreateViewSet.as_view({'post': 'create'}),name='CreateDocument'),
+   path('UpdateDocument/<document_id>', DocumentUpdateViewSet.as_view({'put': 'update'}),name='UpdateDocument'),
+   path('ViewDocument', DocumentViewSet.as_view({'get':'list'}),name='ViewDocument'),
+   path('DeleteDocument', DocumentDeleteViewSet.as_view({'delete':'destroy'}),name='ViewDocument'),
+   
+   path('CreateTemplate', TemplateCreateViewSet.as_view({'post': 'create'}),name='CreateTemplate'),
+   path('UpdateTemplate/<id>', TemplateUpdateViewSet.as_view({'put': 'update'}),name='UpdateTemplate'),
+
+   path('CreateStatus', DynamicStatusCreateViewSet.as_view({'post': 'create'}),name='CreateStatus'),
+   path('ViewStatus', DynamicStatusListViewSet.as_view({'get':'list'}),name='ViewStatus'),
+   path('UpdateStatus/<id>', DynamicStatusUpdateViewSet.as_view({'put': 'update'}),name='UpdateStatus'),
+   path('DeleteStatus', DynamicStatusDeleteViewSet.as_view({'delete':'destroy'}),name='DeleteStatus'),
+
+
 ]

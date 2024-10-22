@@ -103,7 +103,7 @@ class WorkFlowUpdateSet(viewsets.ModelViewSet):
 class DocumentTypeCreateViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentTypeSerializer
     queryset = DocumentType.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
     
     def create(self, request, *args, **kwargs):
         try:
@@ -249,7 +249,6 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         try:
-            # Extract user and other data from request
             user = self.request.user
             document_title = request.data.get('document_title')
             document_number = request.data.get('document_number')
@@ -270,14 +269,9 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
 
             # Handle operation-specific validations
             if document_operation == 'create_online':
-                # For 'create_online', select_template is mandatory
                 if not select_template:
                     return Response({"status": False, "message": "Template selection is required for creating document online", "data": []})
-            elif document_operation == 'upload_file':
-                # For 'upload_file', a Word file must be provided
-                if 'word_file' not in request.FILES:
-                    return Response({"status": False, "message": "Word file is required for file upload", "data": []})
-
+            
             # Create a new Document object
             document = Document.objects.create(
                 user=user,
@@ -292,12 +286,12 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             )
 
             # If the operation is 'upload_file', handle the Word file upload
-            if document_operation == 'upload_file':
-                word_file = request.FILES['word_file']
-                UploadedDocument.objects.create(
-                    document=document,
-                    word_file=word_file
-                )
+            # if document_operation == 'upload_file':
+            #     word_file = request.FILES['word_file']
+            #     UploadedDocument.objects.create(
+            #         document=document,
+            #         word_file=word_file
+            #     )
             
             # Serialize the created document
             serializer = DocumentSerializer(document)
@@ -329,22 +323,16 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             document_description = request.data.get('document_description')
             revision_time = request.data.get('revision_time')
             document_operation = request.data.get('document_operation')
-            select_template = request.data.get('select_template')
+            # select_template = request.data.get('select_template')
             workflow = request.data.get('workflow')
 
-            # Validate document operation-specific fields
-            if document_operation == 'create_online':
-                if not select_template:
-                    return Response({"status": False, "message": "Template selection is required for creating document online"})
-            elif document_operation == 'upload_file':
-                if 'word_file' in request.FILES:
-                    word_file = request.FILES['word_file']
-                    # Check if there's already an uploaded document for this Document
-                    uploaded_doc, created = UploadedDocument.objects.get_or_create(document=document)
-                    uploaded_doc.word_file = word_file 
-                    uploaded_doc.save()
-                else:
-                    return Response({"status": False, "message": "Word file is required for upload_file operation"})
+      
+            if document_operation == 'upload_file':
+                word_file = request.FILES['word_file']
+                UploadedDocument.objects.create(
+                    document=document,
+                    word_file=word_file
+                )
 
             # Update the document fields
             if document_title != '':
@@ -359,8 +347,6 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
                 document.revision_time = revision_time
             if document_operation != '':
                 document.document_operation = document_operation
-            if select_template != '':
-                document.select_template = select_template if document_operation == 'create_online' else None
             if workflow != '':
                 document.workflow = workflow
 
@@ -567,5 +553,112 @@ class DynamicStatusDeleteViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Dynamic status not found"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+class DocumentDetailsCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DocumentDetails.objects.all()
+    serializer_class = DocumentDetailsSerializer
+    
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            document_id = request.data.get('document_id') 
+            document_data = request.data.get('document_data') 
+
+            # Check if the required fields are provided
+            if not document_id:
+                return Response({"status": False, "message": "Document ID is required", "data": []})
+            if not document_data:
+                return Response({"status": False, "message": "Document data is required", "data": []})
+
+            # Fetch the document instance based on the provided document_id
+            try:
+                document = Document.objects.get(id=document_id)
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Document not found", "data": []})
+
+            # Create a new DocumentDetails entry
+            document_details = DocumentDetails.objects.create(
+                user=user,
+                document=document, 
+                document_data=document_data
+            )
+            
+            return Response({"status": True, "message": "Document created successfully", "data": DocumentDetailsSerializer(document_details).data})
+        
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": []})
+
+
+class DocumentDetailsUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DocumentDetails.objects.all()
+    lookup_field = 'docdetail_id'  
+    serializer_class = DocumentDetailsSerializer
+
+    def update(self, request, *args, **kwargs):
+        try:
+            documentdetail_id = self.kwargs.get('docdetail_id')
+
+            try:
+                document_details = DocumentDetails.objects.get(id=documentdetail_id)
+            except DocumentDetails.DoesNotExist:
+                return Response({"status": False, "message": "Document not found"})
+
+            # Get new data from the request
+            document_data = request.data.get('document_data')
+            document_id = request.data.get('document_id') 
+
+
+            if document_data is not None:
+                document_details.document_data = document_data
+            
+            if document_id is not None:
+                document_details.document_id = document_id
+
+            document_details.save() 
+
+            return Response({
+                "status": True,
+                "message": "Document Details updated successfully",
+            })
+
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": "Something went wrong",
+                "error": str(e)
+            })
+        
+
+class DocumentDetailsViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentDetailsSerializer
+    queryset = DocumentDetails.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['document__name', 'user__username'] 
+    ordering_fields = ['created_at']
+
+    def list(self, request):
+        queryset = self.filter_queryset(self.get_queryset()) 
+        
+        try:
+            if queryset.exists():
+                serializer = DocumentDetailsSerializer(queryset, many=True)
+                return Response({
+                    "status": True,
+                    "message": "Documents fetched successfully",
+                    'total': queryset.count(),
+                    'data': serializer.data
+                })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "No Documents found",
+                    "total": 0,
+                    "data": []
+                })
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
 
 

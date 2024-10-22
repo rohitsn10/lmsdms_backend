@@ -21,3 +21,8 @@ class DynamicStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = DynamicStatus
         fields = ['id', 'user', 'status_name', 'status', 'created_at', 'updated_at']
+
+class DocumentDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentDetails
+        fields = ['id', 'user', 'document_data', 'created_at']
