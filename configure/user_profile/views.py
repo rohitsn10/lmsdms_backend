@@ -366,5 +366,43 @@ class UpdateUserViewSet(viewsets.ModelViewSet):
 
         
 
+class LoginAPIView(viewsets.ModelViewSet):
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data
+            if not user.is_reset_password:
+                user.increment_login_count()
+                if user.login_count >= 3:
+                    return Response({"message": "Your account is blocked."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message": "Login successful"})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class ResetPasswordAPIView(viewsets.ModelViewSet):
+    def post(self, request):
+        username = request.data.get('username')
+        try:
+            user = CustomUser.objects.get(username=username)
+            user.is_reset_password = True
+            user.login_count = 0  # Reset login count on password reset
+            user.save()
+            return Response({"message": "Password reset successful"})
+        except CustomUser.DoesNotExist:
+            return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class AdminResetLoginCountAPIView(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]  
+    # if we want to give admin so give that
+
+    def post(self, request):
+        username = request.data.get('username')
+        try:
+            user = CustomUser.objects.get(username=username)
+            serializer = ResetLoginCountSerializer(user, data=request.data)
+            if serializer.is_valid():
+                serializer.reset_login_count()
+                return Response({"message": "Login count reset successful"})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except CustomUser.DoesNotExist:
+            return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
             

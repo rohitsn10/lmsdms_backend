@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import *
 from django.contrib.auth.models import Group, Permission
-
+from django.contrib.auth import authenticate
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -32,7 +32,7 @@ class GroupSerializer(serializers.ModelSerializer):
 class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission
-        fields = ['id','name','content_type','codename']
+        fields = ['id','name','content_type','codename',]
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -42,7 +42,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id','email','first_name','last_name','phone','is_active','is_staff','is_superuser','profile_image','groups_list','user_permissions']
+        fields = ['id','email','first_name','last_name','phone','is_active','is_staff','is_superuser','profile_image','groups_list','user_permissions','username', 'is_reset_password', 'login_count']
 
     def get_groups_list(self, obj):
         groups_data = [{'id': group.id, 'name': group.name} for group in obj.groups.all()]
@@ -75,4 +75,29 @@ class CustomUserSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.profile_image.url)
         return None
     
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
 
+    def validate(self, data):
+        username = data.get("username")
+        password = data.get("password")
+
+        user = authenticate(username=username, password=password)
+
+        if user:
+            if user.login_count >= 3:
+                raise serializers.ValidationError("Your account is blocked.")
+            return user
+        else:
+            raise serializers.ValidationError("Invalid credentials.")    
+
+
+class ResetLoginCountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['login_count']
+
+    def reset_login_count(self):
+        self.instance.reset_login_count()
+        return self.instance

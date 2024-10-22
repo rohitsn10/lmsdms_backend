@@ -36,6 +36,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     profile_image = models.ImageField(null=True, blank=True, upload_to='profile_images/')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+
+
+    is_reset_password = models.BooleanField(default=False, null=True)
+    login_count = models.IntegerField(default=0)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -49,3 +53,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         return self.email
+    
+    def increment_login_count(self):
+        self.login_count += 1
+        self.save()
+
+    def reset_login_count(self):
+        self.login_count = 0
+        self.save()
