@@ -378,7 +378,7 @@ class LoginAPIView(viewsets.ModelViewSet):
                     return Response({"message": "Your account is blocked."}, status=status.HTTP_403_FORBIDDEN)
             login(request, user)
             refresh = RefreshToken.for_user(user)
-            serializer = CustomUserSerializer(user)
+            serializer = CustomUserSerializer(user,context={'request': request})
             data = serializer.data
             data['token'] = str(refresh.access_token)
             return Response({"message": "Login successfully", "data": data})
