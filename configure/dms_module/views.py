@@ -512,17 +512,42 @@ class DynamicStatusCreateViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
 
 class DynamicStatusListViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    queryset = DynamicStatus.objects.all()
+    queryset = DynamicStatus.objects.all().order_by('-id')
     serializer_class = DynamicStatusSerializer
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['status', 'user__username']
+    ordering_fields = ['status', 'created_at']
 
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response({"status": True, "message": "Dynamic statuses fetched successfully", "data": serializer.data})
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
 
+            if queryset.exists():
+                serializer = self.get_serializer(queryset, many=True)
+                return Response({
+                    "status": True,
+                    "message": "Dynamic statuses fetched successfully",
+                    'total': queryset.count(),
+                    'data': serializer.data
+                })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "No dynamic statuses found",
+                    "total": 0,
+                    "data": []
+                })
+        except Exception as e:
+            return Response({
+                "status": False, 
+                'message': 'Something went wrong', 
+                'error': str(e)
+            })
+        
 
 class DynamicStatusUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -674,5 +699,144 @@ class DocumentDetailsViewSet(viewsets.ModelViewSet):
                 })
         except Exception as e:
             return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+
+
+class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DocumentApproveAction.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            document_id = request.data.get('documentdetails')
+            status_id = request.data.get('status')
+
+            # Ensure required fields are provided
+            if not document_id:
+                return Response({"status": False, "message": "Document details are required"})
+            if not status_id:
+                return Response({"status": False, "message": "Status is required"})
+
+            # Fetch related document and status objects
+            documentdetails = DocumentDetails.objects.get(id=document_id)
+            status = DynamicStatus.objects.get(id=status_id)
+
+            document_approve_action = DocumentApproveAction.objects.create(
+                user=user,
+                documentdetails_approve=documentdetails,
+                status_approve=status
+            )
+
+            return Response({"status": True, "message": "Document approval action created successfully", "data": serializer.data})
+
+        except DocumentDetails.DoesNotExist:
+            return Response({"status": False, "message": "Invalid document details ID"})
+        except DynamicStatus.DoesNotExist:
+            return Response({"status": False, "message": "Invalid status ID"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+class DocumentSendBackActionCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DocumentSendBackAction.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            document_id = request.data.get('documentdetails_sendback')
+            status_id = request.data.get('status_sendback')
+
+            if not document_id:
+                return Response({"status": False, "message": "Document details are required"})
+            if not status_id:
+                return Response({"status": False, "message": "Status is required"})
+
+            documentdetails_sendback = DocumentDetails.objects.get(id=document_id)
+            status_sendback = DynamicStatus.objects.get(id=status_id)
+
+            document_sendback_action = DocumentSendBackAction.objects.create(
+                user=user,
+                documentdetails_sendback=documentdetails_sendback,
+                status_sendback=status_sendback
+            )
+
+            return Response({"status": True, "message": "Document send-back action created successfully"})
+
+        except DocumentDetails.DoesNotExist:
+            return Response({"status": False, "message": "Invalid document details ID"})
+        except DynamicStatus.DoesNotExist:
+            return Response({"status": False, "message": "Invalid status ID"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+class DocumentReleaseActionCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DocumentReleaseAction.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            document_id = request.data.get('documentdetails_release')
+            status_id = request.data.get('status_release')
+
+            if not document_id:
+                return Response({"status": False, "message": "Document details are required"})
+            if not status_id:
+                return Response({"status": False, "message": "Status is required"})
+
+            documentdetails_release = DocumentDetails.objects.get(id=document_id)
+            status_release = DynamicStatus.objects.get(id=status_id)
+
+            document_release_action = DocumentReleaseAction.objects.create(
+                user=user,
+                documentdetails_release=documentdetails_release,
+                status_release=status_release
+            )
+
+            return Response({"status": True, "message": "Document release action created successfully"})
+
+        except DocumentDetails.DoesNotExist:
+            return Response({"status": False, "message": "Invalid document details ID"})
+        except DynamicStatus.DoesNotExist:
+            return Response({"status": False, "message": "Invalid status ID"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+class DocumentEffectiveActionCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DocumentEffectiveAction.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            document_id = request.data.get('documentdetails_effective')
+            status_id = request.data.get('status_effective')
+
+            if not document_id:
+                return Response({"status": False, "message": "Document details are required"})
+            if not status_id:
+                return Response({"status": False, "message": "Status is required"})
+
+            documentdetails_effective = DocumentDetails.objects.get(id=document_id)
+            status_effective = DynamicStatus.objects.get(id=status_id)
+
+            document_effective_action = DocumentEffectiveAction.objects.create(
+                user=user,
+                documentdetails_effective=documentdetails_effective,
+                status_effective=status_effective
+            )
+
+            return Response({"status": True, "message": "Document effective action created successfully"})
+
+        except DocumentDetails.DoesNotExist:
+            return Response({"status": False, "message": "Invalid document details ID"})
+        except DynamicStatus.DoesNotExist:
+            return Response({"status": False, "message": "Invalid status ID"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
 
 

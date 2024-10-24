@@ -34,5 +34,11 @@ urlpatterns = [
    path('UpdateDocumentDetails/<docdetail_id>', DocumentDetailsUpdateViewSet.as_view({'put': 'update'}),name='UpdateDocumentDetails'),
    path('ViewDocumentDetails', DocumentDetailsViewSet.as_view({'get':'list'}),name='ViewDocumentDetails'),
 
+   path('DocumentApproveStatus', DocumentApproveActionCreateViewSet.as_view({'post': 'create'}),name='DocumentApproveStatus'),
+   path('DocumentSendBackStatus', DocumentSendBackActionCreateViewSet.as_view({'post': 'create'}),name='DocumentSendBackStatus'),
+   path('DocumentReleaseStatus', DocumentReleaseActionCreateViewSet.as_view({'post': 'create'}),name='DocumentReleaseStatus'),
+   path('DocumentEffectiveStatus', DocumentEffectiveActionCreateViewSet.as_view({'post': 'create'}),name='DocumentEffectiveStatus'),
+
+
 
 ]
