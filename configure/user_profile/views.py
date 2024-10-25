@@ -294,7 +294,7 @@ class CreateUserViewSet(viewsets.ModelViewSet):
                 fail_silently=False,
             )
 
-            serializer = CustomUserSerializer(user)
+            serializer = CustomUserSerializer(user,context={'request': request})
             data = serializer.data
 
             return Response({"status": True, "message": "User created successfully! Check your email for credentials.", "data": data})
@@ -303,7 +303,7 @@ class CreateUserViewSet(viewsets.ModelViewSet):
         
 
 class ListUserViewSet(viewsets.ModelViewSet):
-    queryset = CustomUser.objects.all()
+    queryset = CustomUser.objects.all().order_by('-id')
     serializer_class = CustomUserSerializer
     search_fields = ['email','username','first_name','last_name','phone']
     ordering_fields = ['email','username','first_name','last_name','phone']
@@ -311,23 +311,15 @@ class ListUserViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             queryset = self.filter_queryset(self.get_queryset())
-            if queryset.exists():
-                page = self.paginate_queryset(queryset)
-                if page is not None:
-                    serializer = CustomUserSerializer(page, many=True)
-                    serializer = self.get_paginated_response(serializer.data)
-                else:
-                    serializer = CustomUserSerializer(queryset, many=True)
-                count = serializer.data['count']
-                limit = int(request.GET.get('page_size', 10))
-                return Response({"status": True, "message": "User List Successfully", 
-                                'total_page': (count + limit - 1) // limit,
-                                'count':count,
-                                'data': serializer.data['results']})
-            else:
-                return Response({"status": False,"message":"No data found!","data":[]})
+            serializer = CustomUserSerializer(queryset, many=True,context={'request': request})
+            data = serializer.data
+            return Response({"status": True,"message":"User List Successfully","data":data})
         except Exception as e:
             return Response({"status": False,"message": str(e),"data":[]})
+
+from rest_framework import viewsets
+from rest_framework.response import Response
+from django.contrib.auth.models import Group
 
 class UpdateUserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
@@ -340,6 +332,8 @@ class UpdateUserViewSet(viewsets.ModelViewSet):
             last_name = request.data.get('last_name')
             phone = request.data.get('phone')
             is_active = request.data.get('is_active')
+            groups = request.data.get('groups', [])
+            
             if not user_id:
                 return Response({"status": False, 'message': 'User ID is required', 'data': []})
 
@@ -347,23 +341,42 @@ class UpdateUserViewSet(viewsets.ModelViewSet):
             if not user:
                 return Response({"status": False, "message": "User not found!", "data": []})
 
-            if first_name is not None:
+            # Update fields only if the value is not an empty string
+            if first_name != "":
                 user.first_name = first_name
-            if last_name is not None:
+            if last_name != "":
                 user.last_name = last_name
-            if phone is not None:
+            if phone != "":
                 user.phone = phone
             if is_active is not None:
                 if isinstance(is_active, str):
                     is_active = is_active.lower() in ('true', '1')
                 user.is_active = is_active
 
+            # Update groups and permissions only if groups list is not empty
+            if groups is not None:
+                if groups:  # Check if groups list is not empty
+                    user.groups.clear()
+                    user.user_permissions.clear()
+
+                    for group_id in groups:
+                        try:
+                            group = Group.objects.get(id=group_id)
+                            user.groups.add(group)
+
+                            for permission in group.permissions.all():
+                                user.user_permissions.add(permission)
+
+                        except Group.DoesNotExist:
+                            return Response({"status": False, "message": f"Group with ID {group_id} does not exist!", "data": []})
+
             user.save()
-            serializer = CustomUserSerializer(user)
+            serializer = CustomUserSerializer(user,context={'request': request})
             data = serializer.data
             return Response({"status": True, "message": "User updated successfully!", "data": data})
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
+
 
         
 
@@ -375,44 +388,51 @@ class LoginAPIView(viewsets.ModelViewSet):
             if not user.is_reset_password:
                 user.increment_login_count()
                 if user.login_count >= 3:
-                    return Response({"message": "Your account is blocked."}, status=status.HTTP_403_FORBIDDEN)
+                    return Response({"status": False,"message": "Your account is blocked.", "data": []})
             login(request, user)
             refresh = RefreshToken.for_user(user)
-            serializer = CustomUserSerializer(user)
+            serializer = CustomUserSerializer(user,context={'request': request})
             data = serializer.data
             data['token'] = str(refresh.access_token)
             return Response({"message": "Login successfully", "data": data})
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": False,"message": "Invalid credentials", "data": []})
 
 class ResetPasswordAPIView(viewsets.ModelViewSet):
-    def create(self, request):
-        username = request.data.get('username')
+    def update(self, request):
+        user = self.request.user
         password = request.data.get('password')
-        if not username or not password:
-            return Response({"status": False,"message": "Username and password are required", "data": []})
+        if not password:
+            return Response({"status": False,"message": "password are required", "data": []})
         try:
-            user = CustomUser.objects.get(username=username)
             user.password = make_password(password)
             user.is_reset_password = True
             user.login_count = 0  # Reset login count on password reset
             user.save()
-            return Response({"message": "Password reset successfully"})
+            return Response({"status": True,"message": "Password reset successfully", "data": []})
         except CustomUser.DoesNotExist:
-            return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"status": False,"message": "User not found", "data": []})
 
 class AdminResetLoginCountAPIView(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]  
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'user_id' 
     # if we want to give admin so give that
 
-    def create(self, request):
-        username = request.data.get('username')
+    def update(self, request, *args, **kwargs):
+        user_id = self.kwargs.get("user_id")
+        password = request.data.get('password')
+
+        if not CustomUser.objects.filter(id = user_id).exists():
+                return Response({"status": False,'message': 'User not found','data':[]})
+
+        if not password:
+            return Response({"status": False,"message": "password are required", "data": []})
         try:
-            user = CustomUser.objects.get(username=username)
-            serializer = ResetLoginCountSerializer(user, data=request.data)
-            if serializer.is_valid():
-                serializer.reset_login_count()
-                return Response({"message": "Login count reset successful"})
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            user = CustomUser.objects.get(id = user_id)
+            user.password = make_password(password)
+            user.is_reset_password = True
+            user.login_count = 0  # Reset login count on password reset
+            user.save()
+            return Response({"status": True,"message": "Password reset successfully", "data": []})
         except CustomUser.DoesNotExist:
-            return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"status": False,"message": "User not found", "data": []})
             

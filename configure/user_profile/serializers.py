@@ -58,11 +58,23 @@ class CustomUserSerializer(serializers.ModelSerializer):
     
             # Initialize the dictionary for this model, if not already done
             if model not in permission_dict:
-                permission_dict[model] = {"name": model}
+                permission_dict[model] = {
+                    "name": model,
+                    "add": None,
+                    "is_add": "false",
+                    "change": None,
+                    "is_change": "false",
+                    "delete": None,
+                    "is_delete": "false",
+                    "view": None,
+                    "is_view": "false"
+                }
     
             # Extract the action (add, change, delete, view) from the permission codename
             action = permission.codename.split('_')[0]
+            permission_dict[model]['permission_id'] = permission.id
             permission_dict[model][action] = permission.id
+            permission_dict[model]["is_" + action] = "true"
     
         # Convert the dictionary to the list format you want
         user_permissions = list(permission_dict.values())
@@ -87,10 +99,10 @@ class LoginSerializer(serializers.Serializer):
 
         if user:
             if user.login_count >= 3:
-                raise serializers.ValidationError("Your account is blocked.")
+                raise serializers.ValidationError({"status": False,"message": "Your account is blocked.","data": []})
             return user
         else:
-            raise serializers.ValidationError("Invalid credentials.")    
+            raise serializers.ValidationError({"status": False,"message": "Invalid credentials","data": []})
 
 
 class ResetLoginCountSerializer(serializers.ModelSerializer):
