@@ -22,7 +22,7 @@ class DepartmentAddView(viewsets.ModelViewSet):
                     return Response({'status': False,'message': 'Department name is required'})
                 if not department_description:
                     return Response({'status': False,'message': 'Department description is required'})
-                
+                    
 
                 department_obj = Department.objects.create(department_name=department_name,department_description=department_description)
                 department_obj.save()
