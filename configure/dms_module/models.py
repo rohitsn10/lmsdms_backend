@@ -40,4 +40,89 @@ class PrintRequestApproval(models.Model):
     def __str__(self):
         return f"Approval for Print Request ID {self.print_request.id} by {self.user.username} on {self.created_at}"
 
+class TemplateModel(models.Model):
+    template_name = models.CharField(max_length=255)  
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    template_doc = models.FileField(upload_to='templates/') 
+    created_at = models.DateTimeField(auto_now_add=True)  
+    updated_at = models.DateTimeField(auto_now=True) 
 
+    def __str__(self):
+        return self.template_name
+    
+class Document(models.Model):
+   
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    document_title = models.TextField(blank=True, null=True) 
+    document_number = models.CharField(max_length=255) 
+    document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE) 
+    document_description = models.TextField(blank=True, null=True)  
+    revision_time = models.CharField(max_length=50, blank=True, null=True)  
+    document_operation = models.TextField(blank=True, null=True)  
+    select_template = models.ForeignKey(TemplateModel, on_delete=models.CASCADE, blank=True, null=True) 
+    workflow = models.ForeignKey(WorkFlowModel, on_delete=models.CASCADE)  
+    created_at = models.DateTimeField(auto_now_add=True)  
+    updated_at = models.DateTimeField(auto_now=True) 
+
+    def __str__(self):
+        return self.document_title
+    
+class UploadedDocument(models.Model):
+    document = models.ForeignKey(Document, on_delete=models.CASCADE)  
+    word_file = models.FileField(upload_to='uploaded_docs/') 
+    uploaded_at = models.DateTimeField(auto_now_add=True) 
+
+    def __str__(self):
+        return f"Uploaded document for {self.document.document_title}"
+    
+    
+class DynamicStatus(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    status = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)  
+
+    def __str__(self):
+        return f"{self.user.username} -: {self.status}"
+    
+class DocumentDetails(models.Model):
+    document = models.ForeignKey(Document, on_delete=models.CASCADE)  
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    document_data = models.JSONField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Document for {self.user.username} at {self.created_at}"
+
+
+class DocumentApproveAction(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    documentdetails_approve = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    status_approve = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class DocumentSendBackAction(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    documentdetails_sendback = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    status_sendback = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class DocumentReleaseAction(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    documentdetails_release = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    status_release = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class DocumentReleaseAction(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    documentdetails_release = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    status_release = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class DocumentEffectiveAction(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    documentdetails_effective = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    status_effective = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    

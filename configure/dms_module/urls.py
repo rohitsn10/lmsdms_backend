@@ -17,4 +17,28 @@ urlpatterns = [
     path('UpdatePrintRequest/<int:print_request_id>', PrintRequestUpdateViewSet.as_view({'post': 'update'}), name='UpdatePrintRequest'),
 
 
+   path('CreateDocument', DocumentCreateViewSet.as_view({'post': 'create'}),name='CreateDocument'),
+   path('UpdateDocument/<document_id>', DocumentUpdateViewSet.as_view({'put': 'update'}),name='UpdateDocument'),
+   path('ViewDocument', DocumentViewSet.as_view({'get':'list'}),name='ViewDocument'),
+   path('DeleteDocument', DocumentDeleteViewSet.as_view({'delete':'destroy'}),name='ViewDocument'),
+   
+   path('CreateTemplate', TemplateCreateViewSet.as_view({'post': 'create'}),name='CreateTemplate'),
+   path('UpdateTemplate/<id>', TemplateUpdateViewSet.as_view({'put': 'update'}),name='UpdateTemplate'),
+
+   path('CreateStatus', DynamicStatusCreateViewSet.as_view({'post': 'create'}),name='CreateStatus'),
+   path('ViewStatus', DynamicStatusListViewSet.as_view({'get':'list'}),name='ViewStatus'),
+   path('UpdateStatus/<dynamic_status_id>', DynamicStatusUpdateViewSet.as_view({'put': 'update'}),name='UpdateStatus'),
+   path('DeleteStatus/<dynamic_status_id>', DynamicStatusDeleteViewSet.as_view({'delete':'destroy'}),name='DeleteStatus'),
+
+   path('CreateDocumentDetails', DocumentDetailsCreateViewSet.as_view({'post': 'create'}),name='CreateDocumentDetails'),
+   path('UpdateDocumentDetails/<docdetail_id>', DocumentDetailsUpdateViewSet.as_view({'put': 'update'}),name='UpdateDocumentDetails'),
+   path('ViewDocumentDetails', DocumentDetailsViewSet.as_view({'get':'list'}),name='ViewDocumentDetails'),
+
+   path('DocumentApproveStatus', DocumentApproveActionCreateViewSet.as_view({'post': 'create'}),name='DocumentApproveStatus'),
+   path('DocumentSendBackStatus', DocumentSendBackActionCreateViewSet.as_view({'post': 'create'}),name='DocumentSendBackStatus'),
+   path('DocumentReleaseStatus', DocumentReleaseActionCreateViewSet.as_view({'post': 'create'}),name='DocumentReleaseStatus'),
+   path('DocumentEffectiveStatus', DocumentEffectiveActionCreateViewSet.as_view({'post': 'create'}),name='DocumentEffectiveStatus'),
+
+
+
 ]
