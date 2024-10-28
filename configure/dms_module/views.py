@@ -208,31 +208,25 @@ class PrintRequestUpdateViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         try:
-            # Get request data
             print_request_id = self.kwargs.get('print_request_id')
             status = request.data.get('status')
 
-            # Validate that the print_request_id is provided
             if not print_request_id:
                 return Response({'status': False, 'message': 'Print request ID is required'})
 
-            # Fetch the associated PrintRequest object
             try:
                 print_request = PrintRequest.objects.get(id=print_request_id)
             except PrintRequest.DoesNotExist:
                 return Response({'status': False, 'message': 'Invalid Print Request ID'})
 
-            # Fetch the PrintRequestApproval for the associated PrintRequest
             try:
                 print_request_approval = PrintRequestApproval.objects.get(print_request=print_request, status='approved')
             except PrintRequestApproval.DoesNotExist:
                 return Response({'status': False, 'message': 'No approved PrintRequestApproval found for this PrintRequest'})
 
-            # Check if the status of the PrintRequest is 'print_is_pending'
             if print_request.status != 'print_is_pending':
                 return Response({'status': False, 'message': 'This PrintRequest is not in a pending state'})
 
-            # Update the no_of_print and status fields in PrintRequest
             print_request.status = status
             print_request.save()
 
@@ -838,5 +832,66 @@ class DocumentEffectiveActionCreateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
+class DocumentReviseActionCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DocumentReviseAction.objects.all()
 
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            document_id = request.data.get('documentdetails_revise')
+            status_id = request.data.get('status_revise')
+
+            if not document_id:
+                return Response({"status": False, "message": "Document details are required"})
+            if not status_id:
+                return Response({"status": False, "message": "Status is required"})
+
+            documentdetails_revise = DocumentDetails.objects.get(id=document_id)
+            status_revise = DynamicStatus.objects.get(id=status_id)
+
+            document_revise_action = DocumentReviseAction.objects.create(
+                user=user,
+                documentdetails_revise=documentdetails_revise,
+                status_revise=status_revise
+            )
+
+            return Response({"status": True, "message": "Document revise action created successfully"})
+
+        except DocumentDetails.DoesNotExist:
+            return Response({"status": False, "message": "Invalid document details ID"})
+        except DynamicStatus.DoesNotExist:
+            return Response({"status": False, "message": "Invalid status ID"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+class MasterCopyUserDropdownViewSet(viewsets.ModelViewSet):
+    queryset = CustomUser.objects.all().order_by('-id')
+    serializer_class = SimpleUserSerializer
+    permission_classes = [permissions.IsAuthenticated] 
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = SimpleUserSerializer(queryset, many=True)
+            data = serializer.data
+            return Response({"status": True, "message": "User list fetched successfully", "data": data})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": []})
+        
+
+class OtherUserDropdownViewSet(viewsets.ModelViewSet):
+    queryset = CustomUser.objects.all().order_by('-id')
+    serializer_class = SimpleUserSerializer
+    permission_classes = [permissions.IsAuthenticated] 
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = SimpleUserSerializer(queryset, many=True)
+            data = serializer.data
+            return Response({"status": True, "message": "User list fetched successfully", "data": data})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": []})
 

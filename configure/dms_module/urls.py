@@ -38,7 +38,10 @@ urlpatterns = [
    path('DocumentSendBackStatus', DocumentSendBackActionCreateViewSet.as_view({'post': 'create'}),name='DocumentSendBackStatus'),
    path('DocumentReleaseStatus', DocumentReleaseActionCreateViewSet.as_view({'post': 'create'}),name='DocumentReleaseStatus'),
    path('DocumentEffectiveStatus', DocumentEffectiveActionCreateViewSet.as_view({'post': 'create'}),name='DocumentEffectiveStatus'),
+   path('DocumentReviseStatus', DocumentReviseActionCreateViewSet.as_view({'post': 'create'}),name='DocumentReviseStatus'),
 
+   path('UserDropdownMasterCopy', MasterCopyUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownMasterCopy'),
+   path('UserDropdownOtherUser', OtherUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownOtherUser'),
 
 
 ]

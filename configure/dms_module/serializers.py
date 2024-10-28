@@ -26,3 +26,8 @@ class DocumentDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentDetails
         fields = ['id', 'user', 'document_data', 'created_at']
+
+class SimpleUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'first_name']

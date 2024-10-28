@@ -18,13 +18,15 @@ class DocumentType(models.Model):
 
 class PrintRequest(models.Model):
 
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='print_requests')  # Foreign key to CustomUser
-    sop_document_id = models.TextField(blank=True, null=True)  # Text field for reason for print
-    no_of_print = models.IntegerField()  # Field for the number of prints
-    issue_type = models.TextField(blank=True, null=True)  # Text field for issue type
-    reason_for_print = models.TextField(blank=True, null=True)  # Text field for reason for print
-    print_request_status = models.TextField(blank=True, null=True)  # Status field for print request
-    created_at = models.DateTimeField(auto_now_add=True)  # Auto-populated created date
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='print_requests') 
+    sop_document_id = models.TextField(blank=True, null=True)  
+    no_of_print = models.IntegerField()  
+    issue_type = models.TextField(blank=True, null=True)  
+    reason_for_print = models.TextField(blank=True, null=True) 
+    print_request_status = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    master_copy_user = models.ManyToManyField(CustomUser, related_name='master_copy_requests', blank=True)
+    other_user = models.ManyToManyField(CustomUser, related_name='other_user_requests', blank=True)
 
     def __str__(self):
         return f"Print Request by {self.user.username} on {self.created_at}"
@@ -123,6 +125,12 @@ class DocumentEffectiveAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     documentdetails_effective = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
     status_effective = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class DocumentReviseAction(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    documentdetails_revise = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    status_revise = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     
