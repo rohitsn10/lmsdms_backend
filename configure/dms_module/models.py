@@ -133,4 +133,12 @@ class DocumentReviseAction(models.Model):
     status_revise = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
+
+class DynamicInventory(models.Model):
+    inventory_name = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.inventory_name
     

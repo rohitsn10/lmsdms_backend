@@ -31,3 +31,9 @@ class SimpleUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['id', 'first_name']
+
+
+class DynamicInventorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DynamicInventory
+        fields = ['id', 'inventory_name', 'created_at', 'updated_at']
