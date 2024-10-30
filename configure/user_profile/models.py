@@ -36,10 +36,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     profile_image = models.ImageField(null=True, blank=True, upload_to='profile_images/')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    otp = models.CharField(max_length=6, null=True, blank=True)
 
 
     is_reset_password = models.BooleanField(default=False, null=True)
     login_count = models.IntegerField(default=0)
+
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

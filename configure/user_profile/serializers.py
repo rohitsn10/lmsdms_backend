@@ -113,3 +113,8 @@ class ResetLoginCountSerializer(serializers.ModelSerializer):
     def reset_login_count(self):
         self.instance.reset_login_count()
         return self.instance
+
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = ['id', 'name']

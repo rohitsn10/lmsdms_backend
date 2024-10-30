@@ -24,6 +24,8 @@ from user_profile.function_call import *
 from django.core.mail import send_mail
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
+import random
+
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -378,8 +380,6 @@ class UpdateUserViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": str(e), "data": []})
 
 
-        
-
 class LoginAPIView(viewsets.ModelViewSet):
     def create(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -400,17 +400,78 @@ class LoginAPIView(viewsets.ModelViewSet):
 class ResetPasswordAPIView(viewsets.ModelViewSet):
     def update(self, request):
         user = self.request.user
+        if user.is_anonymous:
+            return Response({"status": False, "message": "User is not authenticated", "data": []})
+
+        old_password = request.data.get('old_password')
         password = request.data.get('password')
-        if not password:
-            return Response({"status": False,"message": "password are required", "data": []})
+        confirm_password = request.data.get('confirm_password')
+
+        if not old_password or not password or not confirm_password:
+            return Response({"status": False, "message": "Old password, new password, and confirm password are required", "data": []})
+
+        if not check_password(old_password, user.password):
+            return Response({"status": False, "message": "Old password is incorrect", "data": []})
+
+        if password != confirm_password:
+            return Response({"status": False, "message": "Password and confirm password do not match", "data": []})
         try:
             user.password = make_password(password)
             user.is_reset_password = True
-            user.login_count = 0  # Reset login count on password reset
+            user.login_count = 0 
             user.save()
             return Response({"status": True,"message": "Password reset successfully", "data": []})
         except CustomUser.DoesNotExist:
             return Response({"status": False,"message": "User not found", "data": []})
+
+
+class RequestOTPViewSet(viewsets.ModelViewSet):
+    def create(self, request):
+        email = request.data.get('email')
+        
+        if not email:
+            return Response({"status": False, "message": "Email is required", "data": []})
+        
+        try:
+            user = CustomUser.objects.get(email=email)
+            otp = str(random.randint(100000, 999999))
+            user.otp = otp
+            user.save()
+
+            return Response({"status": True, "message": "OTP sent to your email", "data": []})
+        except CustomUser.DoesNotExist:
+            return Response({"status": False, "message": "User not found", "data": []})
+
+
+class VerifyOTPAndResetPasswordViewSet(viewsets.ModelViewSet):
+    def create(self, request):
+        email = request.data.get('email')
+        otp = request.data.get('otp')
+        password = request.data.get('password')
+        confirm_password = request.data.get('confirm_password')
+        
+        if not email or not otp or not password or not confirm_password:
+            return Response({"status": False, "message": "All fields are required", "data": []})
+        
+        if password != confirm_password:
+            return Response({"status": False, "message": "Password and confirm password do not match", "data": []})
+
+        try:
+            user = CustomUser.objects.get(email=email)
+
+            if user.otp != otp:
+                return Response({"status": False, "message": "Invalid OTP", "data": []})
+
+            user.password = make_password(password)
+            user.is_reset_password = True
+            user.otp = None
+            user.save()
+            
+            return Response({"status": True, "message": "Password reset successfully", "data": []})
+        except CustomUser.DoesNotExist:
+            return Response({"status": False, "message": "User not found", "data": []})
+
+
 
 class AdminResetLoginCountAPIView(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -435,4 +496,17 @@ class AdminResetLoginCountAPIView(viewsets.ModelViewSet):
             return Response({"status": True,"message": "Password reset successfully", "data": []})
         except CustomUser.DoesNotExist:
             return Response({"status": False,"message": "User not found", "data": []})
+        
+
+class ListUserGroupsViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = Group.objects.all().order_by('name')  # Fetch all groups ordered by name
+            serializer = GroupSerializer(queryset, many=True)
+            data = serializer.data
+            return Response({"status": True, "message": "User Groups List Successfully", "data": data})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": []})
             
