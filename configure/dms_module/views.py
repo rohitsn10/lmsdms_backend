@@ -895,3 +895,86 @@ class OtherUserDropdownViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
 
+
+# Dynamic Inventory
+class DynamicInventoryCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DynamicInventory.objects.all()
+    serializer_class = DynamicInventorySerializer
+
+    def create(self, request, *args, **kwargs):
+        try:
+            inventory_name = request.data.get('inventory_name')
+            if not inventory_name:
+                return Response({"status": False, "message": "Inventory name is required"})
+
+            dynamic_inventory = DynamicInventory.objects.create(inventory_name=inventory_name)
+            serializer = DynamicInventorySerializer(dynamic_inventory)
+            return Response({"status": True, "message": "Dynamic inventory created successfully", "data": serializer.data})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+class DynamicInventoryListViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DynamicInventory.objects.all().order_by('-id')
+    serializer_class = DynamicInventorySerializer
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['inventory_name']
+    ordering_fields = ['inventory_name', 'created_at']
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = self.get_serializer(queryset, many=True)
+            return Response({
+                "status": True,
+                "message": "Dynamic inventories fetched successfully",
+                'total': queryset.count(),
+                'data': serializer.data
+            })
+
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+
+class DynamicInventoryUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DynamicInventorySerializer
+    queryset = DynamicInventory.objects.all()
+    lookup_field = 'inventory_id'
+
+    def update(self, request, *args, **kwargs):
+        try:
+            inventory_id = self.kwargs.get('inventory_id')
+            dynamic_inventory = DynamicInventory.objects.get(id=inventory_id)
+            inventory_name = request.data.get('inventory_name')
+
+            if inventory_name is not None:
+                dynamic_inventory.inventory_name = inventory_name
+            
+            dynamic_inventory.save()
+            serializer = DynamicInventorySerializer(dynamic_inventory)
+            return Response({"status": True, "message": "Dynamic inventory updated successfully", "data": serializer.data})
+
+        except DynamicInventory.DoesNotExist:
+            return Response({"status": False, "message": "Dynamic inventory not found"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+class DynamicInventoryDeleteViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DynamicInventory.objects.all()
+    serializer_class = DynamicInventorySerializer
+    lookup_field = 'inventory_id'
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            inventory_id = self.kwargs.get('inventory_id')
+            dynamic_inventory = DynamicInventory.objects.get(id=inventory_id)
+            dynamic_inventory.delete()
+            return Response({"status": True, "message": "Dynamic inventory deleted successfully"})
+
+        except DynamicInventory.DoesNotExist:
+            return Response({"status": False, "message": "Dynamic inventory not found"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
