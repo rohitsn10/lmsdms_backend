@@ -503,10 +503,31 @@ class ListUserGroupsViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            queryset = Group.objects.all().order_by('name')  # Fetch all groups ordered by name
+            queryset = Group.objects.all().order_by('name') 
             serializer = GroupSerializer(queryset, many=True)
             data = serializer.data
             return Response({"status": True, "message": "User Groups List Successfully", "data": data})
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
             
+class EsignatureViewSet(viewsets.ModelViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = CustomUserSerializer
+
+    def create(self, request):
+        try:
+            if not self.request.user.is_authenticated:
+                return Response({"status": False, "message": "User not authenticated."})
+            
+            password = request.data.get('password')
+
+            if not password:
+                return Response({"status": False, "message": "Password is required."})
+
+            if self.request.user.check_password(password):
+                return Response({"status": True, "message": "Your password is correct."})
+            else:
+                return Response({"status": False, "message": "Incorrect password."})
+
+        except Exception as e:
+            return Response({"status": False, "message": f"An error occurred: {str(e)}"})

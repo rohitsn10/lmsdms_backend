@@ -61,6 +61,7 @@ class Document(models.Model):
     document_description = models.TextField(blank=True, null=True)  
     revision_time = models.CharField(max_length=50, blank=True, null=True)  
     document_operation = models.TextField(blank=True, null=True)  
+    document_current_status = models.TextField(blank=True, null=True)
     select_template = models.ForeignKey(TemplateModel, on_delete=models.CASCADE, blank=True, null=True) 
     workflow = models.ForeignKey(WorkFlowModel, on_delete=models.CASCADE)  
     created_at = models.DateTimeField(auto_now_add=True)  
