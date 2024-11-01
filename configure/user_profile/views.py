@@ -503,7 +503,7 @@ class ListUserGroupsViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            queryset = Group.objects.all().order_by('name')  # Fetch all groups ordered by name
+            queryset = Group.objects.all().order_by('name') 
             serializer = GroupSerializer(queryset, many=True)
             data = serializer.data
             return Response({"status": True, "message": "User Groups List Successfully", "data": data})
