@@ -510,3 +510,24 @@ class ListUserGroupsViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
             
+class EsignatureViewSet(viewsets.ModelViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = CustomUserSerializer
+
+    def create(self, request):
+        try:
+            if not self.request.user.is_authenticated:
+                return Response({"status": False, "message": "User not authenticated."})
+            
+            password = request.data.get('password')
+
+            if not password:
+                return Response({"status": False, "message": "Password is required."})
+
+            if self.request.user.check_password(password):
+                return Response({"status": True, "message": "Your password is correct."})
+            else:
+                return Response({"status": False, "message": "Incorrect password."})
+
+        except Exception as e:
+            return Response({"status": False, "message": f"An error occurred: {str(e)}"})
