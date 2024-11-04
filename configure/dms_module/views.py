@@ -154,6 +154,14 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
         
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = PrintRequest.objects.all()
+            serializer = PrintRequestSerializer(queryset, many=True)
+            return Response({"status": True, "message": "Print request list fetched successfully", "data": serializer.data})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": []})
+        
 
 class PrintApprovalViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -652,8 +660,8 @@ class DocumentDetailsUpdateViewSet(viewsets.ModelViewSet):
             if document_data is not None:
                 document_details.document_data = document_data
             
-            if document_id is not None:
-                document_details.document_id = document_id
+            # if document_id is not None:
+            #     document_details.document_id = document_id
 
             document_details.save() 
 
@@ -837,6 +845,22 @@ class DocumentEffectiveActionCreateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Invalid status ID"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+
+            queryset = DocumentEffectiveAction.objects.filter(user=user)
+
+            if queryset.exists():
+                serializer = DocumentEffectiveActionSerializer(queryset, many=True)
+                data = serializer.data
+                return Response({"status": True, "message": "Document effective actions fetched successfully", "data": data})
+            else:
+                return Response({"status": False, "message": "No document effective actions found", "data": []})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
 
 
 
