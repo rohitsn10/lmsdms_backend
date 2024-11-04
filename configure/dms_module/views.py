@@ -729,7 +729,7 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
                 status_approve=status
             )
 
-            return Response({"status": True, "message": "Document approval action created successfully", "data": serializer.data})
+            return Response({"status": True, "message": "Document approval action created successfully"})
 
         except DocumentDetails.DoesNotExist:
             return Response({"status": False, "message": "Invalid document details ID"})
@@ -858,7 +858,7 @@ class DocumentEffectiveActionCreateViewSet(viewsets.ModelViewSet):
 
 class DocumentReviseActionCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    queryset = DocumentReviseAction.objects.all()
+    queryset = DocumentRevisionAction.objects.all()
 
     def create(self, request, *args, **kwargs):
         try:
@@ -874,7 +874,7 @@ class DocumentReviseActionCreateViewSet(viewsets.ModelViewSet):
             documentdetails_revise = DocumentDetails.objects.get(id=document_id)
             status_revise = DynamicStatus.objects.get(id=status_id)
 
-            document_revise_action = DocumentReviseAction.objects.create(
+            document_revise_action = DocumentRevisionAction.objects.create(
                 user=user,
                 documentdetails_revise=documentdetails_revise,
                 status_revise=status_revise
