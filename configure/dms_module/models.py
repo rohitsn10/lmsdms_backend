@@ -116,22 +116,16 @@ class DocumentReleaseAction(models.Model):
     status_release = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
-class DocumentReleaseAction(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    documentdetails_release = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
-    status_release = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
-
 class DocumentEffectiveAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     documentdetails_effective = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
     status_effective = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
-class DocumentReviseAction(models.Model):
+class DocumentRevisionAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    documentdetails_revise = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
-    status_revise = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    documentdetails_revision = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    status_revision = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
@@ -142,4 +136,5 @@ class DynamicInventory(models.Model):
 
     def __str__(self):
         return self.inventory_name
+
     
