@@ -39,3 +39,14 @@ class DocumentEffectiveActionSerializer(serializers.ModelSerializer):
 
     def get_document(self, obj):
         return DocumentSerializer(obj.document).data
+
+class SimpleUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'first_name']
+
+class DynamicInventorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DynamicInventory
+        fields = ['id', 'inventory_name', 'created_at', 'updated_at']
+

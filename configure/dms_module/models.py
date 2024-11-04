@@ -18,13 +18,15 @@ class DocumentType(models.Model):
 
 class PrintRequest(models.Model):
 
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='print_requests')  # Foreign key to CustomUser
-    sop_document_id = models.TextField(blank=True, null=True)  # Text field for reason for print
-    no_of_print = models.IntegerField()  # Field for the number of prints
-    issue_type = models.TextField(blank=True, null=True)  # Text field for issue type
-    reason_for_print = models.TextField(blank=True, null=True)  # Text field for reason for print
-    print_request_status = models.TextField(blank=True, null=True)  # Status field for print request
-    created_at = models.DateTimeField(auto_now_add=True)  # Auto-populated created date
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='print_requests') 
+    sop_document_id = models.TextField(blank=True, null=True)  
+    no_of_print = models.IntegerField()  
+    issue_type = models.TextField(blank=True, null=True)  
+    reason_for_print = models.TextField(blank=True, null=True) 
+    print_request_status = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    master_copy_user = models.ManyToManyField(CustomUser, related_name='master_copy_requests', blank=True)
+    other_user = models.ManyToManyField(CustomUser, related_name='other_user_requests', blank=True)
 
     def __str__(self):
         return f"Print Request by {self.user.username} on {self.created_at}"
@@ -59,6 +61,7 @@ class Document(models.Model):
     document_description = models.TextField(blank=True, null=True)  
     revision_time = models.CharField(max_length=50, blank=True, null=True)  
     document_operation = models.TextField(blank=True, null=True)  
+    document_current_status = models.TextField(blank=True, null=True)
     select_template = models.ForeignKey(TemplateModel, on_delete=models.CASCADE, blank=True, null=True) 
     workflow = models.ForeignKey(WorkFlowModel, on_delete=models.CASCADE)  
     created_at = models.DateTimeField(auto_now_add=True)  
@@ -124,5 +127,14 @@ class DocumentRevisionAction(models.Model):
     documentdetails_revision = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
     status_revision = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class DynamicInventory(models.Model):
+    inventory_name = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.inventory_name
 
     

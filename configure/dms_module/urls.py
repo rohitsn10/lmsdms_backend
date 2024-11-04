@@ -11,17 +11,15 @@ urlpatterns = [
    path('create_get_workflow', WorkFlowViewSet.as_view({'post': 'create','get':'list'}),name='create_get_workflow'),
    path('update_delete_workflow/<int:workflow_id>',WorkFlowUpdateSet.as_view({'put': 'update','delete':'destroy'}),name='update_delete_workflow'),
 
-
    path('print_request', PrintRequestViewSet.as_view({'post': 'create','get':'list'}), name='print_request'),
    path('print_approvals', PrintApprovalViewSet.as_view({'post': 'create'}), name='print_approvals'),
    path('update_print_request/<int:print_request_id>', PrintRequestUpdateViewSet.as_view({'put': 'update'}), name='update_print_request'),
-
-
+  
    path('create_document', DocumentCreateViewSet.as_view({'post': 'create'}),name='create_document'),
    path('update_document/<document_id>', DocumentUpdateViewSet.as_view({'put': 'update'}),name='update_document'),
    path('view_document', DocumentViewSet.as_view({'get':'list'}),name='view_document'),
    path('delete_Document', DocumentDeleteViewSet.as_view({'delete':'destroy'}),name='delete_Document'),
-   
+
    path('create_template', TemplateCreateViewSet.as_view({'post': 'create'}),name='create_template'),
    path('update_template/<id>', TemplateUpdateViewSet.as_view({'put': 'update'}),name='update_template'),
 
@@ -39,6 +37,12 @@ urlpatterns = [
    path('document_release_status', DocumentReleaseActionCreateViewSet.as_view({'post': 'create'}),name='document_release_status'),
    path('document_effective_status', DocumentEffectiveActionCreateViewSet.as_view({'post': 'create'}),name='document_effective_status'),
 
+   path('UserDropdownMasterCopy', MasterCopyUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownMasterCopy'),
+   path('UserDropdownOtherUser', OtherUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownOtherUser'),
 
+   path('CreateInventory', DynamicInventoryCreateViewSet.as_view({'post': 'create'}), name='CreateInventory'),
+   path('ViewInventory', DynamicInventoryListViewSet.as_view({'get': 'list'}), name='ViewInventory'),
+   path('UpdateInventory/<inventory_id>', DynamicInventoryUpdateViewSet.as_view({'put': 'update'}), name='UpdateInventory'),
+   path('DeleteInventory/<inventory_id>', DynamicInventoryDeleteViewSet.as_view({'delete': 'destroy'}), name='DeleteInventory'),
 
 ]

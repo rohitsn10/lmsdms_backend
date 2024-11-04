@@ -12,9 +12,18 @@ urlpatterns = [
     path('login', LoginAPIView.as_view({'post':'create'}), name='login'),
     path('reset_password', ResetPasswordAPIView.as_view({'put':'update'}), name='reset_password'),
     path('admin_can_reset_passowrd/<int:user_id>', AdminResetLoginCountAPIView.as_view({'put':'update'}), name='admin_reset_login_count'),
+    path('request_forgot_password_otp', RequestOTPViewSet.as_view({'post':'create'}), name='request_forgot_password_otp'),
+    path('forgot_password_otp', VerifyOTPAndResetPasswordViewSet.as_view({'post':'create'}), name='forgot_password_otp'),
 
     path('user_create', CreateUserViewSet.as_view({'post':'create'}), name='user_create'),
     path('user_list', ListUserViewSet.as_view({'get':'list'}), name='user_list'),
     path('user_update/<int:user_id>', UpdateUserViewSet.as_view({'put':'update'}), name='user_update'),
+
+    path('user_group_list', ListUserGroupsViewSet.as_view({'get':'list'}), name='user_group_list'),
+    path('Esignature', EsignatureViewSet.as_view({'post':'create'}), name='Esignature'),
+
+
+
+
 
 ]
