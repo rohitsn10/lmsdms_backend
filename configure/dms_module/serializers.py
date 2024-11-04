@@ -17,6 +17,11 @@ class DocumentSerializer(serializers.ModelSerializer):
         model = Document
         fields = '__all__'
 
+class DocumentCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentComments
+        fields = ['id', 'user', 'document', 'Comment_description', 'created_at']
+
 class DynamicStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = DynamicStatus
