@@ -45,4 +45,10 @@ urlpatterns = [
    path('UpdateInventory/<inventory_id>', DynamicInventoryUpdateViewSet.as_view({'put': 'update'}), name='UpdateInventory'),
    path('DeleteInventory/<inventory_id>', DynamicInventoryDeleteViewSet.as_view({'delete': 'destroy'}), name='DeleteInventory'),
 
+   
+   path('CreateInventory', DocumentCommentCreateViewSet.as_view({'post': 'create'}), name='CreateInventory'),
+   path('ViewInventory', DocumentCommentsViewSet.as_view({'get': 'list'}), name='ViewInventory'),
+   path('DeleteInventory/<inventory_id>', DocumentCommentDeleteViewSet.as_view({'delete': 'destroy'}), name='DeleteInventory'),
+
+
 ]

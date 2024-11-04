@@ -920,7 +920,6 @@ class OtherUserDropdownViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": str(e), "data": []})
 
 
-# Dynamic Inventory
 class DynamicInventoryCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = DynamicInventory.objects.all()
@@ -1002,3 +1001,60 @@ class DynamicInventoryDeleteViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Dynamic inventory not found"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+
+class DocumentCommentCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DocumentComments.objects.all().order_by('-created_at')
+
+    def create(self, request):
+        try:
+            document_id = request.data.get('document')
+            comment_description = request.data.get('comment_description', {})
+            
+            # Ensure required fields are provided
+            if not document_id:
+                return Response({'status': False, 'message': 'Document ID is required'})
+            if not comment_description:
+                return Response({'status': False, 'message': 'Comment description is required'})
+
+            # Create the comment
+            comment_obj = DocumentComments.objects.create(
+                user=self.request.user,
+                document_id=document_id,
+                Comment_description=comment_description
+            )
+            return Response({'status': True, 'message': 'Comment added successfully'})
+        except Exception as e:
+            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+        
+class DocumentCommentsViewSet(viewsets.ModelViewSet):
+    queryset = DocumentComments.objects.all().order_by('-created_at')
+    serializer_class = DocumentCommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = DocumentCommentSerializer(queryset, many=True)
+            data = serializer.data
+            return Response({"message": "Comment list fetched successfully", "data": data})
+        except Exception as e:
+            return Response({"message": str(e), "data": []})
+        
+class DocumentCommentDeleteViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'comment_id'
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            comment_id = self.kwargs.get('comment_id')
+            document_comment = DocumentComments.objects.get(id=comment_id)
+            document_comment.delete()
+            return Response({"message": "Comment deleted successfully"})
+
+        except DocumentComments.DoesNotExist:
+            return Response({"message": "Comment not found"})
+        except Exception as e:
+            return Response({"message": "Something went wrong", "error": str(e)})
