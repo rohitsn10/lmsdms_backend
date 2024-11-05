@@ -382,7 +382,7 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
 
 class DocumentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = DocumentSerializer
+    serializer_class = DocumentviewSerializer
     queryset = Document.objects.all().order_by('-id')
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['document_title', 'document_number', 'document_description', 'document_type__name']
@@ -393,7 +393,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
             queryset = self.filter_queryset(self.get_queryset())
 
             if queryset.exists():
-                serializer = DocumentSerializer(queryset, many=True)
+                serializer = DocumentviewSerializer(queryset, many=True)
                 return Response({
                     "status": True,
                     "message": "Documents fetched successfully",
