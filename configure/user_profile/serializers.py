@@ -35,6 +35,16 @@ class PermissionSerializer(serializers.ModelSerializer):
         fields = ['id','name','content_type','codename',]
 
 
+class CustomUserdataSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomUser
+        fields = ['id','email','full_name','first_name','last_name','phone','username','created_at']
+    
+    def get_full_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}".strip()
+
 class CustomUserSerializer(serializers.ModelSerializer):
     groups_list = serializers.SerializerMethodField()
     profile_image = serializers.SerializerMethodField()

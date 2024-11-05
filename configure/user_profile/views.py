@@ -305,15 +305,16 @@ class CreateUserViewSet(viewsets.ModelViewSet):
         
 
 class ListUserViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = CustomUser.objects.all().order_by('-id')
-    serializer_class = CustomUserSerializer
+    serializer_class = CustomUserdataSerializer
     search_fields = ['email','username','first_name','last_name','phone']
     ordering_fields = ['email','username','first_name','last_name','phone']
 
     def list(self, request, *args, **kwargs):
         try:
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = CustomUserSerializer(queryset, many=True,context={'request': request})
+            serializer = CustomUserdataSerializer(queryset, many=True,context={'request': request})
             data = serializer.data
             return Response({"status": True,"message":"User List Successfully","data":data})
         except Exception as e:
