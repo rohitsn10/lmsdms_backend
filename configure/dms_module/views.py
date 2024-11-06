@@ -483,7 +483,38 @@ class TemplateCreateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
         
+class TemplateViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TemplateSerializer
+    queryset = TemplateModel.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['template_name', 'user__username']
+    ordering_fields = ['template_name', 'created_at']
 
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            if queryset.exists():
+                serializer = self.get_serializer(queryset, many=True)
+                return Response({
+                    "status": True,
+                    "message": "Templates fetched successfully",
+                    'total': queryset.count(),
+                    'data': serializer.data
+                })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "No templates found",
+                    "total": 0,
+                    "data": []
+                })
+        except Exception as e:
+            return Response({
+                "status": False,
+                'message': 'Something went wrong',
+                'error': str(e)
+            })
 
 class TemplateUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]

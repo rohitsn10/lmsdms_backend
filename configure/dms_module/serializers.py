@@ -21,6 +21,11 @@ class DocumentSerializer(serializers.ModelSerializer):
         model = Document
         fields = '__all__'
 
+class TemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TemplateModel
+        fields = '__all__'
+
 class DocumentviewSerializer(serializers.ModelSerializer):
     document_type_name = serializers.SerializerMethodField()
     formatted_created_at = serializers.SerializerMethodField()
