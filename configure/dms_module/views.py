@@ -398,9 +398,7 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             # Save the updated document
             document.save()
 
-            # Serialize the updated document
-            serializer = DocumentSerializer(document)
-            return Response({"status": True, "message": "Document updated successfully", "data": serializer.data})
+            return Response({"status": True, "message": "Document updated successfully"})
         
         except Exception as e:
             return Response({"status": False, "message": 'Something went wrong', 'error': str(e)})
@@ -490,11 +488,11 @@ class TemplateCreateViewSet(viewsets.ModelViewSet):
 class TemplateUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = TemplateModel.objects.all()
-    lookup_field = 'id'
+    lookup_field = 'temp_id'
 
     def update(self, request, *args, **kwargs):
         try:
-            template_id = self.kwargs.get('id') 
+            template_id = self.kwargs.get('temp_id') 
 
             try:
                 template = TemplateModel.objects.get(id=template_id)
