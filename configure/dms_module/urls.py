@@ -9,7 +9,9 @@ urlpatterns = [
    path('create_get_workflow', WorkFlowViewSet.as_view({'post': 'create','get':'list'}),name='create_get_workflow'),
    path('update_delete_workflow/<int:workflow_id>',WorkFlowUpdateSet.as_view({'put': 'update','delete':'destroy'}),name='update_delete_workflow'),
    
-   path('create_get_document_type', DocumentTypeCreateViewSet.as_view({'post': 'create','get':'list'}),name='create_get_document_type'),
+   path('create_get_document_type', DocumentTypeCreateViewSet.as_view({'post': 'create'}),name='create_get_document_type'),
+   path('get_document_type', DocumentTypeCreateViewSet.as_view({'get':'list'}),name='get_document_type'),
+
    path('create_get_workflow', WorkFlowViewSet.as_view({'post': 'create','get':'list'}),name='create_get_workflow'),
    path('update_delete_workflow/<int:workflow_id>',WorkFlowUpdateSet.as_view({'put': 'update','delete':'destroy'}),name='update_delete_workflow'),
 
