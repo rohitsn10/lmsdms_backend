@@ -11,6 +11,32 @@ class CustomPagination(PageNumberPagination):
     page_size_query_param = 'page_size'  # Allow users to set page size
     max_page_size = 100  # Maximum page size
 
+
+class DashboardCountViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            document_count = Document.objects.count()
+            workflow_count = WorkFlowModel.objects.count()
+            document_type_count = DocumentType.objects.count()
+
+            return Response({
+                "status": True,
+                "message": "Dashboard counts fetched successfully",
+                "data": {
+                    "document_count": document_count,
+                    "workflow_count": workflow_count,
+                    "document_type_count": document_type_count
+                }
+            })
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": "Something went wrong",
+                "error": str(e)
+            })
+
 class WorkFlowViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = WorkFlowSerializer
@@ -509,8 +535,7 @@ class DynamicStatusCreateViewSet(viewsets.ModelViewSet):
                 status=status_value
             )
 
-            serializer = DynamicStatusSerializer(dynamic_status)
-            return Response({"status": True, "message": "Dynamic status created successfully", "data": serializer.data})
+            return Response({"status": True, "message": "Dynamic status created successfully"})
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
@@ -555,7 +580,7 @@ class DynamicStatusUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DynamicStatusSerializer
     queryset = DynamicStatus.objects.all()
-    lookup_field = 'dynamic_status_id'  # Assuming you want to look up by primary key
+    lookup_field = 'dynamic_status_id'  
 
     def update(self, request, *args, **kwargs):
         try:
@@ -569,8 +594,7 @@ class DynamicStatusUpdateViewSet(viewsets.ModelViewSet):
                 dynamic_status.status = status_value
             
             dynamic_status.save()
-            serializer = DynamicStatusSerializer(dynamic_status)
-            return Response({"status": True, "message": "Dynamic status updated successfully", "data": serializer.data})
+            return Response({"status": True, "message": "Dynamic status updated successfully"})
 
         except DynamicStatus.DoesNotExist:
             return Response({"status": False, "message": "Dynamic status not found"})
@@ -581,7 +605,7 @@ class DynamicStatusDeleteViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = DynamicStatus.objects.all()
     serializer_class = DynamicStatusSerializer
-    lookup_field = 'dynamic_status_id'  # Assuming you want to look up by primary key
+    lookup_field = 'dynamic_status_id'  
 
     def destroy(self, request, *args, **kwargs):
         try:

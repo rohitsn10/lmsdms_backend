@@ -4,10 +4,12 @@ from dms_module.views import *
 
 urlpatterns = [
 
+   path('DashboardCount', DashboardCountViewSet.as_view({'get':'list'}),name='DashboardCount'),
+
    path('create_get_workflow', WorkFlowViewSet.as_view({'post': 'create','get':'list'}),name='create_get_workflow'),
    path('update_delete_workflow/<int:workflow_id>',WorkFlowUpdateSet.as_view({'put': 'update','delete':'destroy'}),name='update_delete_workflow'),
    
-   path('create_get_department', DocumentTypeCreateViewSet.as_view({'post': 'create','get':'list'}),name='create_get_department'),
+   path('create_get_document_type', DocumentTypeCreateViewSet.as_view({'post': 'create','get':'list'}),name='create_get_document_type'),
    path('create_get_workflow', WorkFlowViewSet.as_view({'post': 'create','get':'list'}),name='create_get_workflow'),
    path('update_delete_workflow/<int:workflow_id>',WorkFlowUpdateSet.as_view({'put': 'update','delete':'destroy'}),name='update_delete_workflow'),
 
@@ -45,7 +47,6 @@ urlpatterns = [
    path('UpdateInventory/<inventory_id>', DynamicInventoryUpdateViewSet.as_view({'put': 'update'}), name='UpdateInventory'),
    path('DeleteInventory/<inventory_id>', DynamicInventoryDeleteViewSet.as_view({'delete': 'destroy'}), name='DeleteInventory'),
 
-   
    path('CreateInventory', DocumentCommentCreateViewSet.as_view({'post': 'create'}), name='CreateInventory'),
    path('ViewInventory', DocumentCommentsViewSet.as_view({'get': 'list'}), name='ViewInventory'),
    path('DeleteInventory/<inventory_id>', DocumentCommentDeleteViewSet.as_view({'delete': 'destroy'}), name='DeleteInventory'),
