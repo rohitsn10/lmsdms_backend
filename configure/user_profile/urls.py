@@ -11,6 +11,7 @@ urlpatterns = [
 
     path('login', LoginAPIView.as_view({'post':'create'}), name='login'),
     path('reset_password', ResetPasswordAPIView.as_view({'put':'update'}), name='reset_password'),
+    path('Otp_ResetPassword', ConfirmOTPAndSetPassword.as_view({'put':'update'}), name='Otp_ResetPassword'),
     path('admin_can_reset_passowrd/<int:user_id>', AdminResetLoginCountAPIView.as_view({'put':'update'}), name='admin_reset_login_count'),
     path('request_forgot_password_otp', RequestOTPViewSet.as_view({'post':'create'}), name='request_forgot_password_otp'),
     path('forgot_password_otp', VerifyOTPAndResetPasswordViewSet.as_view({'post':'create'}), name='forgot_password_otp'),

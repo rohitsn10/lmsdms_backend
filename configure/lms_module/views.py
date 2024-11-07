@@ -6,7 +6,7 @@ from .serializers import *
 from rest_framework import permissions
 from user_profile.function_call import *
 class DepartmentAddView(viewsets.ModelViewSet):
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = GetDepartmentSerializer
     queryset = Department.objects.all().order_by('-id')
     filter_backends = [filters.SearchFilter,filters.OrderingFilter]  # Add the filter backend for search functionality
@@ -67,8 +67,6 @@ class DepartmentUpdatesViewSet(viewsets.ModelViewSet):
     lookup_field = 'department_id'
 
     def update(self, request, *args, **kwargs):
-        if not request.user.has_perm('dashboard_app.change_departmentmaster'):
-            return Response({"status": False, "message": "You are not authorized to update department!", "data": []})
     
         try:
             department_id = self.kwargs.get("department_id")
