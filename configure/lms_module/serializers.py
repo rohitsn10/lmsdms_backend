@@ -7,7 +7,7 @@ class GetDepartmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Department
-        fields = ['id', 'department_name', 'department_description']
+        fields = ['id', 'department_name', 'department_description','department_created_at']
 
 class GetPlantSerializer(serializers.ModelSerializer):
     class Meta:
