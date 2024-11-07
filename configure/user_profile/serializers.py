@@ -128,3 +128,35 @@ class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ['id', 'name']
+
+class GroupPermissionSerializer(serializers.ModelSerializer):
+    permissions = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Group
+        fields = ['id', 'name', 'permissions']
+
+    def get_permissions(self, obj):
+        # Get permissions for this group
+        permissions = obj.permissions.all().select_related('content_type')
+        permission_dict = {}
+
+        for permission in permissions:
+            model = permission.content_type.model
+            if model not in permission_dict:
+                permission_dict[model] = {
+                    "name": model,
+                    "add": None,
+                    "is_add": "false",
+                    "change": None,
+                    "is_change": "false",
+                    "delete": None,
+                    "is_delete": "false",
+                    "view": None,
+                    "is_view": "false"
+                }
+            action = permission.codename.split('_')[0]
+            permission_dict[model][action] = permission.id
+            permission_dict[model]["is_" + action] = "true"
+        
+        return list(permission_dict.values()) if permission_dict else None
