@@ -551,3 +551,26 @@ class EsignatureViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": f"An error occurred: {str(e)}"})
+        
+class SwitchRoleViewSet(viewsets.ModelViewSet):
+    def create(self, request):
+        user = request.user
+        group_name = request.data.get('group_name')
+        password = request.data.get('password')
+
+        if not group_name or not password:
+            return Response({"status": False, "message": "Group name and password are required", "data": []})
+
+        if not user.check_password(password):
+            return Response({"status": False, "message": "Incorrect password", "data": []})
+
+        try:
+            group = Group.objects.get(name=group_name)
+            if not user.groups.filter(id=group.id).exists():
+                return Response({"status": False, "message": "User is not part of the requested group", "data": []})
+        except Group.DoesNotExist:
+            return Response({"status": False, "message": "Group not found", "data": []})
+
+        serializer = GroupPermissionSerializer(group)
+
+        return Response({"status": True, "message": "Permissions retrieved successfully", "data": serializer.data})
