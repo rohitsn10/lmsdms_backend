@@ -33,3 +33,45 @@ class AssessmentQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssessmentQuestion
         fields = '__all__'
+
+class MethodologySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Methodology
+        fields = ['id', 'methodology_name', 'methodology_created_at']
+
+class TrainingTypeSerializer(serializers.ModelSerializer):
+    created_by_name = serializers.ReadOnlyField(source='created_by.first_name')
+    class Meta:
+        model = TrainingType
+        fields = ['id', 'training_type_name', 'created_by', 'created_by_name','training_type_created_at']
+
+class TrainingCreateSerializer(serializers.ModelSerializer):
+    plant_name = serializers.CharField(source='plant.plant_name', read_only=True)
+    training_type_name = serializers.CharField(source='training_type.training_type_name', read_only=True)
+    methodology_name = serializers.SerializerMethodField()  # Fixed this to handle ManyToMany properly
+    document = serializers.SerializerMethodField()
+    created_by_name = serializers.ReadOnlyField(source='created_by.first_name')
+
+    class Meta:
+        model = TrainingCreate
+        fields = [
+            'id', 'plant', 'plant_name', 'training_name', 'training_type', 'training_type_name',
+            'training_number', 'training_title', 'training_version', 'refresher_time',
+            'training_document', 'methodology', 'methodology_name', 'created_by', 'created_by_name',
+            'training_created_at', 'training_updated_at'
+        ]
+
+    def get_document(self, obj):
+
+        if obj.training_document and hasattr(obj.training_document, 'url'):
+            request = self.context.get('request')
+            return request.build_absolute_uri(obj.training_document.url)
+        return None
+
+    def get_methodology_name(self, obj):
+
+        if obj.methodology.exists():
+            return [methodology.methodology_name for methodology in obj.methodology.all()]
+        return []
+    
+

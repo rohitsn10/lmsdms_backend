@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from .models import *
 from .serializers import *
 from rest_framework import permissions
-
+from user_profile.function_call import *
 class DepartmentAddView(viewsets.ModelViewSet):
     # permission_classes = [permissions.IsAuthenticated]
     serializer_class = GetDepartmentSerializer
@@ -653,6 +653,332 @@ class AssessmentQuestionUpdateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
+class MethodologyCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = MethodologySerializer
+    queryset = Methodology.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    ordering_fields = ['methodology_name','created_at']
+    search_fields = ['methodology_name', 'created_by__full_name']
+
+    def create(self, request, *args, **kwargs):
+        try:
+            methodology_name = request.data.get('methodology_name')
+            created_by = self.request.user
+
+            # Validation
+            if not methodology_name:
+                return Response({'status': False, 'message': 'Methodology name is required'})
+
+            # Create Methodology
+            methodology = Methodology.objects.create(
+                methodology_name=methodology_name,
+                created_by=created_by
+            )
+
+            serializer = MethodologySerializer(methodology)
+            data = serializer.data
+            return Response({
+                'status': True,
+                'message': 'Methodology created successfully',
+                'data': data
+            })
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+        
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = MethodologySerializer(queryset, many=True)
+            data = serializer.data
+            return Response({"status": True,"message": "Methodologies fetched successfully","data": data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+class MethodologyUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'methodology_id'  # Using a custom lookup field like 'methodology_id'
+
+    def update(self, request, *args, **kwargs):
+        # Check if the user has the permission to change methodologies
+        # if not request.user.has_perm('lms_module.change_methodology'):
+        #     return Response({"status": False, "message": "You are not authorized to update this methodology!", "data": []})
+        try:
+            # Get the methodology ID from the URL
+            methodology_id = self.kwargs.get("methodology_id")
+            
+            # Check if the methodology exists
+            if not Methodology.objects.filter(id=methodology_id).exists():
+                return Response({"status": False, "message": "Methodology ID not found"})
+
+            methodology = Methodology.objects.get(id=methodology_id)
+            methodology_name = request.data.get('methodology_name')
+
+            if methodology_name:
+                methodology.methodology_name = methodology_name
+
+            methodology.save()
+            serializer = MethodologySerializer(methodology)
+            data = serializer.data
+            return Response({
+                "status": True,
+                "message": "Methodology updated successfully",
+                "data": data
+            })
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+    def destroy(self, request, *args, **kwargs):
+        # Check if the user has the permission to delete methodologies
+        # if not request.user.has_perm('lms_module.delete_methodology'):
+        #     return Response({"status": False, "message": "You are not authorized to delete this methodology!", "data": []})
+        try:
+            # Get the methodology ID from the URL
+            methodology_id = self.kwargs.get("methodology_id")
+            
+            if not Methodology.objects.filter(id=methodology_id).exists():
+                return Response({"status": False, "message": "Methodology ID not found"})
+
+            Methodology.objects.filter(id=methodology_id).delete()
+            return Response({"status": True, "message": "Methodology deleted successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+class TrainingTypeCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingTypeSerializer
+    queryset = TrainingType.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    ordering_fields = ['training_type_name','created_at']
+    search_fields = ['training_type_name', 'created_by__full_name']
+
+    def create(self, request, *args, **kwargs):
+        try:
+            training_type_name = request.data.get('training_type_name')
+            created_by = self.request.user
+
+            # Validation
+            if not training_type_name:
+                return Response({'status': False, 'message': 'Training type name is required'})
+
+            # Create Training Type
+            training_type = TrainingType.objects.create(
+                training_type_name=training_type_name,
+                created_by=created_by
+            )
+
+            serializer = TrainingTypeSerializer(training_type)
+            data = serializer.data
+            return Response({
+                'status': True,
+                'message': 'Training type created successfully',
+                'data': data
+            })
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+        
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = TrainingTypeSerializer(queryset, many=True)
+            data = serializer.data
+            return Response({"status": True,"message": "Training types fetched successfully","data": data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+class TrainingTypeUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'training_type_id'  # Using a custom lookup field like 'training_type_id'
+
+    def update(self, request, *args, **kwargs):
+        try:
+            # Get the training type ID from the URL
+            training_type_id = self.kwargs.get("training_type_id")
+            
+            # Check if the training type exists
+            if not TrainingType.objects.filter(id=training_type_id).exists():
+                return Response({"status": False, "message": "Training type ID not found"})
+
+            training_type = TrainingType.objects.get(id=training_type_id)
+            training_type_name = request.data.get('training_type_name')
+
+            if training_type_name:
+                training_type.training_type_name = training_type_name
+
+            training_type.save()
+            serializer = TrainingTypeSerializer(training_type)
+            data = serializer.data
+            return Response({
+                "status": True,
+                "message": "Training type updated successfully",
+                "data": data
+            })
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+    def destroy(self, request, *args, **kwargs):
+        # Check if the user has the permission to delete training types
+        # if not request.user.has_perm('lms_module.delete_trainingtype'):
+        #     return Response({"status": False, "message": "You are not authorized to delete this training type!", "data": []})
+        try:
+            # Get the training type ID from the URL
+            training_type_id = self.kwargs.get("training_type_id")
+            
+            if not TrainingType.objects.filter(id=training_type_id).exists():
+                return Response({"status": False, "message": "Training type ID not found"})
+
+            TrainingType.objects.filter(id=training_type_id).delete()
+            return Response({"status": True, "message": "Training type deleted successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+class TrainingCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingCreateSerializer
+    queryset = TrainingCreate.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    ordering_fields = ['training_name','created_at']
+    search_fields = ['training_name', 'created_by__full_name']
+
+    def create(self, request, *args, **kwargs):
+        try:
+            plant = request.data.get('plant')
+            training_type = request.data.get('training_type')
+            training_number = request.data.get('training_number')
+            training_name = request.data.get('training_name')
+            training_version = request.data.get('training_version')
+            refresher_time = request.data.get('refresher_time')
+            training_document = request.data.get('training_document')
+            methodology = request.data.get('methodology')
+
+            created_by = self.request.user
+
+            # Validation
+            if not plant:
+                return Response({'status': False, 'message': 'Plant is required'})
+            if not training_type:
+                return Response({'status': False, 'message': 'Training type is required'})
+            if not training_number:
+                return Response({'status': False, 'message': 'Training number is required'})
+            if not training_name:
+                return Response({'status': False, 'message': 'Training name is required'})
+            if not training_version:
+                return Response({'status': False, 'message': 'Training version is required'})
+            if not refresher_time:
+                return Response({'status': False, 'message': 'Refresher time is required'})
+            if not training_document:
+                return Response({'status': False, 'message': 'Training document is required'})
+            if not methodology:
+                return Response({'status': False, 'message': 'Methodology is required'})
+
+            document_path = get_training_document_upload_path(training_document.name)
+            file_path = os.path.join(settings.MEDIA_ROOT, document_path)
+
+            with open(file_path, 'wb') as destination:
+                for chunk in training_document.chunks():
+                    destination.write(chunk)
+
+            # Create Training
+            training = TrainingCreate.objects.create(
+                plant=plant,
+                training_type=training_type,
+                training_number=training_number,
+                training_name=training_name,
+                training_version=training_version,
+                refresher_time=refresher_time,
+                training_document=training_document,
+                created_by=created_by
+            )
+            
+            if methodology:
+                training.methodology.add(*methodology)
+
+            serializer = TrainingCreateSerializer(training, context = {'request': request})
+            data = serializer.data
+            return Response({"status": True,"message": "Training created successfully","data": data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = TrainingCreateSerializer(queryset, many=True, context = {'request': request})
+            data = serializer.data
+            return Response({"status": True,"message": "Training list fetched successfully","data": data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
 
 
+class TrainingUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingCreateSerializer
+    queryset = TrainingCreate.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    ordering_fields = ['training_name', 'created_at']
+    search_fields = ['training_name', 'created_by__full_name']
+    lookup_field = 'training_id'
 
+    # Override the default `update` method provided by ModelViewSet
+    def update(self, request, *args, **kwargs):
+        try:
+            training_id = self.kwargs.get("training_id")
+
+            training = TrainingCreate.objects.get(id=training_id)
+            if not training:
+                return Response({"status": False, "message": "Training ID not found", "data": []})
+            
+            plant = request.data.get('plant')
+            training_type = request.data.get('training_type')
+            training_number = request.data.get('training_number')
+            training_name = request.data.get('training_name')
+            training_version = request.data.get('training_version')
+            refresher_time = request.data.get('refresher_time')
+            training_document = request.FILES.get('training_document')  # Use request.FILES for uploaded files
+            methodology = request.data.get('methodology')
+
+            if training_name:
+                training.training_name = training_name
+            if training_version:
+                training.training_version = training_version
+            if refresher_time:
+                training.refresher_time = refresher_time
+            if plant:
+                training.plant = plant
+            if training_type:
+                training.training_type = training_type
+            if training_number:
+                training.training_number = training_number
+
+            training.training_updated_at = timezone.now()
+
+            if training_document:
+                document_path = get_training_document_upload_path(training_document.name)
+                file_path = os.path.join(settings.MEDIA_ROOT, document_path)
+
+                with open(file_path, 'wb') as destination:
+                    for chunk in training_document.chunks():
+                        destination.write(chunk)
+
+                training.training_document = document_path
+
+            if methodology:
+                training.methodology.set(methodology)
+
+            training.save()
+
+            serializer = TrainingCreateSerializer(training, context={'request': request})
+            return Response({
+                "status": True,
+                "message": "Training updated successfully",
+                "data": serializer.data
+            })
+
+        except TrainingCreate.DoesNotExist:
+            return Response({"status": False, "message": "Training not found", "data": []})
+        except Exception as e:
+            return Response({"status": False, "message": f"Something went wrong: {str(e)}", "data": []})
