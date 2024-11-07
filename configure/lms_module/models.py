@@ -45,3 +45,28 @@ class AssessmentQuestion(models.Model):
 
     def __str__(self):
         return f"Assessment created by {self.created_by.full_name} on {self.created_at}"
+    
+
+class Methodology(models.Model):
+    methodology_name = models.TextField()
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    methodology_created_at = models.DateTimeField(auto_now_add=True)
+
+class TrainingType(models.Model):
+    training_type_name = models.TextField()
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    training_type_created_at = models.DateTimeField(auto_now_add=True)
+
+
+class TrainingCreate(models.Model):
+    plant = models.ForeignKey(Plant, on_delete=models.CASCADE)
+    training_type = models.ForeignKey(TrainingType, on_delete=models.CASCADE)
+    training_number = models.CharField(max_length=255,null=True,blank=True)
+    training_name = models.TextField()
+    training_version = models.CharField(max_length=255,null=True,blank=True)
+    refresher_time = models.DateField(null=True,blank=True)
+    training_document = models.FileField(upload_to='training_documents/')
+    methodology = models.ManyToManyField(Methodology)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    training_created_at = models.DateTimeField(auto_now_add=True)
+    training_updated_at = models.DateTimeField(auto_now=True)
