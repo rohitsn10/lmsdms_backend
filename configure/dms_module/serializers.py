@@ -21,6 +21,18 @@ class DocumentSerializer(serializers.ModelSerializer):
         model = Document
         fields = '__all__'
 
+class DocumentdataSerializer(serializers.ModelSerializer):
+    template_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Document
+        fields = ['id', 'select_template', 'template_url']
+
+    def get_template_url(self, obj):
+        if obj.select_template and obj.select_template.template_doc:
+            return obj.select_template.template_doc.url
+        return None
+
 class TemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = TemplateModel

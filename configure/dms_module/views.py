@@ -277,7 +277,7 @@ class PrintRequestUpdateViewSet(viewsets.ModelViewSet):
 
 class DocumentCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = DocumentSerializer
+    serializer_class = DocumentdataSerializer
     queryset = Document.objects.all()
     
     def create(self, request, *args, **kwargs):
@@ -327,7 +327,7 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             #     )
             
             # Serialize the created document
-            serializer = DocumentSerializer(document)
+            serializer = DocumentdataSerializer(document)
             return Response({"status": True, "message": "Document created successfully", "data": serializer.data})
         
         except Exception as e:
@@ -683,7 +683,7 @@ class DocumentDetailsCreateViewSet(viewsets.ModelViewSet):
                 document_data=document_data
             )
             
-            return Response({"status": True, "message": "Document created successfully", "data": DocumentDetailsSerializer(document_details).data})
+            return Response({"status": True, "message": "Document created successfully"})
         
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
