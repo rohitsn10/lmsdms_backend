@@ -41,7 +41,7 @@ class GroupIdWisePermissionListAPIView(APIView):
         if not request.user.has_perm('auth.view_permission'):
             return Response({'status': False, 'message': "You don't have permission to perform this action"})
 
-        group_id = int(request.GET.get('group_id', None))
+        group_id = request.query_params.get('group_id')
         user = request.user
 
         group_permissions_ids = []
@@ -53,7 +53,7 @@ class GroupIdWisePermissionListAPIView(APIView):
                 return Response({'status': False, 'message': 'Group not found!'})
 
         # Get all available permissions for the model
-        all_permissions = Permission.objects.all()
+        all_permissions = Permission.objects.filter(group=group_id)
         permission_dict = {}
 
         for permission in all_permissions:
