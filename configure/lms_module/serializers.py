@@ -75,3 +75,25 @@ class TrainingCreateSerializer(serializers.ModelSerializer):
         return []
     
 
+class InductionSerializer(serializers.ModelSerializer):
+    trainings = serializers.PrimaryKeyRelatedField(queryset=TrainingCreate.objects.all(), many=True)
+
+    class Meta:
+        model = Induction
+        fields = ['id', 'plant', 'induction_name', 'trainings', 'created_at', 'updated_at']
+
+class InductionDesignationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InductionDesignation
+        fields = ['id', 'induction_designation_name', 'designation_code', 'induction', 'created_date', 'created_by']
+        read_only_fields = ['created_date', 'created_by']        
+
+
+class ClassroomTrainingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClassroomTraining
+        fields = [
+            'id', 'classroom_type', 'title', 'description', 'department', 'employee',
+            'document', 'sop', 'start_date', 'start_time', 'end_time',
+            'created_at', 'created_by', 'status', 'acknowledgement', 'result'
+        ]        

@@ -31,4 +31,16 @@ urlpatterns = [
     path('create_training', TrainingCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_training'),
     path('update_training/<int:training_id>', TrainingUpdateViewSet.as_view({'put': 'update'}), name='update_training'),
 
+    path('create_induction', InductionCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_induction'),
+    path('update_induction/<int:id>', InductionUpdateViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='update_induction'),
+
+    path('create_induction_designation', InductionDesignationCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_induction_designation'),
+    path('update_induction_designation/<int:id>', InductionDesignationUpdateViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='update_induction_designation'),
+
+    path('create_classroom_training', ClassroomTrainingCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_classroom_training'),
+    path('update_classroom_training/<int:id>', ClassroomTrainingUpdateViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='update_classroom_training'),
+    path('mark_classroom_training_completed/<int:id>', ClassroomTrainingCreateViewSet.as_view({'post': 'mark_completed'}), name='mark_classroom_training_completed'),
+
+
+
 ]
