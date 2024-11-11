@@ -980,3 +980,334 @@ class TrainingUpdateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Training not found", "data": []})
         except Exception as e:
             return Response({"status": False, "message": f"Something went wrong: {str(e)}", "data": []})
+        
+
+class InductionCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = InductionSerializer
+    queryset = Induction.objects.all().order_by('-id')
+
+    def create(self, request, *args, **kwargs):
+        try:
+            plant = request.data.get('plant')
+            induction_name = request.data.get('induction_name')
+            trainings = request.data.get('trainings', [])
+
+            # Validation
+            if not plant:
+                return Response({'status': False, 'message': 'Plant is required'})
+            if not induction_name:
+                return Response({'status': False, 'message': 'Induction name is required'})
+            
+            # Create Induction
+            induction = Induction.objects.create(
+                plant_id=plant,
+                induction_name=induction_name
+            )
+
+            if trainings:
+                induction.trainings.add(*trainings)
+
+            serializer = InductionSerializer(induction, context={'request': request})
+            return Response({"status": True, "message": "Induction created successfully", "data": serializer.data})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+    def list(self, request):
+        queryset = Induction.objects.all().order_by('-id')
+        
+        try:
+            if queryset.exists():
+                serializer = InductionSerializer(queryset, many=True)
+                return Response({
+                    "status": True,
+                    "message": "Induction fetched successfully",
+                    "total": queryset.count(),
+                    "data": serializer.data
+                })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "No induction found",
+                    "total": 0,
+                    "data": []
+                })
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})    
+
+class InductionUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = InductionSerializer
+    queryset = Induction.objects.all()
+    lookup_field = 'id'
+
+    def update(self, request, *args, **kwargs):
+        try:
+            induction = self.get_object()
+            induction_name = request.data.get('induction_name')
+            plant = request.data.get('plant')
+            trainings = request.data.get('trainings', [])
+
+            if induction_name:
+                induction.induction_name = induction_name
+            if plant:
+                induction.plant_id = plant
+
+            induction.save()
+
+            if trainings:
+                induction.trainings.set(trainings)
+
+            serializer = InductionSerializer(induction, context={'request': request})
+            return Response({"status": True, "message": "Induction updated successfully", "data": serializer.data})
+
+        except Exception as e:
+            return Response({"status": False, "message": f"Something went wrong: {str(e)}", "data": []})
+          
+           
+    def destroy(self, request, *args, **kwargs):
+        try:
+            induction = self.get_object()
+            induction.delete()
+            return Response({"status": True, "message": "Induction deleted successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": f"Something went wrong: {str(e)}"})
+
+class InductionDesignationCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = InductionDesignationSerializer
+    queryset = InductionDesignation.objects.all().order_by('-id')
+
+    def create(self, request, *args, **kwargs):
+        try:
+            induction_designation_name = request.data.get('induction_designation_name')
+            designation_code = request.data.get('designation_code')
+            induction_id = request.data.get('induction')
+
+            # Validation
+            if not induction_designation_name:
+                return Response({'status': False, 'message': 'Induction Designation Name is required'})
+            if not designation_code:
+                return Response({'status': False, 'message': 'Designation Code is required'})
+            if not induction_id:
+                return Response({'status': False, 'message': 'Induction ID is required'})
+
+            induction_designation = InductionDesignation.objects.create(
+                induction_designation_name=induction_designation_name,
+                designation_code=designation_code,
+                induction_id=induction_id,
+                created_by=request.user
+            )
+
+            serializer = self.get_serializer(induction_designation)
+            return Response({"status": True, "message": "Induction Designation created successfully", "data": serializer.data})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+    def list(self, request):
+        queryset = InductionDesignation.objects.all().order_by('-id')
+        
+        try:
+            if queryset.exists():
+                serializer = InductionDesignationSerializer(queryset, many=True)
+                return Response({
+                    "status": True,
+                    "message": "Induction designations fetched successfully",
+                    "total": queryset.count(),
+                    "data": serializer.data
+                })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "No induction designation found",
+                    "total": 0,
+                    "data": []
+                })
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})      
+
+class InductionDesignationUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = InductionDesignationSerializer
+    queryset = InductionDesignation.objects.all()
+    lookup_field = 'id'
+
+    def update(self, request, *args, **kwargs):
+        try:
+            induction_designation = self.get_object()
+            induction_designation_name = request.data.get('induction_designation_name')
+            designation_code = request.data.get('designation_code')
+            induction_id = request.data.get('induction')
+
+            if induction_designation_name:
+                induction_designation.induction_designation_name = induction_designation_name
+            if designation_code:
+                induction_designation.designation_code = designation_code
+            if induction_id:
+                induction_designation.induction_id = induction_id
+
+            induction_designation.save()
+            serializer = self.get_serializer(induction_designation)
+            return Response({"status": True, "message": "Induction Designation updated successfully", "data": serializer.data}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"status": False, "message": f"Something went wrong: {str(e)}"})
+
+    def destroy(self, request, *args, **kwargs):
+        # Check if the user has permission to delete InductionDesignations
+        # if not request.user.has_perm('your_app.delete_inductiondesignation'):
+        #     return Response({"status": False, "message": "You are not authorized to delete this designation!"}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            # Get the InductionDesignation ID from the URL
+            induction_id = self.kwargs.get("id")
+            
+            # Check if the InductionDesignation exists
+            if not InductionDesignation.objects.filter(id=induction_id).exists():
+                return Response({"status": False, "message": "InductionDesignation ID not found"})
+
+            # Delete the InductionDesignation
+            InductionDesignation.objects.filter(id=induction_id).delete()
+            return Response({"status": True, "message": "InductionDesignation deleted successfully"})
+        
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})       
+
+
+
+
+class ClassroomTrainingCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ClassroomTrainingSerializer
+    queryset = ClassroomTraining.objects.all().order_by('-created_at')
+
+    def create(self, request, *args, **kwargs):
+        try:
+            title = request.data.get('title')
+            department_or_employee = request.data.get('department_or_employee')
+            training_type = request.data.get('classroom_training_type')
+            description = request.data.get('description')
+            sop = request.data.get('sop')
+            start_date = request.data.get('start_date')
+            start_time = request.data.get('start_time')
+            end_time = request.data.get('end_time')
+            document = request.data.get('document')
+            status = request.data.get('status', 'assigned')
+            created_by = request.user.id
+
+            # Validation
+            if not title or not department_or_employee or not training_type or not description:
+                return Response({'status': False, 'message': 'All fields are required.'})
+
+            # Create Classroom Training
+            classroom_training = ClassroomTraining.objects.create(
+                title=title,
+                department_or_employee_id=department_or_employee,
+                classroom_training_type=training_type,
+                description=description,
+                sop=sop,
+                start_date=start_date,
+                start_time=start_time,
+                end_time=end_time,
+                created_by_id=created_by,
+                status=status
+            )
+
+            if document:
+                classroom_training.document = document
+                classroom_training.save()
+
+            serializer = ClassroomTrainingSerializer(classroom_training, context={'request': request})
+            return Response({
+                "status": True,
+                "message": "Classroom training created successfully",
+                "data": serializer.data
+            })
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+    def mark_completed(self, request, *args, **kwargs):
+        try:
+            # Get the classroom training object
+            classroom_training = self.get_object()
+            if classroom_training.classroom_training_type == "assessment":
+                # Check if all users have provided assessment results
+                users = classroom_training.department_or_employee.users.all()  # Assuming `users` is a related field
+                missing_assessment = []
+
+                for user in users:
+                    if not user.assessment_result:  # Assuming `assessment_result` is the field on the user model
+                        missing_assessment.append(user.username)
+
+                if missing_assessment:
+                    return Response({
+                        "status": False,
+                        "message": f"Please provide assessment results for the following users: {', '.join(missing_assessment)}"
+                    })
+
+            # If no missing assessment or no assessment type, change status to completed
+            classroom_training.status = 'completed'
+            classroom_training.save()
+
+            return Response({
+                "status": True,
+                "message": "Classroom training status updated to completed successfully"
+            })
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": f"Something went wrong: {str(e)}"
+            })
+
+
+class ClassroomTrainingUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ClassroomTrainingSerializer
+    queryset = ClassroomTraining.objects.all()
+    lookup_field = 'id'
+
+    def update(self, request, *args, **kwargs):
+        try:
+            classroom_training = self.get_object()
+            training_type = request.data.get('classroom_training_type')
+            title = request.data.get('title')
+            department_or_employee = request.data.get('department_or_employee')
+            description = request.data.get('description')
+            sop = request.data.get('sop')
+            start_date = request.data.get('start_date')
+            start_time = request.data.get('start_time')
+            end_time = request.data.get('end_time')
+            status = request.data.get('status')
+            acknowledged_by_employee = request.data.get('acknowledged_by_employee')
+
+            # Updating fields
+            if training_type: classroom_training.classroom_training_type = training_type
+            if title: classroom_training.title = title
+            if department_or_employee: classroom_training.department_or_employee_id = department_or_employee
+            if description: classroom_training.description = description
+            if sop: classroom_training.sop = sop
+            if start_date: classroom_training.start_date = start_date
+            if start_time: classroom_training.start_time = start_time
+            if end_time: classroom_training.end_time = end_time
+            if status: classroom_training.status = status
+            if acknowledged_by_employee is not None:
+                classroom_training.acknowledged_by_employee = acknowledged_by_employee
+
+            classroom_training.save()
+            serializer = ClassroomTrainingSerializer(classroom_training, context={'request': request})
+            return Response({"status": True, "message": "Classroom training updated successfully", "data": serializer.data})
+
+        except Exception as e:
+            return Response({"status": False, "message": f"Something went wrong: {str(e)}", "data": []})
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            classroom_training = self.get_object()
+            classroom_training.delete()
+            return Response({"status": True, "message": "Classroom training deleted successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": f"Something went wrong: {str(e)}"})
