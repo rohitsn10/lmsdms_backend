@@ -1061,6 +1061,29 @@ class DynamicInventoryDeleteViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
 
+class DocumentTemplateViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentdataSerializer
+    queryset = Document.objects.all()
+    lookup_field = 'document_id'
+
+
+    def list(self, request, *args, **kwargs):
+        document_id = self.kwargs.get('document_id')
+
+        if document_id is None:
+            return Response({"status": False,"message": "document_id parameter is required"})
+
+        try:
+            document = Document.objects.get(id=document_id)
+            serializer = self.get_serializer(document)
+            return Response({"status": True,
+                             "message": "Template data fetched successfully",
+                             "data": serializer.data})
+
+        except Document.DoesNotExist:
+            return Response({"status": False,"message": "Document not found"})
+
 
 class DocumentCommentCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]

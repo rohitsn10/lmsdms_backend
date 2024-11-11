@@ -24,6 +24,9 @@ urlpatterns = [
    path('view_document', DocumentViewSet.as_view({'get':'list'}),name='view_document'),
    path('delete_Document', DocumentDeleteViewSet.as_view({'delete':'destroy'}),name='delete_Document'),
 
+   path('GetTemplate/<document_id>', DocumentTemplateViewSet.as_view({'get': 'list'}),name='GetTemplate'),
+
+
    path('CreateTemplate', TemplateCreateViewSet.as_view({'post': 'create'}),name='CreateTemplate'),
    path('ViewTemplate', TemplateViewSet.as_view({'get':'list'}),name='ViewTemplate'),
    path('UpdateTemplate/<temp_id>', TemplateUpdateViewSet.as_view({'put': 'update'}),name='UpdateTemplate'),
@@ -49,6 +52,7 @@ urlpatterns = [
    path('ViewInventory', DynamicInventoryListViewSet.as_view({'get': 'list'}), name='ViewInventory'),
    path('UpdateInventory/<inventory_id>', DynamicInventoryUpdateViewSet.as_view({'put': 'update'}), name='UpdateInventory'),
    path('DeleteInventory/<inventory_id>', DynamicInventoryDeleteViewSet.as_view({'delete': 'destroy'}), name='DeleteInventory'),
+   
 
    path('CreateInventory', DocumentCommentCreateViewSet.as_view({'post': 'create'}), name='CreateInventory'),
    path('ViewInventory', DocumentCommentsViewSet.as_view({'get': 'list'}), name='ViewInventory'),
