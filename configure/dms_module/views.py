@@ -327,8 +327,8 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             #     )
             
             # Serialize the created document
-            serializer = DocumentdataSerializer(document)
-            return Response({"status": True, "message": "Document created successfully", "data": serializer.data})
+            # serializer = DocumentdataSerializer(document)
+            return Response({"status": True, "message": "Document created successfully"})
         
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
