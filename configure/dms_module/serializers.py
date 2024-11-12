@@ -32,6 +32,20 @@ class DocumentdataSerializer(serializers.ModelSerializer):
         if obj.select_template and obj.select_template.template_doc:
             return obj.select_template.template_doc.url
         return None
+    
+
+class TemplateDocumentSerializer(serializers.ModelSerializer):
+    document_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TemplateModel
+        fields = ['template_name', 'document_url']
+
+    def get_document_url(self, obj):
+        request = self.context.get('request')
+        if obj.template_doc:
+            return request.build_absolute_uri(obj.template_doc.url)
+        return None
 
 class TemplateSerializer(serializers.ModelSerializer):
     class Meta:

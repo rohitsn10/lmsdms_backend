@@ -25,6 +25,8 @@ urlpatterns = [
    path('delete_Document', DocumentDeleteViewSet.as_view({'delete':'destroy'}),name='delete_Document'),
 
    path('GetTemplate/<document_id>', DocumentTemplateViewSet.as_view({'get':'list'}),name='GetTemplate'),
+   path('GetTemplateOnId/<template_id>', TemplateDocumentViewSet.as_view({'get': 'list'}),name='GetTemplateOnId'),
+
 
    path('CreateTemplate', TemplateCreateViewSet.as_view({'post': 'create'}),name='CreateTemplate'),
    path('ViewTemplate', TemplateViewSet.as_view({'get':'list'}),name='ViewTemplate'),

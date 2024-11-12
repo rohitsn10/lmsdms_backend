@@ -573,6 +573,31 @@ class TemplateUpdateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": 'Something went wrong', 'error': str(e)})
         
+
+class TemplateDocumentViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'template_id'
+
+
+    def list(self, request, *args, **kwargs):
+        template_id = self.kwargs.get('template_id')
+
+        if not template_id:
+            return Response({"status": False, "message": "template_id parameter is required"})
+
+        try:
+            template = TemplateModel.objects.get(id=template_id)
+            serializer = TemplateDocumentSerializer(template, context={'request': request})
+            return Response({
+                "status": True,
+                "message": "Template document fetched successfully",
+                "data": serializer.data
+            })
+        except TemplateModel.DoesNotExist:
+            return Response({"status": False, "message": "Template not found"})
+
+
+        
 class DynamicStatusCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = DynamicStatus.objects.all()
