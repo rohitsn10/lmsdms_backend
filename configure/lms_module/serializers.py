@@ -75,3 +75,65 @@ class TrainingCreateSerializer(serializers.ModelSerializer):
         return []
     
 
+class TrainingSectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TrainingSection
+        fields = ['id', 'training', 'section_name', 'section_description', 'section_order']
+
+
+class TrainingMaterialSerializer(serializers.ModelSerializer):
+    material_file_url = serializers.SerializerMethodField()
+    section = TrainingSectionSerializer(many=True)
+
+    class Meta:
+        model = TrainingMaterial
+        fields = ['id', 'section', 'material_title', 'material_type', 'material_file_url', 'minimum_reading_time', 'material_created_at']
+
+    def get_material_file_url(self, obj):
+        request = self.context.get('request')
+        if obj.material_file and hasattr(obj.material_file, 'url'):
+            return request.build_absolute_uri(obj.material_file.url)
+        return None
+    
+
+class TrainingQuestinSerializer(serializers.ModelSerializer):
+    # Create custom fields to return URLs for audio and video files
+    audio_file_url = serializers.SerializerMethodField()
+    video_file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TrainingQuestions
+        fields = [
+            'id', 'training', 'question_type', 'question_text', 'options', 
+            'correct_answer', 'marks', 'language', 'status', 
+            'question_created_at', 'question_updated_at', 
+            'created_by', 'updated_by', 'audio_file_url', 'video_file_url'
+        ]
+
+    def get_audio_file_url(self, obj):
+        request = self.context.get('request')
+        if obj.audio_file and hasattr(obj.audio_file, 'url'):
+            return request.build_absolute_uri(obj.audio_file.url)
+        return None
+
+    def get_video_file_url(self, obj):
+        request = self.context.get('request')
+        if obj.video_file and hasattr(obj.video_file, 'url'):
+            return request.build_absolute_uri(obj.video_file.url)
+        return None
+    
+
+class QuizQuestionSerializer(serializers.ModelSerializer):
+    question_text = serializers.CharField(source='question.question_text')
+    marks = serializers.IntegerField()
+
+    class Meta:
+        model = QuizQuestion
+        fields = ['question', 'marks']
+
+class TrainingQuizSerializer(serializers.ModelSerializer):
+    questions = QuizQuestionSerializer(many=True)
+
+    class Meta:
+        model = TrainingQuiz
+        fields = ['id', 'name', 'pass_criteria', 'quiz_time', 'total_marks', 'total_questions', 'quiz_type', 'questions', 'created_by','updated_by','created_at','updated_at','status']

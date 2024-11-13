@@ -30,4 +30,16 @@ urlpatterns = [
     path('create_training', TrainingCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_training'),
     path('update_training/<int:training_id>', TrainingUpdateViewSet.as_view({'put': 'update'}), name='update_training'),
 
+    path('create_training_section', TrainingSectionViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_section_data'),
+    path('update_training_section/<int:training_section_id>', TrainingSectionUpdateViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='update_section_data'),
+
+    path('create_training_material', TrainingMaterialCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_training_material'),
+    path('update_training_material/<int:training_topic_id>', TrainingMaterialUpdateViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='update_training_material'),
+
+    path('create_training_questions', TrainingQuestionCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_training_questions'),
+    path('update_training_questions/<int:training_question_id>', TrainingQuestionUpdateViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='update_training_questions'),
+
+    path('create_training_quiz', TrainingQuizCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_training_quiz'),
+    path('update_training_quiz/<int:training_quiz_id>', TrainingQuizUpdateView.as_view({'put': 'update', 'delete': 'destroy'}), name='update_training_quiz'),
+
 ]

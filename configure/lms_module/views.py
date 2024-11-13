@@ -5,6 +5,10 @@ from .models import *
 from .serializers import *
 from rest_framework import permissions
 from user_profile.function_call import *
+from django.db import IntegrityError            
+import random
+
+
 class DepartmentAddView(viewsets.ModelViewSet):
     # permission_classes = [permissions.IsAuthenticated]
     serializer_class = GetDepartmentSerializer
@@ -982,3 +986,721 @@ class TrainingUpdateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Training not found", "data": []})
         except Exception as e:
             return Response({"status": False, "message": f"Something went wrong: {str(e)}", "data": []})
+
+
+class TrainingSectionViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingSectionSerializer
+    queryset = TrainingSection.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['training']
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            training_id = request.data.get('training_id')
+            training = TrainingCreate.objects.get(id=training_id)
+            if not training:
+                return Response({"status": False, "message": "Training ID not found", "data": []})
+            
+            section_name = request.data.get('section_name')
+            section_description = request.data.get('section_description')
+            section_order = request.data.get('section_order')
+            if not section_name:
+                return Response({"status": False, "message": "Section name is required", "data": []})
+            if section_order is not None:
+                section_order = str(section_order)
+
+            training_section = TrainingSection.objects.create(
+                training=training,
+                section_name=section_name,
+                section_description=section_description,
+                section_order=section_order,
+                created_by=user
+            )
+
+            serializer = TrainingSectionSerializer(training_section, context = {'request': request})
+            data = serializer.data
+            return Response({"status": True,"message": "Training section created successfully","data": data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+    def list(self, request, *args, **kwargs):
+        try:
+            training_id = self.kwargs.get("training_id")
+            if not training_id:
+                return Response({"status": False, "message": "Training ID is required", "data": []})
+            
+            try:
+                training = TrainingCreate.objects.get(id=training_id)
+            except TrainingCreate.DoesNotExist:
+                return Response({"status": False, "message": "Training ID not found", "data": []})
+            
+            queryset = self.filter_queryset(self.get_queryset().filter(training=training))
+            serializer = TrainingSectionSerializer(queryset, many=True, context = {'request': request})
+            data = serializer.data
+            return Response({"status": True,"message": "Training section list fetched successfully","data": data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+class TrainingSectionUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingSectionSerializer
+    queryset = TrainingSection.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['training']
+
+    def update(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            section_id = self.kwargs.get("section_id")
+            if not section_id:
+                return Response({"status": False, "message": "Section ID is required", "data": []})
+            
+            try:
+                section = TrainingSection.objects.get(id=section_id)
+            except TrainingSection.DoesNotExist:
+                return Response({"status": False, "message": "Section ID not found", "data": []})
+            
+            section_name = request.data.get('section_name', section.section_name)
+            section_description = request.data.get('section_description', section.section_description)
+            section_order = request.data.get('section_order', section.section_order)
+            reason_for_update = request.data.get('reason_for_update', section.reason_for_update)
+            training_section_active_status = request.data.get('training_section_active_status', section.training_section_active_status)
+
+            if section_order is not None:
+                section_order = str(section_order)
+
+            if section_name:
+                section.section_name = section_name
+            if section_description:
+                section.section_description = section_description
+            if section_order:
+                section.section_order = section_order
+            if reason_for_update:
+                section.reason_for_update = reason_for_update
+
+            if training_section_active_status is not None:
+                if isinstance(training_section_active_status, bool):
+                    section.training_section_active_status = training_section_active_status
+                else:
+                    return Response({"status": False, "message": "Invalid value for 'training_section_active_status'. It must be a boolean value (True/False).", "data": []})
+
+            section.updated_by = user
+            section.save()
+
+            serializer = TrainingSectionSerializer(section, context={'request': request})
+            data = serializer.data
+            return Response({"status": True, "message": "Training section updated successfully", "data": data})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "data": []})
+        
+
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            section_id = self.kwargs.get("section_id")
+            if not section_id:
+                return Response({"status": False, "message": "Section ID is required", "data": []})
+            
+            try:
+                section = TrainingSection.objects.get(id=section_id)
+            except TrainingSection.DoesNotExist:
+                return Response({"status": False, "message": "Section ID not found", "data": []})
+            
+            section.delete()
+            return Response({"status": True, "message": "Training section deleted successfully", "data": []})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "data": []})
+                
+
+
+class TrainingMaterialCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingMaterialSerializer
+    queryset = TrainingMaterial.objects.all().order_by('-material_created_at')
+    
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+
+            section_ids = request.data.get('section_ids',[])
+            if not section_ids:
+                return Response({"status": False, "message": "Section IDs are required", "data": []})
+
+            sections = TrainingSection.objects.filter(id__in=section_ids)
+            if sections.count() != len(section_ids):
+                return Response({"status": False, "message": "Some section IDs are invalid", "data": []})
+
+            material_title = request.data.get('material_title')
+            material_type = request.data.get('material_type')
+            material_file = request.FILES.get('material_file')
+            minimum_reading_time = request.data.get('minimum_reading_time')
+
+            if not material_title:
+                return Response({"status": False, "message": "Material title is required", "data": []})
+            if not material_type:
+                return Response({"status": False, "message": "Material type is required", "data": []})
+            if material_type not in dict(TrainingMaterial.MATERIAL_CHOICES).keys():
+                return Response({"status": False, "message": "Invalid material type", "data": []})
+            if not material_file:
+                return Response({"status": False, "message": "Material file is required", "data": []})
+
+            training_material = TrainingMaterial.objects.create(
+                material_title=material_title,
+                material_type=material_type,
+                material_file=material_file,
+                minimum_reading_time=minimum_reading_time,
+                created_by=user,
+                material_created_at = timezone.now()
+            )
+            training_material.section.set(sections)
+            training_material.save()
+
+            # Serialize and return the response
+            serializer = TrainingMaterialSerializer(training_material, context={'request': request})
+            data = serializer.data
+            return Response({"status": True, "message": "Training material created successfully", "data": data})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+        
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = TrainingMaterialSerializer(queryset, many=True, context = {'request': request})
+            data = serializer.data
+            return Response({"status": True,"message": "Training material list fetched successfully","data": data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+class TrainingMaterialUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingMaterialSerializer
+    queryset = TrainingMaterial.objects.all().order_by('-material_created_at')
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+
+            section_id = request.data.get('section_id')
+            if not section_id:
+                return Response({"status": False, "message": "Section ID is required", "data": []})
+
+            section = TrainingMaterial.objects.get(id=section_id)
+            if not section:
+                return Response({"status": False, "message": "Section ID not found", "data": []})
+
+            material_title = request.data.get('material_title', section.material_title)
+            material_type = request.data.get('material_type', section.material_type)
+            material_file = request.FILES.get('material_file', section.material_file)
+            minimum_reading_time = request.data.get('minimum_reading_time', section.minimum_reading_time)
+
+            if material_title:
+                section.material_title = material_title
+            if material_type:
+                section.material_type = material_type
+            if material_file:
+                section.material_file = material_file
+            if minimum_reading_time:
+                section.minimum_reading_time = minimum_reading_time
+            section.updated_by = user
+            section.save()
+
+            serializer = TrainingMaterialSerializer(section, context={'request': request})
+            data = serializer.data
+            return Response({"status": True, "message": "Training material updated successfully", "data": data})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+        
+    def destroy(self, request, *args, **kwargs):
+        try:
+            section_id = self.kwargs.get('section_id')
+            
+            try:
+                section = TrainingMaterial.objects.get(id=section_id)
+            except TrainingMaterial.DoesNotExist:
+                return Response({"status": False, "message": "Section ID not found", "data": []})
+            
+            section.delete()
+            return Response({"status": True, "message": "Training material deleted successfully", "data": []})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "data": []})
+
+        
+
+class TrainingQuestionCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingQuestinSerializer
+    queryset = TrainingQuestions.objects.all().order_by('-question_created_at')
+    
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            training = request.data.get('training_id')
+            if not training:
+                return Response({"status": False, "message": "Training ID is required", "data": []})
+
+            training = TrainingCreate.objects.get(id=training)
+            if not training:
+                return Response({"status": False, "message": "Training ID not found", "data": []})
+
+            question_type = request.data.get('question_type')
+            question_text = request.data.get('question_text')
+            options = request.data.get('options', [])
+            correct_answer = request.data.get('correct_answer')
+            marks = request.data.get('marks')
+            language = request.data.get('language')
+
+            if not question_type:
+                return Response({"status": False, "message": "Question type is required", "data": []})
+            if not question_text:
+                return Response({"status": False, "message": "Question text is required", "data": []})
+            
+            # Validate correct_answer based on question type
+            if question_type == 'mcq' and not options:
+                return Response({"status": False, "message": "MCQ questions must have options", "data": []})
+
+            if question_type == 'mcq' and correct_answer not in options:
+                return Response({"status": False, "message": "MCQ correct answer must be one of the options", "data": []})
+
+            if question_type == 'true_false' and correct_answer not in ['True', 'False']:
+                return Response({"status": False, "message": "True/False correct answer must be 'True' or 'False'", "data": []})
+
+            if question_type == 'fill_in_the_blank' and not correct_answer:
+                return Response({"status": False, "message": "Fill-in-the-blank questions must have a correct answer", "data": []})
+
+            # File validation for audio and video files (max 25MB)
+            audio_file = request.FILES.get('audio_file', None)
+            video_file = request.FILES.get('video_file', None)
+
+            if audio_file:
+                if audio_file.size > 25 * 1024 * 1024:  # 25MB limit
+                    return Response({"status": False, "message": "Audio file size must be less than 25MB.", "data": []})
+
+            if video_file:
+                if video_file.size > 25 * 1024 * 1024:  # 25MB limit
+                    return Response({"status": False, "message": "Video file size must be less than 25MB.", "data": []})
+
+            # Create the TrainingQuestion instance
+            training_question = TrainingQuestions.objects.create(
+                training=training,
+                question_type=question_type,
+                question_text=question_text,
+                options=options,
+                correct_answer=correct_answer,
+                marks=marks,
+                language=language,
+                created_by=user,
+                audio_file=audio_file,
+                video_file=video_file,
+                question_created_at=timezone.now()
+            )
+
+            # Serialize and return the response
+            serializer = TrainingQuestinSerializer(training_question, context={'request': request})
+            data = serializer.data
+            return Response({"status": True, "message": "Training question created successfully", "data": data})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+        
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = TrainingQuestinSerializer(queryset, many=True, context = {'request': request})
+            data = serializer.data
+            return Response({"status": True,"message": "Training question list fetched successfully","data": data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+class TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingQuestinSerializer
+    queryset = TrainingQuestions.objects.all().order_by('-question_created_at')
+    lookup_field = 'training_question_id'
+
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            training_question_id = self.kwargs.get('training_question_id')  # Fix to match the URL
+            if not training_question_id:
+                return Response({"status": False, "message": "Training question ID is required", "data": []})
+
+            # Fetch the TrainingQuestions object
+            section = TrainingQuestions.objects.get(id=training_question_id)
+            if not section:
+                return Response({"status": False, "message": "Training question ID not found", "data": []})
+
+            # Get data from the request or use existing values (for updates)
+            question_type = request.data.get('question_type', section.question_type)
+            question_text = request.data.get('question_text', section.question_text)
+            options = request.data.get('options', section.options)
+            correct_answer = request.data.get('correct_answer', section.correct_answer)
+            marks = request.data.get('marks', section.marks)
+            language = request.data.get('language', section.language)
+            audio_file = request.FILES.get('audio_file', section.audio_file)
+            video_file = request.FILES.get('video_file', section.video_file)
+
+            # Validation checks for question_type and other fields
+            if not question_type:
+                return Response({"status": False, "message": "Question type is required", "data": []})
+            if not question_text:
+                return Response({"status": False, "message": "Question text is required", "data": []})
+
+            # Additional validation for specific question types
+            if question_type == 'mcq' and not options:
+                return Response({"status": False, "message": "MCQ questions must have options", "data": []})
+
+            if question_type == 'mcq' and correct_answer not in options:
+                return Response({"status": False, "message": "MCQ correct answer must be one of the options", "data": []})
+
+            if question_type == 'true_false' and correct_answer not in ['True', 'False']:
+                return Response({"status": False, "message": "True/False correct answer must be 'True' or 'False'", "data": []})
+
+            if question_type == 'fill_in_the_blank' and not correct_answer:
+                return Response({"status": False, "message": "Fill-in-the-blank questions must have a correct answer", "data": []})
+
+            # Update the fields of the section
+            section.question_type = question_type
+            section.question_text = question_text
+            section.options = options
+            section.correct_answer = correct_answer
+            section.marks = marks
+            section.language = language
+
+            # Only update the audio or video file if they are provided in the request
+            if audio_file:
+                section.audio_file = audio_file
+
+            if video_file:
+                section.video_file = video_file
+
+            section.updated_by = user
+            section.question_updated_at = timezone.now()
+            section.save()
+
+            # Serialize and return the updated data
+            serializer = TrainingQuestinSerializer(section, context={'request': request})
+            data = serializer.data
+            return Response({"status": True, "message": "Training question updated successfully", "data": data})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+        
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            section_id = self.kwargs.get('section_id')
+            
+            try:
+                section = TrainingQuestions.objects.get(id=section_id)
+            except TrainingQuestions.DoesNotExist:
+                return Response({"status": False, "message": "Section ID not found", "data": []})
+            
+            section.delete()
+            return Response({"status": True, "message": "Training question deleted successfully", "data": []})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "data": []})
+
+
+
+class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingQuizSerializer
+    queryset = TrainingQuiz.objects.all().order_by('-created_at')
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            training_id = request.data.get('training_id')
+            quiz_name = request.data.get('name')
+            pass_criteria = request.data.get('pass_criteria')
+            quiz_time = request.data.get('quiz_time')
+            quiz_type = request.data.get('quiz_type')
+            total_marks = int(request.data.get('total_marks', 0)) 
+            marks_breakdown = request.data.get('marks_breakdown')  # e.g., {'1': 5, '2': 3, '3': 2}
+            selected_questions = request.data.get('selected_questions', [])  
+
+            if not all([training_id, quiz_name, pass_criteria, quiz_time, quiz_type, total_marks]):
+                return Response({"status": False, "message": "Missing required fields", "data": []})
+
+            try:
+                training = TrainingCreate.objects.get(id=training_id)
+            except TrainingCreate.DoesNotExist:
+                return Response({"status": False, "message": "Training not found", "data": []})
+
+            quiz = TrainingQuiz.objects.create(
+                name=quiz_name,
+                pass_criteria=pass_criteria,
+                quiz_time=quiz_time,
+                quiz_type=quiz_type,
+                created_by=user,
+                training=training,
+            )
+
+            total_marks_accumulated = 0  
+            total_questions = 0  
+
+            if quiz_type == 'auto':
+                
+                for marks, count in marks_breakdown.items():
+                    marks = int(marks)  
+                    count = int(count)  
+        
+                    questions = TrainingQuestions.objects.filter(
+                        training=training,  
+                        marks=marks,       
+                        status=True         
+                    )
+
+                    if len(questions) < count:
+                        return Response({"status": False,"message": f"Not enough questions with {marks} marks. Found {len(questions)} questions.","data": []})
+                    selected_questions = random.sample(questions, count)
+
+                    potential_marks = total_marks_accumulated + (marks * count)
+                    if potential_marks > total_marks:
+                        return Response({"status": False,"message": f"Total marks exceeded. The selected questions' marks total {potential_marks}, which exceeds the input total_marks of {total_marks}.","data": []})
+
+                    for question in selected_questions:
+                        QuizQuestion.objects.create(quiz=quiz, question=question, marks=marks)
+
+                    total_marks_accumulated += marks * count
+                    total_questions += count
+
+            elif quiz_type == 'manual':
+                if not selected_questions or not isinstance(selected_questions, list):
+                    return Response({
+                        "status": False,
+                        "message": "You must provide a list of selected questions for manual quiz creation.",
+                        "data": []
+                    })
+
+                questions = TrainingQuestions.objects.filter(
+                    id__in=selected_questions,  
+                    training=training,  
+                    status=True
+                )
+
+                if len(questions) != len(selected_questions):
+                    return Response({
+                        "status": False,
+                        "message": "Some of the selected questions are invalid or inactive.",
+                        "data": []
+                    })
+
+                for question in questions:
+                    if total_marks_accumulated + question.marks > total_marks:
+                        return Response({
+                            "status": False,
+                            "message": f"Adding this question would exceed the total marks. Current total: {total_marks_accumulated}, question marks: {question.marks}",
+                            "data": []
+                        })
+                    QuizQuestion.objects.create(quiz=quiz, question=question, marks=question.marks)
+                    total_marks_accumulated += question.marks
+                    total_questions += 1
+
+            if total_marks_accumulated != total_marks:
+                return Response({
+                    "status": False,
+                    "message": f"Total marks mismatch. The accumulated marks are {total_marks_accumulated}, but the input total_marks was {total_marks}. Please adjust.",
+                    "data": []
+                })
+
+            quiz.total_marks = total_marks_accumulated
+            quiz.total_questions = total_questions
+            quiz.save()
+
+            serializer = TrainingQuizSerializer(quiz, context={'request': request})
+            return Response({"status": True, "message": "Quiz created successfully", "data": serializer.data})
+
+        except IntegrityError as e:
+            return Response({"status": False, "message": "Database Integrity Error", "error": str(e), "data": []})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+
+
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            queryset = TrainingQuiz.objects.filter(created_by=user).order_by('-created_at')
+            serializer = TrainingQuizSerializer(queryset, many=True, context={'request': request})
+            return Response({"status": True, "message": "Quizzes retrieved successfully", "data": serializer.data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+
+
+class TrainingQuizUpdateView(viewsets.ModelViewSet):
+    queryset = TrainingQuiz.objects.all()
+    serializer_class = TrainingQuizSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'training_quiz_id'
+
+    def update(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            training_quiz_id = self.kwargs.get('training_quiz_id')
+            quiz = TrainingQuiz.objects.get(id=training_quiz_id)
+
+            # Check if the quiz status is False user can not update
+            if not quiz.status:
+                return Response({"status": False, "message": "Quiz is not active", "data": []})
+
+            training_id = request.data.get('training_id', quiz.training.id)
+            quiz_name = request.data.get('name', quiz.quiz_name)
+            pass_criteria = request.data.get('pass_criteria', quiz.pass_criteria)
+            quiz_time = request.data.get('quiz_time', quiz.quiz_time)
+            quiz_type = request.data.get('quiz_type', quiz.quiz_type)
+            total_marks = int(request.data.get('total_marks', quiz.total_marks)) 
+            marks_breakdown = request.data.get('marks_breakdown')  # e.g., {'1': 5, '2': 3, '3': 2}
+            selected_questions = request.data.get('selected_questions', [])
+            status = request.data.get('status',quiz.status)
+
+            if not all([training_id, quiz_name, pass_criteria, quiz_time, quiz_type, total_marks]):
+                return Response({"status": False, "message": "Missing required fields", "data": []})
+
+            try:
+                training = TrainingCreate.objects.get(id=training_id)
+            except TrainingCreate.DoesNotExist:
+                return Response({"status": False, "message": "Training not found", "data": []})
+
+            quiz.training = training
+            quiz.quiz_name = quiz_name
+            quiz.pass_criteria = pass_criteria
+            quiz.quiz_time = quiz_time
+            quiz.quiz_type = quiz_type
+            quiz.updated_by = user
+            quiz.updated_at = timezone.now()
+            quiz.total_marks = total_marks  # Update total marks if needed
+            quiz.total_questions = 0  # Reset question count, will recalculate later
+            if status is not None:
+                if isinstance(status,bool):
+                    quiz.status = status
+                else:
+                    return Response({"status": False, "message": "Invalid status value", "data": []})
+            
+            quiz.save()
+
+            total_marks_accumulated = 0  
+            total_questions = 0  
+
+            if quiz_type == 'auto':
+                # Handling 'auto' type quizzes
+                if marks_breakdown:
+                    # Clear existing questions if it's an "auto" quiz
+                    old_questions = QuizQuestion.objects.filter(quiz=quiz)
+
+                    for marks, count in marks_breakdown.items():
+                        marks = int(marks)  
+                        count = int(count)  
+
+                        questions = TrainingQuestions.objects.filter(
+                            training=training,  
+                            marks=marks,       
+                            status=True         
+                        )
+
+                        if len(questions) < count:
+                            return Response({"status": False, "message": f"Not enough questions with {marks} marks. Found {len(questions)} questions.", "data": []})
+
+                        # Select random questions based on count
+                        selected_questions = random.sample(questions, count)
+
+                        potential_marks = total_marks_accumulated + (marks * count)
+                        if potential_marks > total_marks:
+                            return Response({"status": False, "message": f"Total marks exceeded. The selected questions' marks total {potential_marks}, which exceeds the input total_marks of {total_marks}.", "data": []})
+
+                        # For each selected question, update or add it
+                        for question in selected_questions:
+                            existing_question = old_questions.filter(question=question).first()
+                            if existing_question:
+                                # If the question already exists, do nothing, just update marks if needed
+                                existing_question.marks = marks  # If you want to update marks, do it here
+                                existing_question.save()
+                            else:
+                                # If the question is new, add it to the quiz
+                                QuizQuestion.objects.create(quiz=quiz, question=question, marks=marks)
+                            total_marks_accumulated += marks
+                            total_questions += 1
+
+            elif quiz_type == 'manual':
+                # Handling 'manual' type quizzes
+                if selected_questions:
+                    questions = TrainingQuestions.objects.filter(
+                        id__in=selected_questions,  
+                        training=training,  
+                        status=True
+                    )
+
+                    if len(questions) != len(selected_questions):
+                        return Response({
+                            "status": False,
+                            "message": "Some of the selected questions are invalid or inactive.",
+                            "data": []
+                        })
+
+                    # Add new or checked questions to the quiz
+                    for question in questions:
+                        if total_marks_accumulated + question.marks > total_marks:
+                            return Response({
+                                "status": False,
+                                "message": f"Adding this question would exceed the total marks. Current total: {total_marks_accumulated}, question marks: {question.marks}",
+                                "data": []
+                            })
+                        # Add the question if it's not already in the quiz
+                        if not QuizQuestion.objects.filter(quiz=quiz, question=question).exists():
+                            QuizQuestion.objects.create(quiz=quiz, question=question, marks=question.marks)
+                            total_marks_accumulated += question.marks
+                            total_questions += 1
+
+                    # Remove unchecked questions
+                    existing_quiz_questions = QuizQuestion.objects.filter(quiz=quiz)
+                    for quiz_question in existing_quiz_questions:
+                        # If a question is not selected anymore, remove it from the quiz
+                        if quiz_question.question.id not in selected_questions:
+                            quiz_question.delete()
+
+            if total_marks_accumulated != total_marks:
+                return Response({
+                    "status": False,
+                    "message": f"Total marks mismatch. The accumulated marks are {total_marks_accumulated}, but the input total_marks was {total_marks}. Please adjust.",
+                    "data": []
+                })
+
+            quiz.total_marks = total_marks_accumulated
+            quiz.total_questions = total_questions
+            quiz.save()
+
+            serializer = TrainingQuizSerializer(quiz, context={'request': request})
+            return Response({"status": True, "message": "Quiz updated successfully", "data": serializer.data})
+
+        except TrainingQuiz.DoesNotExist:
+            return Response({"status": False, "message": "Quiz not found", "data": []})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            training_quiz_id = self.kwargs.get("training_quiz_id")
+            quiz = TrainingQuiz.objects.get(id=training_quiz_id)
+            quiz.delete()
+            return Response({"status": True, "message": "Quiz deleted successfully", "data": []})
+        except TrainingQuiz.DoesNotExist:
+            return Response({"status": False, "message": "Quiz not found", "data": []})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+    
+        
