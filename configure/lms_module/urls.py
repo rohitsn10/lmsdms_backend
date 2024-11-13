@@ -41,6 +41,7 @@ urlpatterns = [
     path('update_classroom_training/<int:id>', ClassroomTrainingUpdateViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='update_classroom_training'),
     path('mark_classroom_training_completed/<int:id>', ClassroomTrainingCreateViewSet.as_view({'post': 'mark_completed'}), name='mark_classroom_training_completed'),
 
+    path('training_list', TrainingListViewSet.as_view({'get': 'list'}), name='training_list'),
 
 
 ]

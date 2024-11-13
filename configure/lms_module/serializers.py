@@ -97,3 +97,8 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
             'document', 'sop', 'start_date', 'start_time', 'end_time',
             'created_at', 'created_by', 'status', 'acknowledgement', 'result'
         ]        
+
+class TrainingListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TrainingCreate
+        fields = ['id','plant', 'training_type', 'training_version', 'training_number', 'refresher_time']
