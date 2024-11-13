@@ -20,6 +20,9 @@ class Area(models.Model):
     area_created_at = models.DateTimeField(auto_now_add=True)
 
 class JobRole(models.Model):
+    plant = models.ForeignKey(Plant, on_delete=models.CASCADE,null=True,blank=True)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE,null=True,blank=True)
+    area = models.ForeignKey(Area, on_delete=models.CASCADE,null=True,blank=True)
     job_role_name = models.TextField()
     job_role_description = models.TextField()
 

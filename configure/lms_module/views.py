@@ -5,6 +5,9 @@ from .models import *
 from .serializers import *
 from rest_framework import permissions
 from user_profile.function_call import *
+from django.db.models import Q
+
+
 class DepartmentAddView(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = GetDepartmentSerializer
@@ -872,9 +875,22 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
             if not methodology:
                 return Response({'status': False, 'message': 'Methodology is required'})
 
+            try:
+                plant = Plant.objects.get(id=plant)
+            except Plant.DoesNotExist:
+                return Response({'status': False, 'message': 'Plant not found'})
+            
+            try:
+                training_type = TrainingType.objects.get(id=training_type)
+            except TrainingType.DoesNotExist:
+                return Response({'status': False, 'message': 'Traing type not found'})
+
+            # Generate the file path for saving the document
             document_path = get_training_document_upload_path(training_document.name)
             file_path = os.path.join(settings.MEDIA_ROOT, document_path)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
+            # Write the document to the generated file path
             with open(file_path, 'wb') as destination:
                 for chunk in training_document.chunks():
                     destination.write(chunk)
@@ -894,9 +910,9 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
             if methodology:
                 training.methodology.add(*methodology)
 
-            serializer = TrainingCreateSerializer(training, context = {'request': request})
-            data = serializer.data
-            return Response({"status": True,"message": "Training created successfully","data": data})
+            # serializer = TrainingCreateSerializer(training, context = {'request': request})
+            # data = serializer.data
+            return Response({"status": True,"message": "Training created successfully"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
@@ -1311,3 +1327,30 @@ class ClassroomTrainingUpdateViewSet(viewsets.ModelViewSet):
             return Response({"status": True, "message": "Classroom training deleted successfully"})
         except Exception as e:
             return Response({"status": False, "message": f"Something went wrong: {str(e)}"})
+        
+class TrainingListViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingListSerializer
+    queryset = TrainingCreate.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        plant_id = request.data.get('plant')
+        training_type_id = request.data.get('type')
+        training_number = request.data.get('training_number')
+
+        filters = Q()
+        if plant_id:
+            filters &= Q(plant_id=plant_id)
+        if training_type_id:
+            filters &= Q(training_type_id=training_type_id)
+        if training_number:
+            filters &= Q(training_number=training_number)
+
+        trainings = self.queryset.filter(filters)
+
+        serializer = self.get_serializer(trainings, many=True)
+        return Response({
+            "status": True,
+            "message": "Training data fetched successfully",
+            "data": serializer.data
+        })
