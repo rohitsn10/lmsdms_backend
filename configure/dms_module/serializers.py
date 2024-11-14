@@ -29,8 +29,9 @@ class DocumentdataSerializer(serializers.ModelSerializer):
         fields = ['id', 'select_template', 'template_url']
 
     def get_template_url(self, obj):
+        request = self.context.get('request')
         if obj.select_template and obj.select_template.template_doc:
-            return obj.select_template.template_doc.url
+            return request.build_absolute_uri(obj.select_template.template_doc.url)
         return None
     
 
