@@ -75,6 +75,107 @@ class TrainingCreate(models.Model):
     training_updated_at = models.DateTimeField(auto_now=True)
 
 
+class TrainingSection(models.Model):
+    training = models.ForeignKey(TrainingCreate, related_name='sections', on_delete=models.CASCADE)
+    section_name = models.CharField(max_length=255)
+    section_description = models.TextField(null=True, blank=True)
+    section_order = models.CharField(max_length=255, default='1')
+    reason_for_update = models.TextField(null=True, blank=True)
+    training_section_active_status = models.BooleanField(default=True, null=True,blank=True)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='training_sections_created', null=True, blank=True)
+    updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='training_sections_updated',null=True, blank=True)
+    section_created_at = models.DateTimeField(auto_now_add=True, null=True,blank=True)
+    section_updated_at = models.DateTimeField(auto_now=True,null=True,blank=True)
+
+    def __str__(self):
+        return f"{self.section_name} - {self.training.training_name}"
+    
+
+class TrainingMaterial(models.Model):
+    MATERIAL_CHOICES = (
+        ('pdf', 'PDF'),
+        ('image', 'Image'),
+        ('audio', 'Audio'),
+        ('video', 'Video'),
+        ('html', 'HTML'),
+        ('scorm', 'SCORM'),
+        ('import', 'Import'),
+    )
+    section = models.ManyToManyField(TrainingSection)
+    material_title = models.CharField(max_length=255)
+    material_type = models.CharField(max_length=50, choices=MATERIAL_CHOICES)
+    material_file = models.FileField(upload_to='training_materials/', null=True, blank=True)
+    minimum_reading_time = models.CharField(max_length=500, null=True, blank=True)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='training_materials_created', null=True, blank=True)
+    updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='training_materials_updated', null=True, blank=True)
+    material_created_at = models.DateTimeField(auto_now_add=True)
+    material_updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.material_title
+
+
+
+class TrainingQuestions(models.Model):
+    QUESTION_TYPE_CHOICES = (
+        ('mcq', 'MCQ'),
+        ('fill_in_the_blank', 'Fill in the blank'),
+        ('true_false', 'True/False'),
+    )
+
+    training = models.ForeignKey(TrainingCreate, related_name='questions', on_delete=models.CASCADE)
+    question_type = models.CharField(max_length=50, choices=QUESTION_TYPE_CHOICES)
+    audio_file = models.FileField(upload_to='audio_files/', null=True, blank=True)  # To store audio files
+    video_file = models.FileField(upload_to='video_files/', null=True, blank=True)
+    question_text = models.TextField()
+    options = models.JSONField(null=True, blank=True)  # Store options for MCQ questions (as a list of strings)
+    correct_answer = models.TextField()  # Store the correct answer (can be the option value or index)
+    marks = models.PositiveIntegerField(default=1)  # Marks for the question
+    language = models.CharField(max_length=50, default='en')  # Language of the question (default to English)
+    status = models.BooleanField(default=True)  # Active/Inactive status
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='training_questions_created', null=True, blank=True)
+    updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='training_questions_updated', null=True, blank=True)
+    question_created_at = models.DateTimeField(auto_now_add=True)
+    question_updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.question_text} - {self.training.training_name}"
+    
+
+class TrainingQuiz(models.Model):
+    QUIZ_TYPE_CHOICES = (
+        ('auto', 'Automatic'),
+        ('manual', 'Manual'),
+    )
+    training = models.ForeignKey(TrainingCreate, related_name='quizzes', on_delete=models.CASCADE)
+    quiz_name = models.CharField(max_length=255)
+    pass_criteria = models.DecimalField(max_digits=5, decimal_places=2)  # For example, pass if >= 50%
+    quiz_time = models.PositiveIntegerField()  # Time in minutes
+    total_marks = models.PositiveIntegerField()
+    total_questions = models.PositiveIntegerField()
+    quiz_type = models.CharField(max_length=10, choices=QUIZ_TYPE_CHOICES)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='training_quizzes_created', null=True, blank=True)
+    updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='training_quizzes_updated', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    status = models.BooleanField(default=True,null=True,blank=True)
+
+
+    def __str__(self):
+        return self.name
+
+    def get_total_marks(self):
+        return sum([q.marks for q in self.questions.all()])
+
+
+class QuizQuestion(models.Model):
+    quiz = models.ForeignKey(TrainingQuiz, related_name="questions", on_delete=models.CASCADE)
+    question = models.ForeignKey(TrainingQuestions, on_delete=models.CASCADE)
+    marks = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f"Quiz {self.quiz.id} - Question {self.question.id} ({self.marks} marks)"
+
 # Code for induction create
 class Induction(models.Model):
     plant = models.ForeignKey(Plant, on_delete=models.CASCADE)

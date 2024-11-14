@@ -25,7 +25,7 @@ from django.core.mail import send_mail
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
 import random
-
+import ipdb
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
