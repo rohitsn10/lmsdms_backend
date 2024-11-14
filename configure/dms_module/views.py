@@ -311,7 +311,7 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 document_description=document_description,
                 revision_time=revision_time,
                 document_operation=document_operation,
-                select_template_id=select_template if document_operation == 'create_online' else None,
+                select_template_id=select_template,
                 workflow_id=workflow
             )
 
