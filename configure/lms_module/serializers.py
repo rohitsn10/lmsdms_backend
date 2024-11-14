@@ -137,7 +137,6 @@ class TrainingQuizSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrainingQuiz
         fields = ['id', 'name', 'pass_criteria', 'quiz_time', 'total_marks', 'total_questions', 'quiz_type', 'questions', 'created_by','updated_by','created_at','updated_at','status']
-=======
 class InductionSerializer(serializers.ModelSerializer):
     trainings = serializers.PrimaryKeyRelatedField(queryset=TrainingCreate.objects.all(), many=True)
 

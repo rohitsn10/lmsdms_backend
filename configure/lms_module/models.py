@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from user_profile.models import CustomUser
-
+from dms_module.models import *
 class Plant(models.Model):
     plant_name = models.TextField()
     plant_location = models.TextField()
@@ -67,6 +67,9 @@ class TrainingCreate(models.Model):
     training_number = models.CharField(max_length=255,null=True,blank=True)
     training_name = models.TextField()
     training_version = models.CharField(max_length=255,null=True,blank=True)
+    training_status = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE,null=True,blank=True)
+    schedule_date = models.DateTimeField(null=True,blank=True)
+    number_of_attempts = models.CharField(max_length=255,null=True,blank=True)
     refresher_time = models.DateField(null=True,blank=True)
     training_document = models.FileField(upload_to='training_documents/')
     methodology = models.ManyToManyField(Methodology)
