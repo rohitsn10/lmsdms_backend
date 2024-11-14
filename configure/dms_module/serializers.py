@@ -101,3 +101,8 @@ class DynamicInventorySerializer(serializers.ModelSerializer):
         model = DynamicInventory
         fields = ['id', 'inventory_name', 'created_at', 'updated_at']
 
+class DocumentDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Document
+        fields = ['id','document_title','document_number','document_type','document_description','revision_time','document_operation','select_template','workflow']
+

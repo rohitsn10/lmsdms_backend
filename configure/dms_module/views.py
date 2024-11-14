@@ -1163,3 +1163,25 @@ class DocumentCommentDeleteViewSet(viewsets.ModelViewSet):
             return Response({"message": "Comment not found"})
         except Exception as e:
             return Response({"message": "Something went wrong", "error": str(e)})
+        
+
+class DocumentDetailViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'document_id'
+    
+    def list(self, request, *args, **kwargs):
+        document_id = self.kwargs.get('document_id')
+
+        if not document_id:
+            return Response({"status": False, "message": "document_id parameter is required"})
+
+        try:
+            document = Document.objects.get(id=document_id)
+            serializer = DocumentDetailSerializer(document)
+            return Response({
+                "status": True,
+                "message": "Document details fetched successfully",
+                "data": serializer.data
+            })
+        except Document.DoesNotExist:
+            return Response({"status": False, "message": "Document not found"})
