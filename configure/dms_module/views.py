@@ -299,11 +299,8 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Document type is required", "data": []})
             if not workflow:
                 return Response({"status": False, "message": "Workflow is required", "data": []})
-
-            # Handle operation-specific validations
-            if document_operation == 'create_online':
-                if not select_template:
-                    return Response({"status": False, "message": "Template selection is required for creating document online", "data": []})
+            if not select_template:
+                    return Response({"status": False, "message": "Template selection is required", "data": []})
             
             # Create a new Document object
             document = Document.objects.create(
