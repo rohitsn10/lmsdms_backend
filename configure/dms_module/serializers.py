@@ -21,6 +21,57 @@ class DocumentSerializer(serializers.ModelSerializer):
         model = Document
         fields = '__all__'
 
+class DocumentdataSerializer(serializers.ModelSerializer):
+    template_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Document
+        fields = ['id', 'select_template', 'template_url']
+
+    def get_template_url(self, obj):
+        request = self.context.get('request')
+        if obj.select_template and obj.select_template.template_doc:
+            return request.build_absolute_uri(obj.select_template.template_doc.url)
+        return None
+    
+
+class TemplateDocumentSerializer(serializers.ModelSerializer):
+    document_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TemplateModel
+        fields = ['template_name', 'document_url']
+
+    def get_document_url(self, obj):
+        request = self.context.get('request')
+        if obj.template_doc:
+            return request.build_absolute_uri(obj.template_doc.url)
+        return None
+
+class TemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TemplateModel
+        fields = '__all__'
+
+class DocumentviewSerializer(serializers.ModelSerializer):
+    document_type_name = serializers.SerializerMethodField()
+    formatted_created_at = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Document
+        fields = ['id', 'document_title', 'document_number', 'formatted_created_at', 'document_type_name']
+
+    def get_document_type_name(self, obj):
+        return obj.document_type.document_name if obj.document_type else None
+
+    def get_formatted_created_at(self, obj):
+        return obj.created_at.strftime('%d-%m-%Y')
+
+class DocumentCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentComments
+        fields = ['id', 'user', 'document', 'Comment_description', 'created_at']
+
 class DynamicStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = DynamicStatus

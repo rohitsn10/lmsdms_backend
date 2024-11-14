@@ -5,11 +5,42 @@ from .models import *
 from rest_framework.pagination import PageNumberPagination
 from .serializers import *
 from rest_framework import permissions
+from lms_module.models import Department
 
 class CustomPagination(PageNumberPagination):
     page_size = 10  # Number of items per page
     page_size_query_param = 'page_size'  # Allow users to set page size
     max_page_size = 100  # Maximum page size
+
+
+class DashboardCountViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            document_count = Document.objects.count()
+            workflow_count = WorkFlowModel.objects.count()
+            document_type_count = DocumentType.objects.count()
+            user_count = CustomUser.objects.count()
+            department_count = Department.objects.count()
+
+            return Response({
+                "status": True,
+                "message": "Dashboard counts fetched successfully",
+                "data": {
+                    "document_count": document_count,
+                    "workflow_count": workflow_count,
+                    "document_type_count": document_type_count,
+                    "user_count" : user_count,
+                    "department_count" : department_count
+                }
+            })
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": "Something went wrong",
+                "error": str(e)
+            })
 
 class WorkFlowViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -246,7 +277,7 @@ class PrintRequestUpdateViewSet(viewsets.ModelViewSet):
 
 class DocumentCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = DocumentSerializer
+    serializer_class = DocumentdataSerializer
     queryset = Document.objects.all()
     
     def create(self, request, *args, **kwargs):
@@ -296,8 +327,8 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             #     )
             
             # Serialize the created document
-            serializer = DocumentSerializer(document)
-            return Response({"status": True, "message": "Document created successfully", "data": serializer.data})
+            # serializer = DocumentdataSerializer(document)
+            return Response({"status": True, "message": "Document created successfully"})
         
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
@@ -372,9 +403,7 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             # Save the updated document
             document.save()
 
-            # Serialize the updated document
-            serializer = DocumentSerializer(document)
-            return Response({"status": True, "message": "Document updated successfully", "data": serializer.data})
+            return Response({"status": True, "message": "Document updated successfully"})
         
         except Exception as e:
             return Response({"status": False, "message": 'Something went wrong', 'error': str(e)})
@@ -382,7 +411,7 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
 
 class DocumentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = DocumentSerializer
+    serializer_class = DocumentviewSerializer
     queryset = Document.objects.all().order_by('-id')
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['document_title', 'document_number', 'document_description', 'document_type__name']
@@ -393,7 +422,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
             queryset = self.filter_queryset(self.get_queryset())
 
             if queryset.exists():
-                serializer = DocumentSerializer(queryset, many=True)
+                serializer = DocumentviewSerializer(queryset, many=True)
                 return Response({
                     "status": True,
                     "message": "Documents fetched successfully",
@@ -432,6 +461,31 @@ class DocumentDeleteViewSet(viewsets.ModelViewSet):
             return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
         
 
+class DocumentTemplateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentdataSerializer
+    queryset = Document.objects.all()
+    lookup_field = 'document_id'
+
+    def list(self, request, *args, **kwargs):
+        document_id = self.kwargs.get('document_id')
+
+        if document_id is None:
+            return Response({"status": False, "message": "document_id parameter is required"})
+
+        try:
+            document = Document.objects.get(id=document_id)
+            serializer = self.get_serializer(document, context={'request': request})
+            return Response({
+                "status": True,
+                "message": "Template data fetched successfully",
+                "data": serializer.data
+            })
+
+        except Document.DoesNotExist:
+            return Response({"status": False, "message": "Document not found"})
+
+
 
 class TemplateCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -459,16 +513,47 @@ class TemplateCreateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
         
+class TemplateViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TemplateSerializer
+    queryset = TemplateModel.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['template_name', 'user__username']
+    ordering_fields = ['template_name', 'created_at']
 
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            if queryset.exists():
+                serializer = self.get_serializer(queryset, many=True)
+                return Response({
+                    "status": True,
+                    "message": "Templates fetched successfully",
+                    'total': queryset.count(),
+                    'data': serializer.data
+                })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "No templates found",
+                    "total": 0,
+                    "data": []
+                })
+        except Exception as e:
+            return Response({
+                "status": False,
+                'message': 'Something went wrong',
+                'error': str(e)
+            })
 
 class TemplateUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = TemplateModel.objects.all()
-    lookup_field = 'id'
+    lookup_field = 'temp_id'
 
     def update(self, request, *args, **kwargs):
         try:
-            template_id = self.kwargs.get('id') 
+            template_id = self.kwargs.get('temp_id') 
 
             try:
                 template = TemplateModel.objects.get(id=template_id)
@@ -490,6 +575,31 @@ class TemplateUpdateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": 'Something went wrong', 'error': str(e)})
         
+
+class TemplateDocumentViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'template_id'
+
+
+    def list(self, request, *args, **kwargs):
+        template_id = self.kwargs.get('template_id')
+
+        if not template_id:
+            return Response({"status": False, "message": "template_id parameter is required"})
+
+        try:
+            template = TemplateModel.objects.get(id=template_id)
+            serializer = TemplateDocumentSerializer(template, context={'request': request})
+            return Response({
+                "status": True,
+                "message": "Template document fetched successfully",
+                "data": serializer.data
+            })
+        except TemplateModel.DoesNotExist:
+            return Response({"status": False, "message": "Template not found"})
+
+
+        
 class DynamicStatusCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = DynamicStatus.objects.all()
@@ -509,8 +619,7 @@ class DynamicStatusCreateViewSet(viewsets.ModelViewSet):
                 status=status_value
             )
 
-            serializer = DynamicStatusSerializer(dynamic_status)
-            return Response({"status": True, "message": "Dynamic status created successfully", "data": serializer.data})
+            return Response({"status": True, "message": "Dynamic status created successfully"})
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
@@ -555,7 +664,7 @@ class DynamicStatusUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DynamicStatusSerializer
     queryset = DynamicStatus.objects.all()
-    lookup_field = 'dynamic_status_id'  # Assuming you want to look up by primary key
+    lookup_field = 'dynamic_status_id'  
 
     def update(self, request, *args, **kwargs):
         try:
@@ -569,8 +678,7 @@ class DynamicStatusUpdateViewSet(viewsets.ModelViewSet):
                 dynamic_status.status = status_value
             
             dynamic_status.save()
-            serializer = DynamicStatusSerializer(dynamic_status)
-            return Response({"status": True, "message": "Dynamic status updated successfully", "data": serializer.data})
+            return Response({"status": True, "message": "Dynamic status updated successfully"})
 
         except DynamicStatus.DoesNotExist:
             return Response({"status": False, "message": "Dynamic status not found"})
@@ -581,7 +689,7 @@ class DynamicStatusDeleteViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = DynamicStatus.objects.all()
     serializer_class = DynamicStatusSerializer
-    lookup_field = 'dynamic_status_id'  # Assuming you want to look up by primary key
+    lookup_field = 'dynamic_status_id'  
 
     def destroy(self, request, *args, **kwargs):
         try:
@@ -625,7 +733,7 @@ class DocumentDetailsCreateViewSet(viewsets.ModelViewSet):
                 document_data=document_data
             )
             
-            return Response({"status": True, "message": "Document created successfully", "data": DocumentDetailsSerializer(document_details).data})
+            return Response({"status": True, "message": "Document created successfully"})
         
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
@@ -920,7 +1028,6 @@ class OtherUserDropdownViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": str(e), "data": []})
 
 
-# Dynamic Inventory
 class DynamicInventoryCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = DynamicInventory.objects.all()
@@ -1002,3 +1109,60 @@ class DynamicInventoryDeleteViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Dynamic inventory not found"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+
+class DocumentCommentCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DocumentComments.objects.all().order_by('-created_at')
+
+    def create(self, request):
+        try:
+            document_id = request.data.get('document')
+            comment_description = request.data.get('comment_description', {})
+            
+            # Ensure required fields are provided
+            if not document_id:
+                return Response({'status': False, 'message': 'Document ID is required'})
+            if not comment_description:
+                return Response({'status': False, 'message': 'Comment description is required'})
+
+            # Create the comment
+            comment_obj = DocumentComments.objects.create(
+                user=self.request.user,
+                document_id=document_id,
+                Comment_description=comment_description
+            )
+            return Response({'status': True, 'message': 'Comment added successfully'})
+        except Exception as e:
+            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+        
+class DocumentCommentsViewSet(viewsets.ModelViewSet):
+    queryset = DocumentComments.objects.all().order_by('-created_at')
+    serializer_class = DocumentCommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = DocumentCommentSerializer(queryset, many=True)
+            data = serializer.data
+            return Response({"message": "Comment list fetched successfully", "data": data})
+        except Exception as e:
+            return Response({"message": str(e), "data": []})
+        
+class DocumentCommentDeleteViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'comment_id'
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            comment_id = self.kwargs.get('comment_id')
+            document_comment = DocumentComments.objects.get(id=comment_id)
+            document_comment.delete()
+            return Response({"message": "Comment deleted successfully"})
+
+        except DocumentComments.DoesNotExist:
+            return Response({"message": "Comment not found"})
+        except Exception as e:
+            return Response({"message": "Something went wrong", "error": str(e)})

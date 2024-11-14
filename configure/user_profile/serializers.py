@@ -35,6 +35,16 @@ class PermissionSerializer(serializers.ModelSerializer):
         fields = ['id','name','content_type','codename',]
 
 
+class CustomUserdataSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomUser
+        fields = ['id','email','full_name','first_name','last_name','phone','username','created_at']
+    
+    def get_full_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}".strip()
+
 class CustomUserSerializer(serializers.ModelSerializer):
     groups_list = serializers.SerializerMethodField()
     profile_image = serializers.SerializerMethodField()
@@ -118,3 +128,35 @@ class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ['id', 'name']
+
+class GroupPermissionSerializer(serializers.ModelSerializer):
+    permissions = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Group
+        fields = ['id', 'name', 'permissions']
+
+    def get_permissions(self, obj):
+        # Get permissions for this group
+        permissions = obj.permissions.all().select_related('content_type')
+        permission_dict = {}
+
+        for permission in permissions:
+            model = permission.content_type.model
+            if model not in permission_dict:
+                permission_dict[model] = {
+                    "name": model,
+                    "add": None,
+                    "is_add": "false",
+                    "change": None,
+                    "is_change": "false",
+                    "delete": None,
+                    "is_delete": "false",
+                    "view": None,
+                    "is_view": "false"
+                }
+            action = permission.codename.split('_')[0]
+            permission_dict[model][action] = permission.id
+            permission_dict[model]["is_" + action] = "true"
+        
+        return list(permission_dict.values()) if permission_dict else None

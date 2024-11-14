@@ -305,15 +305,16 @@ class CreateUserViewSet(viewsets.ModelViewSet):
         
 
 class ListUserViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = CustomUser.objects.all().order_by('-id')
-    serializer_class = CustomUserSerializer
+    serializer_class = CustomUserdataSerializer
     search_fields = ['email','username','first_name','last_name','phone']
     ordering_fields = ['email','username','first_name','last_name','phone']
 
     def list(self, request, *args, **kwargs):
         try:
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = CustomUserSerializer(queryset, many=True,context={'request': request})
+            serializer = CustomUserdataSerializer(queryset, many=True,context={'request': request})
             data = serializer.data
             return Response({"status": True,"message":"User List Successfully","data":data})
         except Exception as e:
@@ -404,26 +405,45 @@ class ResetPasswordAPIView(viewsets.ModelViewSet):
             return Response({"status": False, "message": "User is not authenticated", "data": []})
 
         old_password = request.data.get('old_password')
-        password = request.data.get('password')
-        confirm_password = request.data.get('confirm_password')
-
-        if not old_password or not password or not confirm_password:
-            return Response({"status": False, "message": "Old password, new password, and confirm password are required", "data": []})
 
         if not check_password(old_password, user.password):
             return Response({"status": False, "message": "Old password is incorrect", "data": []})
 
-        if password != confirm_password:
-            return Response({"status": False, "message": "Password and confirm password do not match", "data": []})
         try:
-            user.password = make_password(password)
-            user.is_reset_password = True
-            user.login_count = 0 
+            otp = str(random.randint(100000, 999999))
+            user.otp = otp
             user.save()
-            return Response({"status": True,"message": "Password reset successfully", "data": []})
+
+            return Response({"status": True,"message": "Otp genrate successfully", "data": []})
         except CustomUser.DoesNotExist:
             return Response({"status": False,"message": "User not found", "data": []})
 
+class ConfirmOTPAndSetPassword(viewsets.ModelViewSet):
+    def update(self, request):
+        user = request.user
+        if user.is_anonymous:
+            return Response({"status": False, "message": "User is not authenticated", "data": []})
+
+        otp = request.data.get('otp')
+        new_password = request.data.get('password')
+        confirm_password = request.data.get('confirm_password')
+
+        if not otp or not new_password or not confirm_password:
+            return Response({"status": False, "message": "OTP, new password, and confirm password are required", "data": []})
+
+        if otp != user.otp:
+            return Response({"status": False, "message": "Invalid OTP", "data": []})
+
+        if new_password != confirm_password:
+            return Response({"status": False, "message": "Password and confirm password do not match", "data": []})
+
+        user.password = make_password(new_password)
+        user.otp = None  
+        user.is_reset_password = True
+        user.login_count = 0
+        user.save()
+
+        return Response({"status": True, "message": "Password reset successfully", "data": []})
 
 class RequestOTPViewSet(viewsets.ModelViewSet):
     def create(self, request):
@@ -531,3 +551,26 @@ class EsignatureViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": f"An error occurred: {str(e)}"})
+        
+class SwitchRoleViewSet(viewsets.ModelViewSet):
+    def create(self, request):
+        user = request.user
+        group_name = request.data.get('group_name')
+        password = request.data.get('password')
+
+        if not group_name or not password:
+            return Response({"status": False, "message": "Group name and password are required", "data": []})
+
+        if not user.check_password(password):
+            return Response({"status": False, "message": "Incorrect password", "data": []})
+
+        try:
+            group = Group.objects.get(name=group_name)
+            if not user.groups.filter(id=group.id).exists():
+                return Response({"status": False, "message": "User is not part of the requested group", "data": []})
+        except Group.DoesNotExist:
+            return Response({"status": False, "message": "Group not found", "data": []})
+
+        serializer = GroupPermissionSerializer(group)
+
+        return Response({"status": True, "message": "Permissions retrieved successfully", "data": serializer.data})

@@ -96,6 +96,12 @@ class DocumentDetails(models.Model):
 
     def __str__(self):
         return f"Document for {self.user.username} at {self.created_at}"
+    
+class DocumentComments(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE)
+    Comment_description = models.JSONField(blank=True, null=True)    
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class DocumentApproveAction(models.Model):
@@ -136,5 +142,7 @@ class DynamicInventory(models.Model):
 
     def __str__(self):
         return self.inventory_name
+    
+    
 
     
