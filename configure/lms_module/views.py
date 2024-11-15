@@ -2074,35 +2074,32 @@ class TrainingListViewSet(viewsets.ModelViewSet):
         })
 
     
+class JobroleListingViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = GetJobRoleSerializer
 
+    def list(self, request, *args, **kwargs):
+        plant_id = request.data.get('plant')
+        department_id = request.data.get('department')
+        area_id = request.data.get('area')
 
-# class JobRoleTrainingListViewSet(viewsets.ViewSet):
-#     permission_classes = [permissions.IsAuthenticated]
+        job_roles = JobRole.objects.all()
 
-#     def list(self, request, *args, **kwargs):
-#         plant_id = request.data.get('plant_id')
-#         department_id = request.data.get('department_id')
-#         area_id = request.data.get('area_id')
+        if plant_id:
+            job_roles = job_roles.filter(plant_id=plant_id)
+        if department_id:
+            job_roles = job_roles.filter(department_id=department_id)
+        if area_id:
+            job_roles = job_roles.filter(area_id=area_id)
 
-#         # Create filters based on provided parameters
-#         filters = Q()
-#         if plant_id:
-#             filters &= Q(plant_id=plant_id)
-#         if department_id:
-#             filters &= Q(department_id=department_id)
-#         if area_id:
-#             filters &= Q(area_id=area_id)
+        job_role_serializer = GetJobRoleSerializer(job_roles, many=True)
 
-#         # Get job roles that match the filters
-#         job_roles = JobRole.objects.filter(filters)
-
-#         # Serialize data based on job roles and their related trainings
-#         serializer = JobRoleTrainingSerializer(job_roles, many=True, context={'request': request})
-        
-#         return Response({
-#             "status": True,
-#             "message": "Job role training data fetched successfully",
-#             "data": serializer.data
-#         })
+        return Response({
+            "status": True,
+            "message": "Training and job role data fetched successfully",
+            "data": {
+                "job_roles": job_role_serializer.data
+                }
+        })
 
 

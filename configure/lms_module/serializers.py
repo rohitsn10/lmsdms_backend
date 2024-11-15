@@ -165,25 +165,9 @@ class TrainingListSerializer(serializers.ModelSerializer):
         model = TrainingCreate
         fields = ['id','plant', 'training_type', 'training_version', 'training_number', 'refresher_time']
 
+class GetJobRoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobRole
+        fields = ['id', 'job_role_name', 'job_role_description', 'plant', 'department', 'area']
 
-# class JobRoleTrainingSerializer(serializers.ModelSerializer):
-#     plant_name = serializers.CharField(source="plant.plant_name", read_only=True)
-#     department_name = serializers.CharField(source="department.department_name", read_only=True)
-#     area_name = serializers.CharField(source="area.area_name", read_only=True)
-#     refresher_time = serializers.SerializerMethodField()
-#     methodology = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = JobRole
-#         fields = ['plant_name', 'department_name', 'area_name', 'job_role_name', 'refresher_time', 'methodology']
-
-#     def get_refresher_time(self, obj):
-#         training = TrainingCreate.objects.filter(plant=obj.plant, department=obj.department, area=obj.area).first()
-#         return training.refresher_time if training else None
-
-#     def get_methodology(self, obj):
-#         training = TrainingCreate.objects.filter(plant=obj.plant, department=obj.department, area=obj.area).first()
-#         if training:
-#             return [methodology.methodology_name for methodology in training.methodology.all()]
-#         return []
 
