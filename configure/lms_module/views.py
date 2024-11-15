@@ -2103,3 +2103,36 @@ class JobroleListingViewSet(viewsets.ModelViewSet):
         })
 
 
+class TrainingAssignViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = TrainingCreate.objects.all()
+    lookup_field = 'training_id'  
+
+    def update(self, request, *args, **kwargs):
+        try:
+            training_id = self.kwargs.get("training_id")
+
+            training_instance = TrainingCreate.objects.filter(id=training_id).first()
+            if not training_instance:
+                return Response({"status": False, "message": "Training ID not found"})
+
+            job_role_ids = request.data.get('job_role_ids', [])
+            if not isinstance(job_role_ids, list):
+                return Response({"status": False, "message": "Job role IDs should be a list"})
+
+            valid_job_roles = JobRole.objects.filter(id__in=job_role_ids)
+            if len(valid_job_roles) != len(job_role_ids):
+                return Response({
+                    "status": False,
+                    "message": "Some Job Role IDs are invalid"
+                })
+
+            training_instance.job_roles.set(valid_job_roles)
+            training_instance.save()
+
+            return Response({
+                "status": True,
+                "message": "Training updated successfully",
+            })
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
