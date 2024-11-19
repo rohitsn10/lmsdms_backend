@@ -2136,3 +2136,61 @@ class TrainingAssignViewSet(viewsets.ModelViewSet):
             })
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+class JobroleListingapiViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = GetJobRoleSerializer
+
+    def list(self, request, *args, **kwargs):
+        plant_id = request.data.get('plant')
+        department_id = request.data.get('department')
+        area_id = request.data.get('area')
+        job_role_name = request.data.get('job_role_name')
+
+        job_roles = JobRole.objects.all()
+
+        if plant_id:
+            job_roles = job_roles.filter(plant_id=plant_id)
+        if department_id:
+            job_roles = job_roles.filter(department_id=department_id)
+        if area_id:
+            job_roles = job_roles.filter(area_id=area_id)
+        if job_role_name:
+            job_roles = job_roles.filter(job_role_name__icontains=job_role_name)
+
+        job_role_serializer = self.serializer_class(job_roles, many=True)
+
+        return Response({
+            "status": True,
+            "message": "Training and job role data fetched successfully",
+            "data": {
+                "job_roles": job_role_serializer.data
+            }
+        })
+
+
+class TrainingListingViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingSerializer
+
+    def list(self, request, *args, **kwargs):
+        training_type_id = request.data.get("training_type")
+
+        trainings = TrainingCreate.objects.all()
+
+        if training_type_id:
+            trainings = trainings.filter(training_type_id=training_type_id)
+
+        # Serialize the data
+        training_serializer = self.serializer_class(trainings, many=True)
+
+        # Return the response
+        return Response({
+            "status": True,
+            "message": "Training data fetched successfully",
+            "data": training_serializer.data
+        })
+
+
+
