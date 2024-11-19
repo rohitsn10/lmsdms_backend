@@ -4,10 +4,16 @@ from rest_framework import serializers
 from django.contrib.auth.models import Group, Permission
 
 class GetDepartmentSerializer(serializers.ModelSerializer):
+    department_created_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Department
-        fields = ['id', 'department_name', 'department_description','department_created_at']
+        fields = ['id', 'department_name', 'department_description', 'department_created_at']
+
+    def get_department_created_at(self, obj):
+        if obj.department_created_at:
+            return obj.department_created_at.strftime('%d-%m-%Y')
+        return None
 
 class GetPlantSerializer(serializers.ModelSerializer):
     class Meta:
@@ -169,5 +175,15 @@ class GetJobRoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobRole
         fields = ['id', 'job_role_name', 'job_role_description', 'plant', 'department', 'area']
+
+class TrainingSerializer(serializers.ModelSerializer):
+    methodology = serializers.StringRelatedField(many=True)
+
+    class Meta:
+        model = TrainingCreate
+        fields = [
+            "training_number","training_version","training_name","methodology","refresher_time",
+        ]
+
 
 
