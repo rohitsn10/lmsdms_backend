@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from user_profile.models import CustomUser
 from dms_module.models import *
+
 class Plant(models.Model):
     plant_name = models.TextField()
     plant_location = models.TextField()
