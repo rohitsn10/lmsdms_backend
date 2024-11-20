@@ -256,8 +256,8 @@ class TrainingMatrix(models.Model):
     training_duration = models.DateTimeField(null=True, blank=True)
     evaluation_status = models.CharField(max_length=255, choices=EVALUATION_STATUS_CHOICES, null=True, blank=True)
     assigned_user = models.ManyToManyField(CustomUser)
-    assigned_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
-    assigned_role = models.ForeignKey(JobRole, on_delete=models.CASCADE, null=True, blank=True)
+    assigned_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True,related_name='assigned_by_training_matrices')
+    assigned_role = models.ForeignKey(JobRole, on_delete=models.CASCADE, null=True, blank=True,related_name='assigned_user_training_matrices')
     due_reason = models.TextField(null=True, blank=True)
     
     
