@@ -268,11 +268,15 @@ class CreateUserViewSet(viewsets.ModelViewSet):
             first_name = request.data.get('first_name')
             last_name = request.data.get('last_name')
             phone = request.data.get('phone')
+            department_id = request.data.get('department_id')
+
             
             if not email:
                 return Response({"status": False, 'message': 'Email is required', 'data': []})
             if not username:
                 return Response({"status": False, 'message': 'Username is required', 'data': []})
+            if not department_id:
+                return Response({"status": False, 'message': 'department is required', 'data': []})
 
             # Use the imported function to generate a random password
             password = generate_random_password()
@@ -282,7 +286,8 @@ class CreateUserViewSet(viewsets.ModelViewSet):
                 username=username,
                 first_name=first_name,
                 last_name=last_name,
-                phone=phone
+                phone=phone,
+                department = department_id
             )
             user.set_password(password)
             user.save()
