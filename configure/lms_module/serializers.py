@@ -55,7 +55,7 @@ class TrainingCreateSerializer(serializers.ModelSerializer):
     plant_name = serializers.CharField(source='plant.plant_name', read_only=True)
     training_type_name = serializers.CharField(source='training_type.training_type_name', read_only=True)
     methodology_name = serializers.SerializerMethodField()  # Fixed this to handle ManyToMany properly
-    document = serializers.SerializerMethodField()
+    training_document = serializers.SerializerMethodField()
     created_by_name = serializers.ReadOnlyField(source='created_by.first_name')
 
     class Meta:
@@ -64,7 +64,7 @@ class TrainingCreateSerializer(serializers.ModelSerializer):
             'id', 'plant', 'plant_name', 'training_name', 'training_type', 'training_type_name',
             'training_number', 'training_title', 'training_version', 'refresher_time',
             'training_document', 'methodology', 'methodology_name', 'created_by', 'created_by_name',
-            'training_created_at', 'training_updated_at'
+            'training_created_at', 'training_updated_at','schedule_date','number_of_attempts','training_status'
         ]
 
     def get_document(self, obj):
@@ -171,6 +171,47 @@ class TrainingListSerializer(serializers.ModelSerializer):
         model = TrainingCreate
         fields = ['id','plant', 'training_type', 'training_version', 'training_number', 'refresher_time']
 
+
+
+class TrainingMatrixAssignUserSerializer(serializers.ModelSerializer):
+    assigned_user_details = serializers.SerializerMethodField()
+    assigned_by_details = serializers.SerializerMethodField()
+    assigned_role_name = serializers.SerializerMethodField()
+    class Meta:
+        model = TrainingMatrix
+        fields = [
+            'id', 'training', 'training_duration', 'evaluation_status','assigned_user',
+            'assigned_user_details', 'assigned_by', 'assigned_by_details', 'assigned_role', 'assigned_role_name', 'due_reason'
+        ]
+    
+    def get_assigned_user_details(self, obj):
+
+        users = obj.assigned_user.all()
+        return [
+            {
+                'id': user.id,
+                'first_name': user.first_name,
+                'last_name': user.last_name
+            }
+            for user in users
+        ]
+    
+    def get_assigned_by_details(self, obj):
+        users = obj.assigned_by.all()
+        return [
+            {
+                'id': user.id,
+                'first_name': user.first_name,
+                'last_name': user.last_name
+            }
+            for user in users
+        ]
+    
+    def get_assigned_role_name(self, obj):
+        if obj.assigned_role:
+            return obj.assigned_role.job_role_name
+        return None
+
 class GetJobRoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobRole
@@ -184,6 +225,7 @@ class TrainingSerializer(serializers.ModelSerializer):
         fields = [
             "training_number","training_version","training_name","methodology","refresher_time",
         ]
+
 
 
 

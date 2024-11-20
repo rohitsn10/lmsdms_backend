@@ -855,6 +855,7 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
             training_version = request.data.get('training_version')
             refresher_time = request.data.get('refresher_time')
             training_document = request.data.get('training_document')
+            schedule_date = request.data.get('schedule_date')
             methodology = request.data.get('methodology')
 
             created_by = self.request.user
@@ -906,7 +907,8 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
                 training_version=training_version,
                 refresher_time=refresher_time,
                 training_document=training_document,
-                created_by=created_by
+                created_by=created_by,
+                schedule_date=schedule_date
             )
             
             if methodology:
@@ -2073,6 +2075,62 @@ class TrainingListViewSet(viewsets.ModelViewSet):
             "data": serializer.data
         })
 
+
+
+class TrainingMatrixAssignUserViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = TrainingMatrix.objects.all()
+    serializer_class = TrainingMatrixAssignUserSerializer
+
+    def create(self, request, *args, **kwargs):
+        user = self.request.user
+        training_create_id = request.data.get('training_create_id')
+        user_ids = request.data.get('user_ids', [])
+        training_duration = request.data.get('training_duration', None)
+        evaluation_status = request.data.get('evaluation_status', None)
+        assigned_role_id = request.data.get('assigned_role', None)
+        due_reason = request.data.get('due_reason', None)
+
+        if not training_create_id:
+            return Response({"status": False,"message": "TrainingCreate ID not provided.","data": []})
+
+        try:
+            training_create_instance = TrainingCreate.objects.get(id=training_create_id)
+        except TrainingCreate.DoesNotExist:
+            return Response({
+                "status": False,"message": "TrainingCreate instance not found.","data": []})
+
+        if not user_ids:
+            return Response({"status": False,"message": "User IDs not provided.","data": []})
+
+        users = CustomUser.objects.filter(id__in=user_ids)
+        if users.count() != len(user_ids):
+            return Response({"status": False,"message": "Invalid user IDs.","data": []})
+
+        assigned_role = None
+        if assigned_role_id:
+            try:
+                assigned_role = JobRole.objects.get(id=assigned_role_id)
+            except JobRole.DoesNotExist:
+                return Response({
+                    "status": False,"message": "Assigned role not found.","data": []})
+
+        training_matrix = TrainingMatrix.objects.create(
+            training=training_create_instance,
+            assigned_by=user,
+            training_duration=training_duration,
+            evaluation_status=evaluation_status,
+            assigned_role=assigned_role,
+            due_reason=due_reason
+        )
+
+        training_matrix.assigned_user.set(users)
+        training_matrix.save()
+
+        serializer = TrainingMatrixAssignUserSerializer(training_matrix)
+
+        return Response({"status": True,"message": "Training matrix created and users assigned successfully.","data": serializer.data})
+
     
 class JobroleListingViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -2191,6 +2249,5 @@ class TrainingListingViewSet(viewsets.ModelViewSet):
             "message": "Training data fetched successfully",
             "data": training_serializer.data
         })
-
 
 

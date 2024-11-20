@@ -63,14 +63,20 @@ class TrainingType(models.Model):
 
 
 class TrainingCreate(models.Model):
+    TRAINING_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('Completed', 'Completed'),
+    ]
+
     plant = models.ForeignKey(Plant, on_delete=models.CASCADE)
     training_type = models.ForeignKey(TrainingType, on_delete=models.CASCADE)
     training_number = models.CharField(max_length=255,null=True,blank=True)
     training_name = models.TextField()
     training_version = models.CharField(max_length=255,null=True,blank=True)
-    training_status = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE,null=True,blank=True)
+    training_status = models.CharField(max_length=255,choices=TRAINING_STATUS_CHOICES,default='pending',null=True,blank=True)
     schedule_date = models.DateTimeField(null=True,blank=True)
-    number_of_attempts = models.CharField(max_length=255,null=True,blank=True)
+    number_of_attempts = models.CharField(max_length=255,default='3',null=True,blank=True)
     refresher_time = models.DateField(null=True,blank=True)
     training_document = models.FileField(upload_to='training_documents/')
     methodology = models.ManyToManyField(Methodology)
@@ -238,3 +244,20 @@ class ClassroomTraining(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class TrainingMatrix(models.Model):
+    EVALUATION_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+    ]
+    training = models.ForeignKey(TrainingCreate, on_delete=models.CASCADE)
+    training_duration = models.DateTimeField(null=True, blank=True)
+    evaluation_status = models.CharField(max_length=255, choices=EVALUATION_STATUS_CHOICES, null=True, blank=True)
+    assigned_user = models.ManyToManyField(CustomUser)
+    assigned_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    assigned_role = models.ForeignKey(JobRole, on_delete=models.CASCADE, null=True, blank=True)
+    due_reason = models.TextField(null=True, blank=True)
+    
+    
