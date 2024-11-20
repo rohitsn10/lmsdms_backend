@@ -7,9 +7,11 @@ class WorkFlowSerializer(serializers.ModelSerializer):
         fields = ['id', 'workflow_name', 'workflow_description', 'created_at', 'is_active']
 
 class PrintRequestSerializer(serializers.ModelSerializer):
+    document_title = serializers.CharField(source='sop_document_id.document_title', read_only=True)
+
     class Meta:
         model = PrintRequest
-        fields = ['id', 'user', 'sop_document_id', 'no_of_print', 'issue_type','reason_for_print','print_request_status','created_at']
+        fields = ['id', 'user', 'sop_document_id', 'document_title','no_of_print', 'issue_type','reason_for_print','print_request_status','created_at']
 
 class DocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:
