@@ -36,7 +36,7 @@ class PrintRequestApproval(models.Model):
     print_request = models.ForeignKey(PrintRequest, on_delete=models.CASCADE, related_name='approvals')  # Foreign key to PrintRequest
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='approved_print_requests')  # Foreign key to CustomUser (admin who approves)
     no_of_request_by_admin = models.IntegerField()  # Field for number of requests approved by admin
-    status = models.TextField(blank=True, null=True)  # Status field for approval or rejection
+    status = models.ForeignKey('DynamicStatus', on_delete=models.CASCADE,blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)  # Auto-populated created date
 
     def __str__(self):

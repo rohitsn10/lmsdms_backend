@@ -158,12 +158,13 @@ class DocumentTypeCreateViewSet(viewsets.ModelViewSet):
         
         
 class PrintRequestViewSet(viewsets.ModelViewSet):
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
     queryset = PrintRequest.objects.all().order_by('-id')
 
     def create(self, request):
         try:
             user = self.request.user
+            sop_document_id = request.data.get('sop_document_id')
             no_of_print = request.data.get('no_of_print')
             issue_type = request.data.get('issue_type')
             reason_for_print = request.data.get('reason_for_print')
@@ -179,7 +180,8 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
                 user = user,
                 no_of_print=no_of_print,
                 issue_type=issue_type,
-                reason_for_print=reason_for_print
+                reason_for_print=reason_for_print,
+                sop_document_id = sop_document_id
             )
             return Response({'status': True, 'message': 'Print requested successfully'})
         except Exception as e:
@@ -215,28 +217,28 @@ class PrintApprovalViewSet(viewsets.ModelViewSet):
             except PrintRequest.DoesNotExist:
                 return Response({'status': False, 'message': 'Invalid Print Request ID'})
             
-            # Validate the status field
-            if not status or status not in ['approved', 'rejected']:
-                return Response({'status': False, 'message': 'Status must be either "approved" or "rejected"'})
+            if not no_of_request_by_admin:
+                return Response({'status': False, 'message': 'No of request by admin is required when approving'})
             
-            # If status is 'approved', no_of_request_by_admin is mandatory
-            if status == 'approved':
-                if not no_of_request_by_admin:
-                    return Response({'status': False, 'message': 'No of request by admin is required when approving'})
-                
-                # Ensure no_of_request_by_admin does not exceed no_of_print from PrintRequest
-                if int(no_of_request_by_admin) > print_request.no_of_print:
-                    return Response({'status': False, 'message': f'No of request by admin cannot exceed {print_request.no_of_print}'})
+            # Ensure no_of_request_by_admin does not exceed no_of_print from PrintRequest
+            if int(no_of_request_by_admin) > print_request.no_of_print:
+                return Response({'status': False, 'message': f'No of request by admin cannot exceed {print_request.no_of_print}'})
             
+            # Fetch the DynamicStatus object for the provided status
+            try:
+                dynamic_status = DynamicStatus.objects.get(id=status)
+            except DynamicStatus.DoesNotExist:
+                return Response({'status': False, 'message': 'Invalid status value provided'})
+
             # Create PrintRequestApproval object
             print_request_approval = PrintRequestApproval.objects.create(
                 user=user,
                 print_request=print_request,
-                no_of_request_by_admin=no_of_request_by_admin if status == 'approved' else None,
-                status=status
+                no_of_request_by_admin=no_of_request_by_admin,
+                status=dynamic_status
             )
             
-            return Response({'status': True, 'message': f'Print request {status} successfully', 'data': {'approval_id': print_request_approval.id}})
+            return Response({'status': True, 'message': f'Print request successfully'})
         
         except Exception as e:
             return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
