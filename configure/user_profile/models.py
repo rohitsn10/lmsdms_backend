@@ -37,6 +37,13 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     otp = models.CharField(max_length=6, null=True, blank=True)
+    department = models.ForeignKey(
+        'lms_module.Department',  # String reference to avoid direct import
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='users'
+    )
 
 
     is_reset_password = models.BooleanField(default=False, null=True)

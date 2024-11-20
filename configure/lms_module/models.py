@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from user_profile.models import CustomUser
 from dms_module.models import *
+
 class Plant(models.Model):
     plant_name = models.TextField()
     plant_location = models.TextField()
@@ -23,8 +24,8 @@ class JobRole(models.Model):
     plant = models.ForeignKey(Plant, on_delete=models.CASCADE,null=True,blank=True)
     department = models.ForeignKey(Department, on_delete=models.CASCADE,null=True,blank=True)
     area = models.ForeignKey(Area, on_delete=models.CASCADE,null=True,blank=True)
-    job_role_name = models.TextField()
-    job_role_description = models.TextField()
+    job_role_name = models.TextField(null=True,blank=True)
+    job_role_description = models.TextField(null=True,blank=True)
 
 class Assessment(models.Model):
     title = models.TextField(blank=True, null=True)
@@ -80,6 +81,7 @@ class TrainingCreate(models.Model):
     training_document = models.FileField(upload_to='training_documents/')
     methodology = models.ManyToManyField(Methodology)
     created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    job_roles = models.ManyToManyField(JobRole)
     training_created_at = models.DateTimeField(auto_now_add=True)
     training_updated_at = models.DateTimeField(auto_now=True)
 

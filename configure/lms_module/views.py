@@ -2077,7 +2077,6 @@ class TrainingListViewSet(viewsets.ModelViewSet):
 
 
 
-
 class TrainingMatrixAssignUserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = TrainingMatrix.objects.all()
@@ -2131,3 +2130,124 @@ class TrainingMatrixAssignUserViewSet(viewsets.ModelViewSet):
         serializer = TrainingMatrixAssignUserSerializer(training_matrix)
 
         return Response({"status": True,"message": "Training matrix created and users assigned successfully.","data": serializer.data})
+
+    
+class JobroleListingViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = GetJobRoleSerializer
+
+    def list(self, request, *args, **kwargs):
+        plant_id = request.data.get('plant')
+        department_id = request.data.get('department')
+        area_id = request.data.get('area')
+
+        job_roles = JobRole.objects.all()
+
+        if plant_id:
+            job_roles = job_roles.filter(plant_id=plant_id)
+        if department_id:
+            job_roles = job_roles.filter(department_id=department_id)
+        if area_id:
+            job_roles = job_roles.filter(area_id=area_id)
+
+        job_role_serializer = GetJobRoleSerializer(job_roles, many=True)
+
+        return Response({
+            "status": True,
+            "message": "Training and job role data fetched successfully",
+            "data": {
+                "job_roles": job_role_serializer.data
+                }
+        })
+
+
+class TrainingAssignViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = TrainingCreate.objects.all()
+    lookup_field = 'training_id'  
+
+    def update(self, request, *args, **kwargs):
+        try:
+            training_id = self.kwargs.get("training_id")
+
+            training_instance = TrainingCreate.objects.filter(id=training_id).first()
+            if not training_instance:
+                return Response({"status": False, "message": "Training ID not found"})
+
+            job_role_ids = request.data.get('job_role_ids', [])
+            if not isinstance(job_role_ids, list):
+                return Response({"status": False, "message": "Job role IDs should be a list"})
+
+            valid_job_roles = JobRole.objects.filter(id__in=job_role_ids)
+            if len(valid_job_roles) != len(job_role_ids):
+                return Response({
+                    "status": False,
+                    "message": "Some Job Role IDs are invalid"
+                })
+
+            training_instance.job_roles.set(valid_job_roles)
+            training_instance.save()
+
+            return Response({
+                "status": True,
+                "message": "Training updated successfully",
+            })
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+class JobroleListingapiViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = GetJobRoleSerializer
+
+    def list(self, request, *args, **kwargs):
+        plant_id = request.data.get('plant')
+        department_id = request.data.get('department')
+        area_id = request.data.get('area')
+        job_role_name = request.data.get('job_role_name')
+
+        job_roles = JobRole.objects.all()
+
+        if plant_id:
+            job_roles = job_roles.filter(plant_id=plant_id)
+        if department_id:
+            job_roles = job_roles.filter(department_id=department_id)
+        if area_id:
+            job_roles = job_roles.filter(area_id=area_id)
+        if job_role_name:
+            job_roles = job_roles.filter(job_role_name__icontains=job_role_name)
+
+        job_role_serializer = self.serializer_class(job_roles, many=True)
+
+        return Response({
+            "status": True,
+            "message": "Training and job role data fetched successfully",
+            "data": {
+                "job_roles": job_role_serializer.data
+            }
+        })
+
+
+class TrainingListingViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingSerializer
+
+    def list(self, request, *args, **kwargs):
+        training_type_id = request.data.get("training_type")
+
+        trainings = TrainingCreate.objects.all()
+
+        if training_type_id:
+            trainings = trainings.filter(training_type_id=training_type_id)
+
+        # Serialize the data
+        training_serializer = self.serializer_class(trainings, many=True)
+
+        # Return the response
+        return Response({
+            "status": True,
+            "message": "Training data fetched successfully",
+            "data": training_serializer.data
+        })
+
+

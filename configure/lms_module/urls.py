@@ -54,6 +54,11 @@ urlpatterns = [
     path('mark_classroom_training_completed/<int:id>', ClassroomTrainingCreateViewSet.as_view({'post': 'mark_completed'}), name='mark_classroom_training_completed'),
 
     path('training_list', TrainingListViewSet.as_view({'get': 'list'}), name='training_list'),
+    path('job_training_list', JobroleListingViewSet.as_view({'get': 'list'}), name='job_training_list'),
+    path('jobrole_assign_training/<int:training_id>', TrainingAssignViewSet.as_view({'put': 'update'}), name='jobrole_assign_training'),
+
+    path('job_training_list_mapping', JobroleListingapiViewSet.as_view({'get': 'list'}), name='job_training_list_mapping'),
+    path('training_list_data', TrainingListingViewSet.as_view({'get': 'list'}), name='training_list_data'),
 
 
 ]
