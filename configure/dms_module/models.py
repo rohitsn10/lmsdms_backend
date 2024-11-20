@@ -19,7 +19,7 @@ class DocumentType(models.Model):
 class PrintRequest(models.Model):
 
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='print_requests') 
-    sop_document_id = models.TextField(blank=True, null=True)  
+    sop_document_id = models.ForeignKey("Document", on_delete=models.CASCADE,blank=True, null=True, related_name='print_requests')  # Updated
     no_of_print = models.IntegerField()  
     issue_type = models.TextField(blank=True, null=True)  
     reason_for_print = models.TextField(blank=True, null=True) 
