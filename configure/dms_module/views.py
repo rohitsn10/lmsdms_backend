@@ -176,7 +176,10 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
             if not reason_for_print:
                 return Response({'status': False, 'message': 'Reason is required'})
             
-            sop_document = Document.objects.get(Document, id=sop_document_id)
+            try:
+                sop_document = Document.objects.get(id=sop_document_id)
+            except Document.DoesNotExist:
+                return Response({'status': False, 'message': 'Invalid document id'})
 
             printrequest_obj = PrintRequest.objects.create(
                 user = user,
