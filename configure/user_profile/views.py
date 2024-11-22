@@ -26,6 +26,8 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
 import random
 import ipdb
+from lms_module.models import Department
+
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -285,6 +287,11 @@ class CreateUserViewSet(viewsets.ModelViewSet):
                 group = Group.objects.get(id=group_id)
             except Group.DoesNotExist:
                 return Response({"status": False, "message": "Invalid group ID", "data": []})
+            
+            try:
+                department = Department.objects.get(id=department_id)
+            except Department.DoesNotExist:
+                return Response({"status": False, "message": "Invalid department ID", "data": []})
 
             # Use the imported function to generate a random password
             password = generate_random_password()
@@ -295,7 +302,7 @@ class CreateUserViewSet(viewsets.ModelViewSet):
                 first_name=first_name,
                 last_name=last_name,
                 phone=phone,
-                department = department_id
+                department = department
             )
             user.set_password(password)
             user.save()
