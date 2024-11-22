@@ -58,16 +58,20 @@ class TemplateSerializer(serializers.ModelSerializer):
 class DocumentviewSerializer(serializers.ModelSerializer):
     document_type_name = serializers.SerializerMethodField()
     formatted_created_at = serializers.SerializerMethodField()
+    current_status_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Document
-        fields = ['id', 'document_title', 'document_number', 'formatted_created_at', 'document_type_name']
+        fields = ['id', 'document_title', 'document_number', 'formatted_created_at', 'document_type_name','form_status','document_current_status','current_status_name']
 
     def get_document_type_name(self, obj):
         return obj.document_type.document_name if obj.document_type else None
 
     def get_formatted_created_at(self, obj):
         return obj.created_at.strftime('%d-%m-%Y')
+    
+    def get_current_status_name(self, obj):
+        return obj.document_current_status.status if obj.document_current_status else None
 
 class DocumentCommentSerializer(serializers.ModelSerializer):
     class Meta:

@@ -50,6 +50,9 @@ urlpatterns = [
    path('document_release_status', DocumentReleaseActionCreateViewSet.as_view({'post': 'create'}),name='document_release_status'),
    path('document_effective_status', DocumentEffectiveActionCreateViewSet.as_view({'post': 'create'}),name='document_effective_status'),
 
+   path('draft_document', DocumentDraftStatusViewSet.as_view({'put': 'update'}),name='draft_document'),
+
+
    path('UserDropdownMasterCopy', MasterCopyUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownMasterCopy'),
    path('UserDropdownOtherUser', OtherUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownOtherUser'),
 
