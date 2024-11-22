@@ -1192,3 +1192,40 @@ class DocumentDetailViewSet(viewsets.ViewSet):
             })
         except Document.DoesNotExist:
             return Response({"status": False, "message": "Document not found"})
+        
+class DocumentDraftStatusViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Document.objects.all()
+
+    def update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            document_id = request.data.get('document_id')
+            status_id = request.data.get('status_id')
+
+            # Ensure required fields are provided
+            if not document_id:
+                return Response({"status": False, "message": "Document ID is required"})
+            if not status_id:
+                return Response({"status": False, "message": "Status ID is required"})
+
+            # Fetch related document and status objects
+            try:
+                document = Document.objects.get(id=document_id)
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Document ID"})
+
+            try:
+                status = DynamicStatus.objects.get(id=status_id)
+            except DynamicStatus.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Status ID"})
+
+            # Update the fields in the Document table
+            document.document_current_status = status
+            document.form_status = "save_draft"  # Update form_status to "save_draft"
+            document.save()
+
+            return Response({"status": True, "message": "Document updated successfully"})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
