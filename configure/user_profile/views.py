@@ -40,8 +40,8 @@ class GroupIdWisePermissionListAPIView(APIView):
     # filterset_class = PermissionFilter
    
     def get(self, request):
-        if not request.user.has_perm('auth.view_permission'):
-            return Response({'status': False, 'message': "You don't have permission to perform this action"})
+        # if not request.user.has_perm('auth.view_permission'):
+        #     return Response({'status': False, 'message': "You don't have permission to perform this action"})
 
         group_id = request.query_params.get('group_id')
         user = request.user
@@ -103,8 +103,8 @@ class PermissionListAPIView(APIView):
 
     def get(self, request):
         try:
-            if not request.user.has_perm('auth.view_permission'):
-                return Response({'status': False, 'message': "You don't have permission to perform this action"})
+            # if not request.user.has_perm('auth.view_permission'):
+            #     return Response({'status': False, 'message': "You don't have permission to perform this action"})
 
             user = request.user
 

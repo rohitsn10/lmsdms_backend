@@ -822,22 +822,27 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             user = request.user
-            document_id = request.data.get('documentdetails')
+            document = request.data.get('document_id')
+            # document_id = request.data.get('documentdetails_id')
             status_id = request.data.get('status')
 
             # Ensure required fields are provided
-            if not document_id:
-                return Response({"status": False, "message": "Document details are required"})
+            # if not document_id:
+            #     return Response({"status": False, "message": "Document details are required"})
+            if not document:
+                return Response({"status": False, "message": "Document are required"})
             if not status_id:
                 return Response({"status": False, "message": "Status is required"})
 
             # Fetch related document and status objects
-            documentdetails = DocumentDetails.objects.get(id=document_id)
+            document = Document.objects.get(id=document)
+            # documentdetails = DocumentDetails.objects.get(id=document_id)
             status = DynamicStatus.objects.get(id=status_id)
 
             document_approve_action = DocumentApproveAction.objects.create(
                 user=user,
-                documentdetails_approve=documentdetails,
+                document=document,
+                # documentdetails_approve=documentdetails,
                 status_approve=status
             )
 
@@ -1222,10 +1227,10 @@ class DocumentDraftStatusViewSet(viewsets.ModelViewSet):
 
             # Update the fields in the Document table
             document.document_current_status = status
-            document.form_status = "save_draft"  # Update form_status to "save_draft"
+            document.form_status = "save_draft"
             document.save()
 
-            return Response({"status": True, "message": "Document updated successfully"})
+            return Response({"status": True, "message": "Document Drafted successfully"})
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})

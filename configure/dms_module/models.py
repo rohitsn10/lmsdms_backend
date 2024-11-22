@@ -107,7 +107,8 @@ class DocumentComments(models.Model):
 
 class DocumentApproveAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    documentdetails_approve = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
+    # documentdetails_approve = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
     status_approve = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
