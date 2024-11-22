@@ -269,6 +269,7 @@ class CreateUserViewSet(viewsets.ModelViewSet):
             last_name = request.data.get('last_name')
             phone = request.data.get('phone')
             department_id = request.data.get('department_id')
+            group_id = request.data.get('user_role')
 
             
             if not email:
@@ -277,6 +278,13 @@ class CreateUserViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, 'message': 'Username is required', 'data': []})
             if not department_id:
                 return Response({"status": False, 'message': 'department is required', 'data': []})
+            if not group_id:
+                return Response({"status": False, 'message': 'Group is required', 'data': []})
+            
+            try:
+                group = Group.objects.get(id=group_id)
+            except Group.DoesNotExist:
+                return Response({"status": False, "message": "Invalid group ID", "data": []})
 
             # Use the imported function to generate a random password
             password = generate_random_password()
@@ -291,6 +299,8 @@ class CreateUserViewSet(viewsets.ModelViewSet):
             )
             user.set_password(password)
             user.save()
+
+            user.groups.add(group)
 
             # Send email with username and password
             send_mail(
