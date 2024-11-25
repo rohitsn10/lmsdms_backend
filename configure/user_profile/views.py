@@ -271,7 +271,7 @@ class CreateUserViewSet(viewsets.ModelViewSet):
             last_name = request.data.get('last_name')
             phone = request.data.get('phone')
             department_id = request.data.get('department_id')
-            group_id = request.data.get('user_role')
+            group_ids  = request.data.get('user_role')
 
             
             if not email:
@@ -280,13 +280,16 @@ class CreateUserViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, 'message': 'Username is required', 'data': []})
             if not department_id:
                 return Response({"status": False, 'message': 'department is required', 'data': []})
-            if not group_id:
-                return Response({"status": False, 'message': 'Group is required', 'data': []})
+            if not group_ids or not isinstance(group_ids, list):  # Check if it's a list
+                return Response({"status": False, 'message': 'User roles must be a list of group IDs', 'data': []})
             
-            try:
-                group = Group.objects.get(id=group_id)
-            except Group.DoesNotExist:
-                return Response({"status": False, "message": "Invalid group ID", "data": []})
+            groups = []
+            for group_id in group_ids:
+                try:
+                    group = Group.objects.get(id=group_id)
+                    groups.append(group)
+                except Group.DoesNotExist:
+                    return Response({"status": False, "message": "Invalid group ID: {group_id}", "data": []})
             
             try:
                 department = Department.objects.get(id=department_id)
@@ -307,7 +310,9 @@ class CreateUserViewSet(viewsets.ModelViewSet):
             user.set_password(password)
             user.save()
 
-            user.groups.add(group)
+            # Assign user to multiple groups
+            for group in groups:
+                user.groups.add(group)
 
             # Send email with username and password
             send_mail(
@@ -596,3 +601,25 @@ class SwitchRoleViewSet(viewsets.ModelViewSet):
         serializer = GroupPermissionSerializer(group)
 
         return Response({"status": True, "message": "Permissions retrieved successfully", "data": serializer.data})
+
+
+class ListRequestUserGroupsViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = request.user  # Get the logged-in user
+            queryset = user.groups.all().order_by('name')  # Fetch only the user's groups
+            serializer = GroupSerializer(queryset, many=True)
+            data = serializer.data
+            return Response({
+                "status": True,
+                "message": "User Groups List Retrieved Successfully",
+                "data": data
+            })
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": str(e),
+                "data": []
+            })
