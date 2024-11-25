@@ -51,6 +51,7 @@ urlpatterns = [
    path('document_effective_status', DocumentEffectiveActionCreateViewSet.as_view({'post': 'create'}),name='document_effective_status'),
 
    path('draft_document', DocumentDraftStatusViewSet.as_view({'put': 'update'}),name='draft_document'),
+   path('document_review_status', DocumentReviewerActionCreateViewSet.as_view({'post': 'create'}),name='document_review_status'),
 
 
    path('UserDropdownMasterCopy', MasterCopyUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownMasterCopy'),
