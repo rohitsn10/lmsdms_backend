@@ -309,6 +309,12 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             if not select_template:
                     return Response({"status": False, "message": "Template selection is required", "data": []})
             
+            # Fetch the default status
+            try:
+                default_status = DynamicStatus.objects.get(id=1)  # Assuming status with ID 1 is the default
+            except DynamicStatus.DoesNotExist:
+                return Response({"status": False, "message": "Default status not found in the system", "data": []})
+
             # Create a new Document object
             document = Document.objects.create(
                 user=user,
@@ -319,7 +325,8 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 revision_time=revision_time,
                 document_operation=document_operation,
                 select_template_id=select_template,
-                workflow_id=workflow
+                workflow_id=workflow,
+                document_current_status=default_status
             )
 
             # If the operation is 'upload_file', handle the Word file upload
@@ -845,6 +852,9 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
                 # documentdetails_approve=documentdetails,
                 status_approve=status
             )
+            document.document_current_status = status
+            document.form_status = None
+            document.save()
 
             return Response({"status": True, "message": "Document approval action created successfully"})
 
@@ -854,6 +864,75 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Invalid status ID"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DocumentReviewerAction.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            document_id = request.data.get('document_id')
+            status_id = request.data.get('status')
+
+            # Validate required fields
+            if not document_id:
+                return Response({"status": False, "message": "Document is required"})
+            if not status_id:
+                return Response({"status": False, "message": "Status is required"})
+
+            # Fetch the document
+            try:
+                document = Document.objects.get(id=document_id)
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Document ID"})
+
+            # Fetch the status
+            try:
+                status = DynamicStatus.objects.get(id=status_id)
+            except DynamicStatus.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Status ID"})
+
+            # Check if the user is a reviewer for the document creator's department
+            # user_department = document.user.department  # Assuming a department field in the user model
+            # reviewers_in_department = CustomUser.objects.filter(
+            #     department=user_department,
+            #     groups__name="Reviewer"
+            # )
+
+            # Ensure the requesting user is among the reviewers
+            # if user not in reviewers_in_department:
+            #     return Response({"status": False, "message": "You are not authorized to review this document"})
+
+            # Create the reviewer action
+            document_reviewer_action = DocumentReviewerAction.objects.create(
+                user=user,
+                document=document,
+                status_approve=status
+            )
+
+            # Check if all reviewers in the department have approved the document
+            # approved_reviewers = DocumentReviewerAction.objects.filter(
+            #     document=document,
+            #     status_approve=status
+            # ).values_list('user', flat=True)
+
+            # all_reviewers_approved = all(reviewer.id in approved_reviewers for reviewer in reviewers_in_department)
+
+            # Update document current status only if all reviewers have approved
+            # if all_reviewers_approved:
+            document.document_current_status = status
+            document.save()
+
+            return Response({
+                "status": True,
+                "message": "Document reviewer action created successfully",
+            })
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
 
 
 class DocumentSendBackActionCreateViewSet(viewsets.ModelViewSet):

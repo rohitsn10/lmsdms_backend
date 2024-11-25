@@ -112,6 +112,12 @@ class DocumentApproveAction(models.Model):
     status_approve = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
+class DocumentReviewerAction(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
+    status_approve = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
 class DocumentSendBackAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     documentdetails_sendback = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
