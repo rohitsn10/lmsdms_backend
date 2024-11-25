@@ -22,6 +22,7 @@ urlpatterns = [
 
     path('user_group_list', ListUserGroupsViewSet.as_view({'get':'list'}), name='user_group_list'),
     path('Esignature', EsignatureViewSet.as_view({'post':'create'}), name='Esignature'),
+    path('requestuser_group_list', ListRequestUserGroupsViewSet.as_view({'get':'list'}), name='requestuser_group_list'),
 
     path('UserSwitchRole', SwitchRoleViewSet.as_view({'post':'create'}), name='UserSwitchRole'),
 
