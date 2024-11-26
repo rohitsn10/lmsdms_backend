@@ -39,7 +39,7 @@ urlpatterns = [
    path('create_status', DynamicStatusCreateViewSet.as_view({'post': 'create'}),name='create_status'),
    path('view_status', DynamicStatusListViewSet.as_view({'get':'list'}),name='view_status'),
    path('update_status/<dynamic_status_id>', DynamicStatusUpdateViewSet.as_view({'put': 'update'}),name='update_status'),
-   path('delete_status/<dynamic_status_id>', DynamicStatusDeleteViewSet.as_view({'delete':'destroy'}),name='delete_status'),
+   # path('delete_status/<dynamic_status_id>', DynamicStatusDeleteViewSet.as_view({'delete':'destroy'}),name='delete_status'),
 
    path('create_document_details', DocumentDetailsCreateViewSet.as_view({'post': 'create'}),name='create_document_details'),
    path('update_document_details/<docdetail_id>', DocumentDetailsUpdateViewSet.as_view({'put': 'update'}),name='update_document_details'),
