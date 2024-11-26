@@ -420,6 +420,36 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": 'Something went wrong', 'error': str(e)})
         
 
+# class DocumentViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     serializer_class = DocumentviewSerializer
+#     queryset = Document.objects.all().order_by('-id')
+#     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+#     search_fields = ['document_title', 'document_number', 'document_description', 'document_type__name']
+#     ordering_fields = ['document_title', 'created_at'] 
+
+#     def list(self, request):
+#         try:
+#             queryset = self.filter_queryset(self.get_queryset())
+
+#             if queryset.exists():
+#                 serializer = DocumentviewSerializer(queryset, many=True)
+#                 return Response({
+#                     "status": True,
+#                     "message": "Documents fetched successfully",
+#                     'total': queryset.count(),
+#                     'data': serializer.data
+#                 })
+#             else:
+#                 return Response({
+#                     "status": True,
+#                     "message": "No Documents found",
+#                     "total": 0,
+#                     "data": []
+#                 })
+#         except Exception as e:
+#             return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+
 class DocumentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DocumentviewSerializer
@@ -430,10 +460,19 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
     def list(self, request):
         try:
-            queryset = self.filter_queryset(self.get_queryset())
+            user = request.user 
 
+            if user.department:
+                queryset = Document.objects.filter(user__department=user.department).order_by('-id')
+            else:
+                queryset = Document.objects.none()
+
+            # Apply search and ordering filters
+            queryset = self.filter_queryset(queryset)
+
+            # Serialize and respond
             if queryset.exists():
-                serializer = DocumentviewSerializer(queryset, many=True)
+                serializer = self.serializer_class(queryset, many=True)
                 return Response({
                     "status": True,
                     "message": "Documents fetched successfully",
@@ -448,7 +487,12 @@ class DocumentViewSet(viewsets.ModelViewSet):
                     "data": []
                 })
         except Exception as e:
-            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+            return Response({
+                "status": False,
+                'message': 'Something went wrong',
+                'error': str(e)
+            })
+
         
 class DocumentDeleteViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]

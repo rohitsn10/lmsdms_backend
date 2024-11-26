@@ -52,7 +52,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id','email','first_name','last_name','phone','is_active','is_staff','is_superuser','profile_image','groups_list','user_permissions','username', 'is_reset_password', 'login_count']
+        fields = ['id','email','first_name','last_name','phone','department','is_active','is_staff','is_superuser','profile_image','groups_list','user_permissions','username', 'is_reset_password', 'login_count']
 
     def get_groups_list(self, obj):
         groups_data = [{'id': group.id, 'name': group.name} for group in obj.groups.all()]
