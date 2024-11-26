@@ -696,23 +696,23 @@ class DynamicStatusUpdateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
-class DynamicStatusDeleteViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    queryset = DynamicStatus.objects.all()
-    serializer_class = DynamicStatusSerializer
-    lookup_field = 'dynamic_status_id'  
+# class DynamicStatusDeleteViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     queryset = DynamicStatus.objects.all()
+#     serializer_class = DynamicStatusSerializer
+#     lookup_field = 'dynamic_status_id'  
 
-    def destroy(self, request, *args, **kwargs):
-        try:
-            dynamic_status_id = self.kwargs.get('dynamic_status_id')
-            dynamic_status = DynamicStatus.objects.get(id=dynamic_status_id)      
-            dynamic_status.delete()
-            return Response({"status": True, "message": "Dynamic status deleted successfully"})
+#     def destroy(self, request, *args, **kwargs):
+#         try:
+#             dynamic_status_id = self.kwargs.get('dynamic_status_id')
+#             dynamic_status = DynamicStatus.objects.get(id=dynamic_status_id)      
+#             dynamic_status.delete()
+#             return Response({"status": True, "message": "Dynamic status deleted successfully"})
 
-        except DynamicStatus.DoesNotExist:
-            return Response({"status": False, "message": "Dynamic status not found"})
-        except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+#         except DynamicStatus.DoesNotExist:
+#             return Response({"status": False, "message": "Dynamic status not found"})
+#         except Exception as e:
+#             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 class DocumentDetailsCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
