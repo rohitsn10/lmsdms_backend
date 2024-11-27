@@ -227,5 +227,12 @@ class TrainingSerializer(serializers.ModelSerializer):
         ]
 
 
+class QuizSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizSession
+        fields = ['id', 'user', 'quiz', 'current_question_index', 'started_at', 'completed_at', 'score', 'status']
 
-
+class TrainingQuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TrainingQuestions
+        fields = ['id', 'question_text', 'options', 'marks', 'question_type', 'correct_answer']

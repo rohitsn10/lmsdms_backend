@@ -111,7 +111,8 @@ class DocumentApproveAction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 class DocumentSendBackAction(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, blank=True, null=True,related_name='self_user')
+    send_back_user = models.ManyToManyField(CustomUser)
     documentdetails_sendback = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
     status_sendback = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)

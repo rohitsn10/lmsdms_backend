@@ -57,8 +57,15 @@ urlpatterns = [
     path('job_training_list', JobroleListingViewSet.as_view({'get': 'list'}), name='job_training_list'),
     path('jobrole_assign_training/<int:training_id>', TrainingAssignViewSet.as_view({'put': 'update'}), name='jobrole_assign_training'),
 
+    path('training_matrix_assign_user_and_add_data', TrainingMatrixAssignUserViewSet.as_view({'post': 'create', 'get': 'list'}), name='training_list_mapping'),
+    path('training_id_wise_training_section', TrainingIdWiseTrainingSectionViewset.as_view({'get': 'list'}), name='training_id_wise_training_section'),
+    path('training_section_wise_training_material', TrainingSectionWiseTrainingMaterialViewset.as_view({'get': 'list'}), name='training_section_wise_training_material'),
+    path('training_wise_training_matrix', TrainingWiseTrainingMatrixViewset.as_view({'get': 'list'}), name='training_wise_training_matrix'),
+
     path('job_training_list_mapping', JobroleListingapiViewSet.as_view({'get': 'list'}), name='job_training_list_mapping'),
     path('training_list_data', TrainingListingViewSet.as_view({'get': 'list'}), name='training_list_data'),
+
+    path('training_status_update/<int:training_id>', TrainingStatusUpdateViewset.as_view({'put': 'update'}), name='training_status_update'),
 
 
 ]

@@ -852,9 +852,10 @@ class DocumentSendBackActionCreateViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            user = request.user
+            user = self.request.user
             document_id = request.data.get('documentdetails_sendback')
             status_id = request.data.get('status_sendback')
+            send_back_user_ids = request.data.get('send_back_user_ids',[])
 
             if not document_id:
                 return Response({"status": False, "message": "Document details are required"})
@@ -869,7 +870,9 @@ class DocumentSendBackActionCreateViewSet(viewsets.ModelViewSet):
                 documentdetails_sendback=documentdetails_sendback,
                 status_sendback=status_sendback
             )
-
+            send_back_users = CustomUser.objects.filter(id__in=send_back_user_ids)
+            document_sendback_action.send_back_user.set(send_back_users)
+            document_sendback_action.save()
             return Response({"status": True, "message": "Document send-back action created successfully"})
 
         except DocumentDetails.DoesNotExist:
