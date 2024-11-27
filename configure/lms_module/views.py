@@ -1192,6 +1192,41 @@ class TrainingMaterialCreateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
+class TrainingIdWiseTrainingSectionViewset(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingSectionSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            training_id = request.query_params.get('training_id')
+            if not training_id:
+                return Response({"status": False, "message": "Training ID is required", "data": []})
+
+            queryset = TrainingSection.objects.filter(training=training_id)
+            serializer = TrainingSectionSerializer(queryset, many=True, context = {'request': request})
+            data = serializer.data
+            return Response({"status": True,"message": "Training section list fetched successfully","data": data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+class TrainingSectionWiseTrainingMaterialViewset(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingMaterialSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            section_id = request.query_params.get('section_id')
+            if not section_id:
+                return Response({"status": False, "message": "Section ID is required", "data": []})
+
+            queryset = TrainingMaterial.objects.filter(section=section_id)
+            serializer = TrainingMaterialSerializer(queryset, many=True, context = {'request': request})
+            data = serializer.data
+            return Response({"status": True,"message": "Training material list fetched successfully","data": data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
 
 class TrainingMaterialUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -2076,7 +2111,6 @@ class TrainingListViewSet(viewsets.ModelViewSet):
         })
 
 
-
 class TrainingMatrixAssignUserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = TrainingMatrix.objects.all()
@@ -2091,47 +2125,92 @@ class TrainingMatrixAssignUserViewSet(viewsets.ModelViewSet):
         assigned_role_id = request.data.get('assigned_role', None)
         due_reason = request.data.get('due_reason', None)
 
+        # Validate the training_create_id
         if not training_create_id:
-            return Response({"status": False,"message": "TrainingCreate ID not provided.","data": []})
+            return Response({"status": False, "message": "TrainingCreate ID not provided.", "data": []})
 
         try:
             training_create_instance = TrainingCreate.objects.get(id=training_create_id)
         except TrainingCreate.DoesNotExist:
             return Response({
-                "status": False,"message": "TrainingCreate instance not found.","data": []})
+                "status": False, "message": "TrainingCreate instance not found.", "data": []})
 
+        # Validate user_ids
         if not user_ids:
-            return Response({"status": False,"message": "User IDs not provided.","data": []})
+            return Response({"status": False, "message": "User IDs not provided.", "data": []})
 
         users = CustomUser.objects.filter(id__in=user_ids)
         if users.count() != len(user_ids):
-            return Response({"status": False,"message": "Invalid user IDs.","data": []})
+            return Response({"status": False, "message": "Invalid user IDs.", "data": []})
 
+        # Validate assigned_role_id if provided
         assigned_role = None
         if assigned_role_id:
             try:
                 assigned_role = JobRole.objects.get(id=assigned_role_id)
             except JobRole.DoesNotExist:
                 return Response({
-                    "status": False,"message": "Assigned role not found.","data": []})
+                    "status": False, "message": "Assigned role not found.", "data": []})
 
-        training_matrix = TrainingMatrix.objects.create(
-            training=training_create_instance,
-            assigned_by=user,
-            training_duration=training_duration,
-            evaluation_status=evaluation_status,
-            assigned_role=assigned_role,
-            due_reason=due_reason
-        )
+        # Check if the TrainingMatrix already exists
+        training_matrix = TrainingMatrix.objects.filter(training=training_create_instance).first()
 
-        training_matrix.assigned_user.set(users)
-        training_matrix.save()
+        if training_matrix:
+            # Update existing TrainingMatrix with new data
+            training_matrix.assigned_user.set(users)  # Update the assigned users
+            training_matrix.training_duration = training_duration
+            training_matrix.evaluation_status = evaluation_status
+            training_matrix.assigned_role = assigned_role
+            training_matrix.due_reason = due_reason
+            training_matrix.save()
 
+            message = "Training matrix updated successfully."
+        else:
+            # Create new TrainingMatrix if not exists
+            training_matrix = TrainingMatrix.objects.create(
+                training=training_create_instance,
+                assigned_by=user,
+                training_duration=training_duration,
+                evaluation_status=evaluation_status,
+                assigned_role=assigned_role,
+                due_reason=due_reason
+            )
+            training_matrix.assigned_user.set(users)
+            training_matrix.save()
+
+            message = "Training matrix created or users assigned successfully."
+
+        # Serialize and return the response
         serializer = TrainingMatrixAssignUserSerializer(training_matrix)
+        return Response({"status": True, "message": message, "data": serializer.data})
 
-        return Response({"status": True,"message": "Training matrix created and users assigned successfully.","data": serializer.data})
 
+    def list(self, request, *args, **kwargs):
+        training_matrix = TrainingMatrix.objects.all()
+        serializer = TrainingMatrixAssignUserSerializer(training_matrix, many=True)
+        data = serializer.data
+        return Response({"status": True, "message": "Training matrix data fetched successfully", "data": data})
     
+
+class TrainingWiseTrainingMatrixViewset(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingMatrixAssignUserSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            training_id = request.query_params.get('training_id')
+            if not training_id:
+                return Response({"status": False, "message": "Training ID not provided.", "data": []})
+
+            training_matrix = TrainingMatrix.objects.filter(training_id=training_id)
+            serializer = TrainingMatrixAssignUserSerializer(training_matrix, many=True)
+            data = serializer.data
+
+            return Response({"status": True, "message": "Training matrix data fetched successfully", "data": data})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": []})
+    
+
 class JobroleListingViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = GetJobRoleSerializer
@@ -2251,3 +2330,185 @@ class TrainingListingViewSet(viewsets.ModelViewSet):
         })
 
 
+class MaterialStartStopReadingView(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        material_id = request.data.get('material_id')
+        action = request.data.get('action')  # "start_reading" or "stop_reading"
+        start_time = request.data.get('start_time', None)
+        end_time = request.data.get('end_time', None)
+        # Fetch the material and user
+        user = self.request.user
+        try:
+            material = TrainingMaterial.objects.get(id=material_id)
+        except TrainingMaterial.DoesNotExist:
+            return Response({"status": False, "message": "Material not found.", "data": []})
+        
+        # Check if the material is part of the current training
+        if material not in material.section.all():
+            return Response({"status": False, "message": "Material is not part of the selected training section.", "data": []})
+
+        if action == "start_reading":
+            # Start reading the material
+            session = MaterialReadingTime.objects.create(
+                user=user,
+                material=material,
+                start_time=start_time
+            )
+            return Response({
+                "status": True,
+                "message": "Started reading the material.",
+                "data": {"session_id": session.id, "material": material.material_title}
+            })
+
+        elif action == "stop_reading":
+            # Stop reading the material
+            session = MaterialReadingTime.objects.filter(user=user, material=material, end_time__isnull=True).first()
+            if not session:
+                return Response({"status": False, "message": "Reading session not found."}, status=404)
+
+            session.end_time = end_time
+            session.time_spent = session.end_time - session.start_time
+            session.save()
+
+            return Response({
+                "status": True,
+                "message": "Stopped reading the material.",
+                "data": {"session_id": session.id, "material": material.material_title, "time_spent": session.time_spent}
+            })
+    
+
+class TrainingStatusUpdateViewset(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = TrainingCreate.objects.all()
+    lookup_field = 'training_id'
+
+    def update(self, request, *args, **kwargs):
+        training_id = self.kwargs.get('training_id')
+        action = request.data.get('action')
+        start_time = request.data.get('start_time')
+        end_time = request.data.get('end_time')
+
+        # Fetch the training instance
+        try:
+            training = TrainingCreate.objects.get(id=training_id)
+        except TrainingCreate.DoesNotExist:
+            return Response({"status": False, "message": "Training not found.","data":[]})
+
+        if action == "start_training":
+            if training.training_status == "in_progress":
+                return Response({"status": False, "message": "Training already in progress.","data":[]})
+
+            training.training_status = "in_progress"
+            training.start_time = start_time
+            training.save()
+
+            return Response({
+                "status": True,
+                "message": "Training started.",
+                "data": {"training_id": training.id, "training_status": training.training_status}
+            })
+
+        elif action == "stop_training":
+            if training.training_status == "Completed":
+                return Response({"status": False, "message": "Training already completed.","data": {"training_id": training.id, "training_status": training.training_status}}, status=400)
+
+            # Check if all materials are read
+            all_materials_read = not MaterialReadingTime.objects.filter(material__section__training=training, end_time__isnull=True).exists()
+            if all_materials_read:
+                training.training_status = "Completed"
+                training.end_time = end_time
+                training.save()
+
+                return Response({
+                    "status": True,
+                    "message": "Training completed.",
+                    "data": {"training_id": training.id, "training_status": training.training_status}
+                })
+            else:
+                return Response({
+                    "status": False,
+                    "message": "Not all materials have been read yet.",
+                    "data":[]
+                })
+
+        return Response({"status": False, "message": "Invalid action.","data": []})
+
+
+
+
+class StartExam(viewsets.ModelViewSet):
+    queryset = QuizSession.objects.all()
+    serializer_class = QuizSessionSerializer
+
+    def create(self, request, *args, **kwargs):
+        # Fetch the quiz
+        quiz_id = request.data.get('quiz_id')
+        quiz = TrainingQuiz.objects.get(id=quiz_id)
+        user = self.request.user  # Get the authenticated user
+
+        # Create the QuizSession
+        quiz_session = QuizSession.objects.create(user=user, quiz=quiz)
+
+        return Response({
+            "status": True,
+            "message": "Exam started successfully.",
+            "quiz_session_id": quiz_session.id})
+
+
+class GetNextQuestion(viewsets.ModelViewSet):
+    queryset = QuizSession.objects.all()
+    serializer_class = QuizSessionSerializer
+
+    def list(self, request, *args, **kwargs):
+        # Get the QuizSession instance
+        session_id = self.kwargs.get('session_id')
+        quiz_session = QuizSession.objects.get(id=session_id)
+        quiz = quiz_session.quiz
+
+        # Get the questions for this quiz and fetch the next question
+        questions = quiz.questions.all()  # Using related_name `questions` on the Quiz model
+
+        # Check if there are more questions to show
+        if quiz_session.current_question_index < len(questions):
+            current_question = questions[quiz_session.current_question_index]
+
+            # Prepare the data for the next question
+            question_data = TrainingQuestionSerializer(current_question).data
+
+            return Response({"status": True,"message": "Next question fetched successfully.","data": question_data})
+        else:
+            return Response({"status": True,"message": "All questions completed.","data": []})
+
+    def update(self, request, *args, **kwargs):
+        # Get the QuizSession instance
+        session_id = self.kwargs.get('session_id')
+        quiz_session = QuizSession.objects.get(id=session_id)
+
+        question_id = request.data.get('question_id')
+        user_answer = request.data.get('user_answer')
+
+        # Get the current question
+        current_question = TrainingQuestions.objects.get(id=question_id)
+
+        # Check the answer
+        correct_answer = current_question.correct_answer
+        is_correct = (user_answer == correct_answer)
+
+        # Update the score if the answer is correct
+        if is_correct:
+            quiz_session.score += current_question.marks  # Increment score by the question's marks
+
+        # Increment the current_question_index to move to the next question
+        quiz_session.current_question_index += 1
+        quiz_session.save()
+
+        # Return the response
+        return Response({
+            "status": True,
+            "message": "Answer submitted successfully.",
+            "is_correct": is_correct,
+            "score": quiz_session.score,
+            "next_question_index": quiz_session.current_question_index
+        })

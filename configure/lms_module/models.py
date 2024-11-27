@@ -84,7 +84,8 @@ class TrainingCreate(models.Model):
     job_roles = models.ManyToManyField(JobRole)
     training_created_at = models.DateTimeField(auto_now_add=True)
     training_updated_at = models.DateTimeField(auto_now=True)
-
+    start_time = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(null=True, blank=True)
 
 class TrainingSection(models.Model):
     training = models.ForeignKey(TrainingCreate, related_name='sections', on_delete=models.CASCADE)
@@ -121,11 +122,18 @@ class TrainingMaterial(models.Model):
     updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='training_materials_updated', null=True, blank=True)
     material_created_at = models.DateTimeField(auto_now_add=True)
     material_updated_at = models.DateTimeField(auto_now=True)
+    reading_start_time = models.DateTimeField(null=True, blank=True)
+    reading_end_time = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.material_title
 
-
+class MaterialReadingTime(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    material = models.ForeignKey(TrainingMaterial, on_delete=models.CASCADE)
+    start_time = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+    time_spent = models.DurationField(null=True, blank=True)
 
 class TrainingQuestions(models.Model):
     QUESTION_TYPE_CHOICES = (
@@ -261,3 +269,12 @@ class TrainingMatrix(models.Model):
     due_reason = models.TextField(null=True, blank=True)
     
     
+
+class QuizSession(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    quiz = models.ForeignKey(TrainingQuiz, on_delete=models.CASCADE)
+    current_question_index = models.IntegerField(default=0)  # To keep track of the question index
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    score = models.PositiveIntegerField(default=0)  # To track score if needed
+    status = models.BooleanField(default=False)  # To track if quiz is completed or not
