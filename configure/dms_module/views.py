@@ -175,13 +175,18 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
                 return Response({'status': False, 'message': 'Issue type is required'})
             if not reason_for_print:
                 return Response({'status': False, 'message': 'Reason is required'})
+            
+            try:
+                sop_document = Document.objects.get(id=sop_document_id)
+            except Document.DoesNotExist:
+                return Response({'status': False, 'message': 'Invalid document id'})
 
             printrequest_obj = PrintRequest.objects.create(
                 user = user,
                 no_of_print=no_of_print,
                 issue_type=issue_type,
                 reason_for_print=reason_for_print,
-                sop_document_id = sop_document_id
+                sop_document_id = sop_document
             )
             return Response({'status': True, 'message': 'Print requested successfully'})
         except Exception as e:
@@ -304,6 +309,12 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             if not select_template:
                     return Response({"status": False, "message": "Template selection is required", "data": []})
             
+            # Fetch the default status
+            try:
+                default_status = DynamicStatus.objects.get(id=1)  # Assuming status with ID 1 is the default
+            except DynamicStatus.DoesNotExist:
+                return Response({"status": False, "message": "Default status not found in the system", "data": []})
+
             # Create a new Document object
             document = Document.objects.create(
                 user=user,
@@ -314,7 +325,8 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 revision_time=revision_time,
                 document_operation=document_operation,
                 select_template_id=select_template,
-                workflow_id=workflow
+                workflow_id=workflow,
+                document_current_status=default_status
             )
 
             # If the operation is 'upload_file', handle the Word file upload
@@ -408,6 +420,36 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": 'Something went wrong', 'error': str(e)})
         
 
+# class DocumentViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     serializer_class = DocumentviewSerializer
+#     queryset = Document.objects.all().order_by('-id')
+#     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+#     search_fields = ['document_title', 'document_number', 'document_description', 'document_type__name']
+#     ordering_fields = ['document_title', 'created_at'] 
+
+#     def list(self, request):
+#         try:
+#             queryset = self.filter_queryset(self.get_queryset())
+
+#             if queryset.exists():
+#                 serializer = DocumentviewSerializer(queryset, many=True)
+#                 return Response({
+#                     "status": True,
+#                     "message": "Documents fetched successfully",
+#                     'total': queryset.count(),
+#                     'data': serializer.data
+#                 })
+#             else:
+#                 return Response({
+#                     "status": True,
+#                     "message": "No Documents found",
+#                     "total": 0,
+#                     "data": []
+#                 })
+#         except Exception as e:
+#             return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+
 class DocumentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DocumentviewSerializer
@@ -418,10 +460,19 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
     def list(self, request):
         try:
-            queryset = self.filter_queryset(self.get_queryset())
+            user = request.user 
 
+            if user.department:
+                queryset = Document.objects.filter(user__department=user.department).order_by('-id')
+            else:
+                queryset = Document.objects.none()
+
+            # Apply search and ordering filters
+            queryset = self.filter_queryset(queryset)
+
+            # Serialize and respond
             if queryset.exists():
-                serializer = DocumentviewSerializer(queryset, many=True)
+                serializer = self.serializer_class(queryset, many=True)
                 return Response({
                     "status": True,
                     "message": "Documents fetched successfully",
@@ -436,7 +487,12 @@ class DocumentViewSet(viewsets.ModelViewSet):
                     "data": []
                 })
         except Exception as e:
-            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+            return Response({
+                "status": False,
+                'message': 'Something went wrong',
+                'error': str(e)
+            })
+
         
 class DocumentDeleteViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -684,23 +740,23 @@ class DynamicStatusUpdateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
-class DynamicStatusDeleteViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    queryset = DynamicStatus.objects.all()
-    serializer_class = DynamicStatusSerializer
-    lookup_field = 'dynamic_status_id'  
+# class DynamicStatusDeleteViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     queryset = DynamicStatus.objects.all()
+#     serializer_class = DynamicStatusSerializer
+#     lookup_field = 'dynamic_status_id'  
 
-    def destroy(self, request, *args, **kwargs):
-        try:
-            dynamic_status_id = self.kwargs.get('dynamic_status_id')
-            dynamic_status = DynamicStatus.objects.get(id=dynamic_status_id)      
-            dynamic_status.delete()
-            return Response({"status": True, "message": "Dynamic status deleted successfully"})
+#     def destroy(self, request, *args, **kwargs):
+#         try:
+#             dynamic_status_id = self.kwargs.get('dynamic_status_id')
+#             dynamic_status = DynamicStatus.objects.get(id=dynamic_status_id)      
+#             dynamic_status.delete()
+#             return Response({"status": True, "message": "Dynamic status deleted successfully"})
 
-        except DynamicStatus.DoesNotExist:
-            return Response({"status": False, "message": "Dynamic status not found"})
-        except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+#         except DynamicStatus.DoesNotExist:
+#             return Response({"status": False, "message": "Dynamic status not found"})
+#         except Exception as e:
+#             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 class DocumentDetailsCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -812,29 +868,38 @@ class DocumentDetailsViewSet(viewsets.ModelViewSet):
 
 class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    queryset = DocumentApproveAction.objects.all()
+    queryset = DocumentAuthorApproveAction.objects.all()
 
     def create(self, request, *args, **kwargs):
         try:
             user = request.user
-            document_id = request.data.get('documentdetails')
+            document = request.data.get('document_id')
+            # document_id = request.data.get('documentdetails_id')
             status_id = request.data.get('status')
 
             # Ensure required fields are provided
-            if not document_id:
-                return Response({"status": False, "message": "Document details are required"})
+            # if not document_id:
+            #     return Response({"status": False, "message": "Document details are required"})
+            if not document:
+                return Response({"status": False, "message": "Document are required"})
             if not status_id:
                 return Response({"status": False, "message": "Status is required"})
 
             # Fetch related document and status objects
-            documentdetails = DocumentDetails.objects.get(id=document_id)
+            document = Document.objects.get(id=document)
+            # documentdetails = DocumentDetails.objects.get(id=document_id)
             status = DynamicStatus.objects.get(id=status_id)
 
-            document_approve_action = DocumentApproveAction.objects.create(
+            document_approve_action = DocumentAuthorApproveAction.objects.create(
                 user=user,
-                documentdetails_approve=documentdetails,
+                document=document,
+                # documentdetails_approve=documentdetails,
                 status_approve=status
             )
+            document.document_current_status = status
+            document.form_status = None
+            document.assigned_to = None
+            document.save()
 
             return Response({"status": True, "message": "Document approval action created successfully"})
 
@@ -846,41 +911,231 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
-class DocumentSendBackActionCreateViewSet(viewsets.ModelViewSet):
+class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    queryset = DocumentSendBackAction.objects.all()
+    queryset = DocumentReviewerAction.objects.all()
 
     def create(self, request, *args, **kwargs):
         try:
             user = self.request.user
-            document_id = request.data.get('documentdetails_sendback')
-            status_id = request.data.get('status_sendback')
-            send_back_user_ids = request.data.get('send_back_user_ids',[])
+            document_id = request.data.get('document_id')
+            status_id = request.data.get('status')
 
+            # Validate required fields
             if not document_id:
-                return Response({"status": False, "message": "Document details are required"})
+                return Response({"status": False, "message": "Document is required"})
             if not status_id:
                 return Response({"status": False, "message": "Status is required"})
 
-            documentdetails_sendback = DocumentDetails.objects.get(id=document_id)
-            status_sendback = DynamicStatus.objects.get(id=status_id)
+            # Fetch the document
+            try:
+                document = Document.objects.get(id=document_id)
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Document ID"})
 
-            document_sendback_action = DocumentSendBackAction.objects.create(
+            # Fetch the status
+            try:
+                status = DynamicStatus.objects.get(id=status_id)
+            except DynamicStatus.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Status ID"})
+
+            # Check if the user is a reviewer for the document creator's department
+            # user_department = document.user.department  # Assuming a department field in the user model
+            # reviewers_in_department = CustomUser.objects.filter(
+            #     department=user_department,
+            #     groups__name="Reviewer"
+            # )
+
+            # Ensure the requesting user is among the reviewers
+            # if user not in reviewers_in_department:
+            #     return Response({"status": False, "message": "You are not authorized to review this document"})
+
+            # Create the reviewer action
+            document_reviewer_action = DocumentReviewerAction.objects.create(
                 user=user,
-                documentdetails_sendback=documentdetails_sendback,
-                status_sendback=status_sendback
+                document=document,
+                status_approve=status
             )
-            send_back_users = CustomUser.objects.filter(id__in=send_back_user_ids)
-            document_sendback_action.send_back_user.set(send_back_users)
-            document_sendback_action.save()
-            return Response({"status": True, "message": "Document send-back action created successfully"})
 
-        except DocumentDetails.DoesNotExist:
-            return Response({"status": False, "message": "Invalid document details ID"})
-        except DynamicStatus.DoesNotExist:
-            return Response({"status": False, "message": "Invalid status ID"})
+            # Check if all reviewers in the department have approved the document
+            # approved_reviewers = DocumentReviewerAction.objects.filter(
+            #     document=document,
+            #     status_approve=status
+            # ).values_list('user', flat=True)
+
+            # all_reviewers_approved = all(reviewer.id in approved_reviewers for reviewer in reviewers_in_department)
+
+            # Update document current status only if all reviewers have approved
+            # if all_reviewers_approved:
+            document.document_current_status = status
+            document.assigned_to = None
+
+            document.save()
+
+            return Response({
+                "status": True,
+                "message": "Document reviewer action created successfully",
+            })
+
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+class DocumentApproverActionCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DocumentApproverAction.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            document_id = request.data.get('document_id')
+            status_id = request.data.get('status')
+
+            # Validate required fields
+            if not document_id:
+                return Response({"status": False, "message": "Document is required"})
+            if not status_id:
+                return Response({"status": False, "message": "Status is required"})
+
+            # Fetch the document
+            try:
+                document = Document.objects.get(id=document_id)
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Document ID"})
+
+            # Fetch the status
+            try:
+                status = DynamicStatus.objects.get(id=status_id)
+            except DynamicStatus.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Status ID"})
+
+           
+            # Create the reviewer action
+            document_approver_action = DocumentApproverAction.objects.create(
+                user=user,
+                document=document,
+                status_approve=status
+            )
+
+            # Update document current status only if all reviewers have approved
+            # if all_reviewers_approved:
+            document.document_current_status = status
+            document.assigned_to = None
+            document.save()
+
+            return Response({
+                "status": True,
+                "message": "Document approver action created successfully",
+            })
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DocumentDocAdminAction.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            document_id = request.data.get('document_id')
+            status_id = request.data.get('status')
+
+            # Validate required fields
+            if not document_id:
+                return Response({"status": False, "message": "Document is required"})
+            if not status_id:
+                return Response({"status": False, "message": "Status is required"})
+
+            # Fetch the document
+            try:
+                document = Document.objects.get(id=document_id)
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Document ID"})
+
+            # Fetch the status
+            try:
+                status = DynamicStatus.objects.get(id=status_id)
+            except DynamicStatus.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Status ID"})
+
+           
+            # Create the reviewer action
+            document_docAdmin_action = DocumentDocAdminAction.objects.create(
+                user=user,
+                document=document,
+                status_approve=status
+            )
+
+            document.document_current_status = status
+            document.save()
+
+            return Response({
+                "status": True,
+                "message": "Document Doc Admin action created successfully",
+            })
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            document_id = request.data.get('document_id')
+            assigned_to_id = request.data.get('assigned_to')
+            status_id = request.data.get('status_sendback')
+
+            # Validate required fields
+            if not document_id or not assigned_to_id or not status_id:
+                return Response({
+                    "status": False,
+                    "message": "Document ID, Assigned User ID, and Status ID are required"
+                })
+
+            # Fetch the document
+            try:
+                document = Document.objects.get(id=document_id)
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Document ID"})
+
+            # Fetch the assigned user
+            try:
+                assigned_to = CustomUser.objects.get(id=assigned_to_id)
+            except CustomUser.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Assigned User ID"})
+
+            # Fetch the status
+            try:
+                status = DynamicStatus.objects.get(id=status_id)
+            except DynamicStatus.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Status ID"})
+
+            # Log the send-back action
+            send_back_action = DocumentSendBackAction.objects.create(
+                user=user,
+                document=document,
+                status_sendback=status,
+            )
+
+            # Update the document's assigned user and reason
+            document.assigned_to = assigned_to
+            document.document_current_status = status
+            document.save()
+
+            return Response({
+                "status": True,
+                "message": "Document sent back successfully",
+            })
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
 
 
 class DocumentReleaseActionCreateViewSet(viewsets.ModelViewSet):
@@ -1190,3 +1445,40 @@ class DocumentDetailViewSet(viewsets.ViewSet):
             })
         except Document.DoesNotExist:
             return Response({"status": False, "message": "Document not found"})
+        
+class DocumentDraftStatusViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Document.objects.all()
+
+    def update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            document_id = request.data.get('document_id')
+            status_id = request.data.get('status_id')
+
+            # Ensure required fields are provided
+            if not document_id:
+                return Response({"status": False, "message": "Document ID is required"})
+            if not status_id:
+                return Response({"status": False, "message": "Status ID is required"})
+
+            # Fetch related document and status objects
+            try:
+                document = Document.objects.get(id=document_id)
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Document ID"})
+
+            try:
+                status = DynamicStatus.objects.get(id=status_id)
+            except DynamicStatus.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Status ID"})
+
+            # Update the fields in the Document table
+            document.document_current_status = status
+            document.form_status = "save_draft"
+            document.save()
+
+            return Response({"status": True, "message": "Document Drafted successfully"})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})

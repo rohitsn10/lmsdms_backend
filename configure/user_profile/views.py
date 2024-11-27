@@ -26,6 +26,8 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
 import random
 import ipdb
+from lms_module.models import Department
+
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -38,8 +40,8 @@ class GroupIdWisePermissionListAPIView(APIView):
     # filterset_class = PermissionFilter
    
     def get(self, request):
-        if not request.user.has_perm('auth.view_permission'):
-            return Response({'status': False, 'message': "You don't have permission to perform this action"})
+        # if not request.user.has_perm('auth.view_permission'):
+        #     return Response({'status': False, 'message': "You don't have permission to perform this action"})
 
         group_id = request.query_params.get('group_id')
         user = request.user
@@ -101,8 +103,8 @@ class PermissionListAPIView(APIView):
 
     def get(self, request):
         try:
-            if not request.user.has_perm('auth.view_permission'):
-                return Response({'status': False, 'message': "You don't have permission to perform this action"})
+            # if not request.user.has_perm('auth.view_permission'):
+            #     return Response({'status': False, 'message': "You don't have permission to perform this action"})
 
             user = request.user
 
@@ -269,6 +271,7 @@ class CreateUserViewSet(viewsets.ModelViewSet):
             last_name = request.data.get('last_name')
             phone = request.data.get('phone')
             department_id = request.data.get('department_id')
+            group_ids  = request.data.get('user_role')
 
             
             if not email:
@@ -277,6 +280,21 @@ class CreateUserViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, 'message': 'Username is required', 'data': []})
             if not department_id:
                 return Response({"status": False, 'message': 'department is required', 'data': []})
+            if not group_ids or not isinstance(group_ids, list):  # Check if it's a list
+                return Response({"status": False, 'message': 'User roles must be a list of group IDs', 'data': []})
+            
+            groups = []
+            for group_id in group_ids:
+                try:
+                    group = Group.objects.get(id=group_id)
+                    groups.append(group)
+                except Group.DoesNotExist:
+                    return Response({"status": False, "message": "Invalid group ID: {group_id}", "data": []})
+            
+            try:
+                department = Department.objects.get(id=department_id)
+            except Department.DoesNotExist:
+                return Response({"status": False, "message": "Invalid department ID", "data": []})
 
             # Use the imported function to generate a random password
             password = generate_random_password()
@@ -287,10 +305,14 @@ class CreateUserViewSet(viewsets.ModelViewSet):
                 first_name=first_name,
                 last_name=last_name,
                 phone=phone,
-                department = department_id
+                department = department
             )
             user.set_password(password)
             user.save()
+
+            # Assign user to multiple groups
+            for group in groups:
+                user.groups.add(group)
 
             # Send email with username and password
             send_mail(
@@ -579,3 +601,25 @@ class SwitchRoleViewSet(viewsets.ModelViewSet):
         serializer = GroupPermissionSerializer(group)
 
         return Response({"status": True, "message": "Permissions retrieved successfully", "data": serializer.data})
+
+
+class ListRequestUserGroupsViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = request.user  # Get the logged-in user
+            queryset = user.groups.all().order_by('name')  # Fetch only the user's groups
+            serializer = GroupSerializer(queryset, many=True)
+            data = serializer.data
+            return Response({
+                "status": True,
+                "message": "User Groups List Retrieved Successfully",
+                "data": data
+            })
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": str(e),
+                "data": []
+            })

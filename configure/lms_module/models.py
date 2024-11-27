@@ -53,12 +53,12 @@ class AssessmentQuestion(models.Model):
 
 class Methodology(models.Model):
     methodology_name = models.TextField()
-    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,blank=True, null=True)
     methodology_created_at = models.DateTimeField(auto_now_add=True)
 
 class TrainingType(models.Model):
     training_type_name = models.TextField()
-    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,blank=True, null=True)
     training_type_created_at = models.DateTimeField(auto_now_add=True)
 
 
@@ -80,7 +80,7 @@ class TrainingCreate(models.Model):
     refresher_time = models.DateField(null=True,blank=True)
     training_document = models.FileField(upload_to='training_documents/')
     methodology = models.ManyToManyField(Methodology)
-    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,blank=True, null=True)
     job_roles = models.ManyToManyField(JobRole)
     training_created_at = models.DateTimeField(auto_now_add=True)
     training_updated_at = models.DateTimeField(auto_now=True)
@@ -212,7 +212,7 @@ class InductionDesignation(models.Model):
     designation_code = models.CharField(max_length=50)
     induction = models.ForeignKey(Induction, on_delete=models.CASCADE, related_name='induction_designations')
     created_date = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,blank=True, null=True)
 
     def __str__(self):
         return self.induction_designation_name    
@@ -236,7 +236,7 @@ class ClassroomTraining(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     department_or_employee = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name='classroom_trainings'
+        CustomUser, on_delete=models.CASCADE, related_name='classroom_trainings',blank=True, null=True
     )
     document = models.FileField(upload_to='classroom_trainings/', null=True, blank=True)
     sop = models.CharField(max_length=255)  # Assuming SOP refers to a string value
@@ -264,8 +264,8 @@ class TrainingMatrix(models.Model):
     training_duration = models.DateTimeField(null=True, blank=True)
     evaluation_status = models.CharField(max_length=255, choices=EVALUATION_STATUS_CHOICES, null=True, blank=True)
     assigned_user = models.ManyToManyField(CustomUser)
-    assigned_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True, related_name='assigned_by')
-    assigned_role = models.ForeignKey(JobRole, on_delete=models.CASCADE, null=True, blank=True)
+    assigned_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True,related_name='assigned_by_training_matrices')
+    assigned_role = models.ForeignKey(JobRole, on_delete=models.CASCADE, null=True, blank=True,related_name='assigned_user_training_matrices')
     due_reason = models.TextField(null=True, blank=True)
     
     

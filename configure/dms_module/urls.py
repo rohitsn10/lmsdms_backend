@@ -15,7 +15,9 @@ urlpatterns = [
    path('create_get_workflow', WorkFlowViewSet.as_view({'post': 'create','get':'list'}),name='create_get_workflow'),
    path('update_delete_workflow/<int:workflow_id>',WorkFlowUpdateSet.as_view({'put': 'update','delete':'destroy'}),name='update_delete_workflow'),
 
-   path('print_request', PrintRequestViewSet.as_view({'post': 'create','get':'list'}), name='print_request'),
+   path('print_request', PrintRequestViewSet.as_view({'post': 'create'}), name='print_request'),
+   path('get_print_request', PrintRequestViewSet.as_view({'get':'list'}), name='get_print_request'),
+
    path('print_approvals', PrintApprovalViewSet.as_view({'post': 'create'}), name='print_approvals'),
    path('update_print_request/<int:print_request_id>', PrintRequestUpdateViewSet.as_view({'put': 'update'}), name='update_print_request'),
   
@@ -37,16 +39,22 @@ urlpatterns = [
    path('create_status', DynamicStatusCreateViewSet.as_view({'post': 'create'}),name='create_status'),
    path('view_status', DynamicStatusListViewSet.as_view({'get':'list'}),name='view_status'),
    path('update_status/<dynamic_status_id>', DynamicStatusUpdateViewSet.as_view({'put': 'update'}),name='update_status'),
-   path('delete_status/<dynamic_status_id>', DynamicStatusDeleteViewSet.as_view({'delete':'destroy'}),name='delete_status'),
+   # path('delete_status/<dynamic_status_id>', DynamicStatusDeleteViewSet.as_view({'delete':'destroy'}),name='delete_status'),
 
    path('create_document_details', DocumentDetailsCreateViewSet.as_view({'post': 'create'}),name='create_document_details'),
    path('update_document_details/<docdetail_id>', DocumentDetailsUpdateViewSet.as_view({'put': 'update'}),name='update_document_details'),
    path('view_document_details', DocumentDetailsViewSet.as_view({'get':'list'}),name='view_document_details'),
 
-   path('document_approve_status', DocumentApproveActionCreateViewSet.as_view({'post': 'create'}),name='document_approve_status'),
    path('document_send_back_status', DocumentSendBackActionCreateViewSet.as_view({'post': 'create'}),name='document_send_back_status'),
    path('document_release_status', DocumentReleaseActionCreateViewSet.as_view({'post': 'create'}),name='document_release_status'),
    path('document_effective_status', DocumentEffectiveActionCreateViewSet.as_view({'post': 'create'}),name='document_effective_status'),
+
+   path('document_approve_status', DocumentApproveActionCreateViewSet.as_view({'post': 'create'}),name='document_approve_status'),
+   path('draft_document', DocumentDraftStatusViewSet.as_view({'put': 'update'}),name='draft_document'),
+   path('document_review_status', DocumentReviewerActionCreateViewSet.as_view({'post': 'create'}),name='document_review_status'),
+   path('document_approver_status', DocumentApproverActionCreateViewSet.as_view({'post': 'create'}),name='document_approver_status'),
+   path('document_docadmin_status', DocumentDocAdminActionCreateViewSet.as_view({'post': 'create'}),name='document_docadmin_status'),
+
 
    path('UserDropdownMasterCopy', MasterCopyUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownMasterCopy'),
    path('UserDropdownOtherUser', OtherUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownOtherUser'),

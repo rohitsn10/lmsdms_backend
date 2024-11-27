@@ -19,7 +19,7 @@ class DocumentType(models.Model):
 class PrintRequest(models.Model):
 
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='print_requests') 
-    sop_document_id = models.TextField(blank=True, null=True)  
+    sop_document_id = models.ForeignKey("Document", on_delete=models.CASCADE,blank=True, null=True, related_name='print_requests')  # Updated
     no_of_print = models.IntegerField()  
     issue_type = models.TextField(blank=True, null=True)  
     reason_for_print = models.TextField(blank=True, null=True) 
@@ -61,8 +61,10 @@ class Document(models.Model):
     document_description = models.TextField(blank=True, null=True)  
     revision_time = models.CharField(max_length=50, blank=True, null=True)  
     document_operation = models.TextField(blank=True, null=True)  
-    document_current_status = models.TextField(blank=True, null=True)
-    select_template = models.ForeignKey(TemplateModel, on_delete=models.CASCADE, blank=True, null=True) 
+    form_status = models.TextField(blank=True, null=True)
+    document_current_status = models.ForeignKey('DynamicStatus', on_delete=models.CASCADE,blank=True, null=True)
+    select_template = models.ForeignKey(TemplateModel, on_delete=models.CASCADE, blank=True, null=True)
+    assigned_to = models.ForeignKey(CustomUser, related_name="assigned_documents", on_delete=models.SET_NULL, blank=True, null=True)  # To track the user to whom the document is currently assigned 
     workflow = models.ForeignKey(WorkFlowModel, on_delete=models.CASCADE)  
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True) 
@@ -104,16 +106,34 @@ class DocumentComments(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
-class DocumentApproveAction(models.Model):
+class DocumentAuthorApproveAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    documentdetails_approve = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
+    # documentdetails_approve = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    status_approve = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class DocumentReviewerAction(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
+    status_approve = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class DocumentApproverAction(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
+    status_approve = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class DocumentDocAdminAction(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     status_approve = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
 class DocumentSendBackAction(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, blank=True, null=True,related_name='self_user')
-    send_back_user = models.ManyToManyField(CustomUser)
-    documentdetails_sendback = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     status_sendback = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
