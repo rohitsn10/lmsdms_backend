@@ -6,7 +6,7 @@ from rest_framework.pagination import PageNumberPagination
 from .serializers import *
 from rest_framework import permissions
 from lms_module.models import Department
-
+from user_profile.function_call import *
 class CustomPagination(PageNumberPagination):
     page_size = 10  # Number of items per page
     page_size_query_param = 'page_size'  # Allow users to set page size
@@ -298,7 +298,7 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             document_operation = request.data.get('document_operation', '')
             select_template = request.data.get('select_template')
             workflow = request.data.get('workflow')
-            
+            document_current_status_id = request.data.get('document_current_status_id')
             # Validation for required fields
             if not document_title:
                 return Response({"status": False, "message": "Document title is required", "data": []})
@@ -311,7 +311,7 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             
             # Fetch the default status
             try:
-                default_status = DynamicStatus.objects.get(id=1)  # Assuming status with ID 1 is the default
+                default_status = DynamicStatus.objects.get(id=document_current_status_id)  # Assuming status with ID 1 is the default
             except DynamicStatus.DoesNotExist:
                 return Response({"status": False, "message": "Default status not found in the system", "data": []})
 
@@ -326,7 +326,14 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 document_operation=document_operation,
                 select_template_id=select_template,
                 workflow_id=workflow,
-                document_current_status=default_status
+                document_current_status=default_status,
+                version="1.0"
+            )
+            document.save()
+            DocumentVersion.objects.create(
+                document=document,
+                version_number=document.version,
+                updated_by=user,
             )
 
             # If the operation is 'upload_file', handle the Word file upload
@@ -410,7 +417,10 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
                 document.document_operation = document_operation
             if workflow != '':
                 document.workflow = workflow
-
+            version = document.version
+            new_version = increment_version(version)
+            document.version = new_version
+            document.save()
             # Save the updated document
             document.save()
 

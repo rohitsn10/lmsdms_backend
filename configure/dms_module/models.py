@@ -67,7 +67,8 @@ class Document(models.Model):
     assigned_to = models.ForeignKey(CustomUser, related_name="assigned_documents", on_delete=models.SET_NULL, blank=True, null=True)  # To track the user to whom the document is currently assigned 
     workflow = models.ForeignKey(WorkFlowModel, on_delete=models.CASCADE)  
     created_at = models.DateTimeField(auto_now_add=True)  
-    updated_at = models.DateTimeField(auto_now=True) 
+    updated_at = models.DateTimeField(auto_now=True)
+    version = models.CharField(max_length=10, default="1.0")
 
     def __str__(self):
         return self.document_title
@@ -80,12 +81,19 @@ class UploadedDocument(models.Model):
     def __str__(self):
         return f"Uploaded document for {self.document.document_title}"
     
-    
+class DocumentVersion(models.Model):
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name="versions")
+    version_number = models.CharField(max_length=10)
+    updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    updated_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Version {self.version_number} of {self.document.document_title}"
 class DynamicStatus(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     status = models.CharField(max_length=50)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)  
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.user.username} -: {self.status}"
@@ -132,10 +140,10 @@ class DocumentDocAdminAction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 class DocumentSendBackAction(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,blank=True, null=True)
     document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
-    status_sendback = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
+    status_sendback = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE,blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True,blank=True, null=True)
 
 class DocumentReleaseAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)

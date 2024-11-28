@@ -67,5 +67,8 @@ urlpatterns = [
 
     path('training_status_update/<int:training_id>', TrainingStatusUpdateViewset.as_view({'put': 'update'}), name='training_status_update'),
 
+    path('start_exam', StartExam.as_view({'post': 'create'}), name='start_exam'),
+    path('get_next_question/<int:session_id>', GetNextQuestion.as_view({'get': 'list','put': 'update'}), name='get_next_question'),
+
 
 ]
