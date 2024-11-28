@@ -155,6 +155,39 @@ class DocumentTypeCreateViewSet(viewsets.ModelViewSet):
             return Response({"status": True, "message": "Document type list fetched successfully", "data": serializer.data})
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
+
+class DocumentTypeUpdateViewSet(viewsets.ModelViewSet):
+    serializer_class = DocumentTypeSerializer
+    queryset = DocumentType.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'document_type_id'       
+
+    def update(self, request, *args, **kwargs):
+        try:
+            # Get document_type_id and new document_name from the request
+            document_type_id = self.kwargs.get('document_type_id')
+            document_name = request.data.get('document_name')
+
+            # Validate document_type_id and document_name
+            if not document_type_id:
+                return Response({"status": False, "message": "Document type ID is required", "data": []})
+            if not document_name:
+                return Response({"status": False, "message": "Document name is required", "data": []})
+
+            # Fetch the DocumentType instance
+            document_type = DocumentType.objects.filter(id=document_type_id).first()
+            if not document_type:
+                return Response({"status": False, "message": "Document type not found", "data": []})
+
+            # Update the document_name
+            document_type.document_name = document_name
+            document_type.save()
+
+            # Serialize the updated instance
+            serializer = DocumentTypeSerializer(document_type)
+            return Response({"status": True, "message": "Document type updated successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": []})
         
         
 class PrintRequestViewSet(viewsets.ModelViewSet):
