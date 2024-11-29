@@ -5,7 +5,7 @@ from .models import *
 from django.core.validators import EmailValidator
 import os
 from django.utils.timezone import now
-
+from django.conf import settings
 
 class CustomUserManager(BaseUserManager):
     
@@ -70,3 +70,15 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def reset_login_count(self):
         self.login_count = 0
         self.save()
+
+
+
+class EmailTemplate(models.Model):
+    name = models.CharField(max_length=500, unique=True)
+    subject = models.CharField(max_length=500)
+    content = models.TextField()
+    from_email = models.EmailField(default=settings.EMAIL_HOST_USER)
+    signature = models.CharField(max_length=255, default='Bharat Parenterals Ltd.')
+
+    def __str__(self):
+        return self.name
