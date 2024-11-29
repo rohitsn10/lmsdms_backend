@@ -11,6 +11,8 @@ urlpatterns = [
    
    path('create_get_document_type', DocumentTypeCreateViewSet.as_view({'post': 'create'}),name='create_get_document_type'),
    path('get_document_type', DocumentTypeCreateViewSet.as_view({'get':'list'}),name='get_document_type'),
+   path('update_document_type/<document_type_id>', DocumentTypeUpdateViewSet.as_view({'put': 'update'}),name='update_document_type'),
+
 
    path('create_get_workflow', WorkFlowViewSet.as_view({'post': 'create','get':'list'}),name='create_get_workflow'),
    path('update_delete_workflow/<int:workflow_id>',WorkFlowUpdateSet.as_view({'put': 'update','delete':'destroy'}),name='update_delete_workflow'),
@@ -55,7 +57,6 @@ urlpatterns = [
    path('document_approver_status', DocumentApproverActionCreateViewSet.as_view({'post': 'create'}),name='document_approver_status'),
    path('document_docadmin_status', DocumentDocAdminActionCreateViewSet.as_view({'post': 'create'}),name='document_docadmin_status'),
 
-
    path('UserDropdownMasterCopy', MasterCopyUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownMasterCopy'),
    path('UserDropdownOtherUser', OtherUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownOtherUser'),
 
@@ -66,6 +67,6 @@ urlpatterns = [
    
 
    path('create_comment', DocumentCommentCreateViewSet.as_view({'post': 'create'}), name='create_comment'),
-   path('view_comment', DocumentCommentsViewSet.as_view({'get': 'list'}), name='view_comment'),
+   path('view_comment/<document_id>', DocumentCommentsViewSet.as_view({'get': 'list'}), name='view_comment'),
    path('delete_comment/<comment_id>', DocumentCommentDeleteViewSet.as_view({'delete': 'delete_comment'}), name='DeleteInventory'),
 ]
