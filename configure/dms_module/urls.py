@@ -57,7 +57,6 @@ urlpatterns = [
    path('document_approver_status', DocumentApproverActionCreateViewSet.as_view({'post': 'create'}),name='document_approver_status'),
    path('document_docadmin_status', DocumentDocAdminActionCreateViewSet.as_view({'post': 'create'}),name='document_docadmin_status'),
 
-
    path('UserDropdownMasterCopy', MasterCopyUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownMasterCopy'),
    path('UserDropdownOtherUser', OtherUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownOtherUser'),
 
@@ -68,7 +67,7 @@ urlpatterns = [
    
 
    path('create_comment', DocumentCommentCreateViewSet.as_view({'post': 'create'}), name='create_comment'),
-   path('view_comment', DocumentCommentsViewSet.as_view({'get': 'list'}), name='view_comment'),
+   path('view_comment/<document_id>', DocumentCommentsViewSet.as_view({'get': 'list'}), name='view_comment'),
    path('delete_comment/<comment_id>', DocumentCommentDeleteViewSet.as_view({'delete': 'delete_comment'}), name='DeleteInventory'),
 
 
