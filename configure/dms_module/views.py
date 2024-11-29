@@ -7,6 +7,10 @@ from .serializers import *
 from rest_framework import permissions
 from lms_module.models import Department
 from user_profile.function_call import *
+from django.contrib.auth.models import Group
+from django.core.mail import send_mail
+from user_profile.email_utils import *
+
 class CustomPagination(PageNumberPagination):
     page_size = 10  # Number of items per page
     page_size_query_param = 'page_size'  # Allow users to set page size
@@ -336,6 +340,12 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 updated_by=user,
             )
 
+            # reviewer_group = Group.objects.get(name='Reviewer')
+            # reviewers = CustomUser.objects.filter(groups=reviewer_group)
+            # department_users = CustomUser.objects.filter(department=user.department)
+            # users_to_notify = reviewers.union(department_users).distinct()
+            # send_document_create_email(user, document_title, users_to_notify)
+
             # If the operation is 'upload_file', handle the Word file upload
             # if document_operation == 'upload_file':
             #     word_file = request.FILES['word_file']
@@ -360,6 +370,7 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         try:
+            user = self.request.user
             document_id = self.kwargs.get('document_id')
             
             try:
@@ -420,7 +431,6 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             version = document.version
             new_version = increment_version(version)
             document.version = new_version
-            document.save()
             # Save the updated document
             document.save()
 
@@ -910,6 +920,13 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
             document.form_status = None
             document.assigned_to = None
             document.save()
+            
+            document_title = document.document_title
+            reviewer_group = Group.objects.get(name='Reviewer')
+            reviewers = CustomUser.objects.filter(groups=reviewer_group)
+            department_users = CustomUser.objects.filter(department=user.department)
+            users_to_notify = reviewers.union(department_users).distinct()
+            send_document_update_email(user, document_title, users_to_notify)
 
             return Response({"status": True, "message": "Document approval action created successfully"})
 
@@ -1136,7 +1153,9 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
             document.assigned_to = assigned_to
             document.document_current_status = status
             document.save()
-
+            document_title = document.document_title
+            send_document_sendback_email(assigned_to, document_title)
+            
             return Response({
                 "status": True,
                 "message": "Document sent back successfully",
