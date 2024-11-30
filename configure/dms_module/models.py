@@ -69,6 +69,8 @@ class Document(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)
     version = models.CharField(max_length=10, default="1.0")
+    training_required = models.BooleanField(default=False)  # New field added
+
 
     def __str__(self):
         return self.document_title

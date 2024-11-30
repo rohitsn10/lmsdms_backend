@@ -298,6 +298,9 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             select_template = request.data.get('select_template')
             workflow = request.data.get('workflow')
             document_current_status_id = request.data.get('document_current_status_id')
+            training_required = request.data.get('training_required')
+
+
             # Validation for required fields
             if not document_title:
                 return Response({"status": False, "message": "Document title is required", "data": []})
@@ -326,7 +329,9 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 select_template_id=select_template,
                 workflow_id=workflow,
                 document_current_status=default_status,
-                version="1.0"
+                version="1.0",
+                training_required=training_required,
+
             )
             document.save()
             DocumentVersion.objects.create(
