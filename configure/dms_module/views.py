@@ -931,16 +931,8 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
             # department_users = CustomUser.objects.filter(department=user.department)
             # users_to_notify = reviewers.union(department_users).distinct()
             # send_document_update_email(user, document_title, users_to_notify)
-
-             # Fetch the document title
-            document_title = document.document_title
             
-            # Fetch reviewers and department users
-            reviewer_group = Group.objects.get(name='Reviewer')
-            reviewers = CustomUser.objects.filter(groups=reviewer_group)
-            department_users = CustomUser.objects.filter(department=user.department)
-            users_to_notify = set(reviewers) | set(department_users)
-            send_document_update_email(user, document_title, users_to_notify)
+           
 
             return Response({"status": True, "message": "Document approval action created successfully"})
 
