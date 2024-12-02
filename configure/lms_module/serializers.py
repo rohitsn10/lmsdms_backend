@@ -4,16 +4,10 @@ from rest_framework import serializers
 from django.contrib.auth.models import Group, Permission
 
 class GetDepartmentSerializer(serializers.ModelSerializer):
-    department_created_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Department
         fields = ['id', 'department_name', 'department_description', 'department_created_at']
-
-    def get_department_created_at(self, obj):
-        if obj.department_created_at:
-            return obj.department_created_at.strftime('%d-%m-%Y')
-        return None
 
 class GetPlantSerializer(serializers.ModelSerializer):
     class Meta:
