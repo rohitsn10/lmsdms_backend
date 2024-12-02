@@ -69,10 +69,11 @@ class CustomUserdataSerializer(serializers.ModelSerializer):
 
     def get_group_name(self, obj):
         # Assuming a user can belong to multiple groups; return the names as a list
-        return list(obj.groups.values_list('name', flat=True))
+        return list(obj.groups.values_list('name', flat=True))  
 
 class DocumentviewSerializer(serializers.ModelSerializer):
     document_type_name = serializers.SerializerMethodField()
+    formatted_created_at = serializers.SerializerMethodField()
     current_status_name = serializers.SerializerMethodField()
 
     class Meta:
@@ -82,7 +83,8 @@ class DocumentviewSerializer(serializers.ModelSerializer):
     def get_document_type_name(self, obj):
         return obj.document_type.document_name if obj.document_type else None
 
-   
+    def get_formatted_created_at(self, obj):
+        return obj.created_at.strftime('%d-%m-%Y')
     
     def get_current_status_name(self, obj):
         return obj.document_current_status.status if obj.document_current_status else None
