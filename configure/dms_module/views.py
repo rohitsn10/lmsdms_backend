@@ -1383,20 +1383,45 @@ class DynamicInventoryUpdateViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         try:
+            # Retrieve the inventory_id from the URL
             inventory_id = self.kwargs.get('inventory_id')
+            
+            # Retrieve inventory_name from the request data
             inventory_name = request.data.get('inventory_name')
+            if not inventory_name:
+                raise ValidationError("The field 'inventory_name' is required and cannot be null.")
 
+            # Retrieve the inventory instance and update
             dynamic_inventory = DynamicInventory.objects.get(id=inventory_id)
             dynamic_inventory.inventory_name = inventory_name
-            
             dynamic_inventory.save()
+
+            # Serialize and return the updated data
             serializer = DynamicInventorySerializer(dynamic_inventory)
-            return Response({"status": True, "message": "Dynamic inventory updated successfully", "data": serializer.data})
+            return Response({
+                "status": True, 
+                "message": "Dynamic inventory updated successfully", 
+                "data": serializer.data
+            })
 
         except DynamicInventory.DoesNotExist:
-            return Response({"status": False, "message": "Dynamic inventory not found"})
+            return Response({
+                "status": False, 
+                "message": "Dynamic inventory not found"
+            })
+
+        except ValidationError as ve:
+            return Response({
+                "status": False, 
+                "message": str(ve)
+            })
+
         except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+            return Response({
+                "status": False, 
+                "message": "Something went wrong", 
+                "error": str(e)
+            })
 
 class DynamicInventoryDeleteViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
