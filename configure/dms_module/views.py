@@ -10,6 +10,8 @@ from user_profile.function_call import *
 from django.contrib.auth.models import Group
 from django.core.mail import send_mail
 from user_profile.email_utils import *
+from django.db.models import Q
+
 
 class CustomPagination(PageNumberPagination):
     page_size = 10  # Number of items per page
@@ -1382,11 +1384,10 @@ class DynamicInventoryUpdateViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         try:
             inventory_id = self.kwargs.get('inventory_id')
-            dynamic_inventory = DynamicInventory.objects.get(id=inventory_id)
             inventory_name = request.data.get('inventory_name')
 
-            if inventory_name is not None:
-                dynamic_inventory.inventory_name = inventory_name
+            dynamic_inventory = DynamicInventory.objects.get(id=inventory_id)
+            dynamic_inventory.inventory_name = inventory_name
             
             dynamic_inventory.save()
             serializer = DynamicInventorySerializer(dynamic_inventory)
@@ -1571,4 +1572,49 @@ class DocumentTypeUpdateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
 
+
+class DepartmentUsersViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = CustomUserdataSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            # Get the document ID from the request
+            document_id = request.data.get('document_id', None)
+            if not document_id:
+                return Response({
+                    "status": False,
+                    "message": "Document ID is required.",
+                    "data": []
+                })
+
+            # Fetch the document and the user associated with it
+            try:
+                document = Document.objects.get(id=document_id)
+            except Document.DoesNotExist:
+                return Response({
+                    "status": False,
+                    "message": "Document not found.",
+                    "data": []
+                })
+
+            # Filter users based on the department of the document's creator
+            created_user = document.user
+            department_users = CustomUser.objects.filter(
+                Q(department=created_user.department)
+            ).exclude(id=created_user.id)  # Exclude the creator if needed
+
+            # Serialize the filtered users
+            serializer = self.serializer_class(department_users, many=True, context={'request': request})
+            return Response({
+                "status": True,
+                "message": "Users fetched successfully.",
+                "data": serializer.data,
+            })
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": str(e),
+                "data": [],
+            })
 

@@ -69,4 +69,9 @@ urlpatterns = [
    path('create_comment', DocumentCommentCreateViewSet.as_view({'post': 'create'}), name='create_comment'),
    path('view_comment/<document_id>', DocumentCommentsViewSet.as_view({'get': 'list'}), name='view_comment'),
    path('delete_comment/<comment_id>', DocumentCommentDeleteViewSet.as_view({'delete': 'delete_comment'}), name='DeleteInventory'),
+
+   path('view_user_document', DepartmentUsersViewSet.as_view({'get':'list'}),name='view_user_document'),
+
+
+
 ]

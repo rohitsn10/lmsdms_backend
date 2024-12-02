@@ -55,6 +55,12 @@ class TemplateSerializer(serializers.ModelSerializer):
         model = TemplateModel
         fields = '__all__'
 
+class CustomUserdataSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'first_name', 'last_name']
+
 class DocumentviewSerializer(serializers.ModelSerializer):
     document_type_name = serializers.SerializerMethodField()
     formatted_created_at = serializers.SerializerMethodField()
