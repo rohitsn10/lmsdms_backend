@@ -486,7 +486,14 @@ class DocumentViewSet(viewsets.ModelViewSet):
         try:
             user = request.user 
 
-            if user.department:
+            # if user.department:
+            #     queryset = Document.objects.filter(user__department=user.department).order_by('-id')
+            # else:
+            #     queryset = Document.objects.none()
+
+            if user.groups.filter(name='Admin').exists():  # Check if the user is in the Admin group
+                queryset = Document.objects.all().order_by('-id')
+            elif user.department:  # Check if the user has a department
                 queryset = Document.objects.filter(user__department=user.department).order_by('-id')
             else:
                 queryset = Document.objects.none()
