@@ -486,6 +486,9 @@ class DocumentViewSet(viewsets.ModelViewSet):
         try:
             user = request.user 
 
+             # Get the user's group IDs
+            user_group_ids = user.groups.values_list('id', flat=True)
+
             # if user.department:
             #     queryset = Document.objects.filter(user__department=user.department).order_by('-id')
             # else:
@@ -508,14 +511,17 @@ class DocumentViewSet(viewsets.ModelViewSet):
                     "status": True,
                     "message": "Documents fetched successfully",
                     'total': queryset.count(),
-                    'data': serializer.data
+                    'user_group_ids': list(user_group_ids) ,
+                    'data': serializer.data,
                 })
             else:
                 return Response({
                     "status": True,
                     "message": "No Documents found",
                     "total": 0,
-                    "data": []
+                    'user_group_ids': list(user_group_ids),  
+                    "data": [],
+
                 })
         except Exception as e:
             return Response({
