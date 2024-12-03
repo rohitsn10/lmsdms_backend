@@ -1159,7 +1159,7 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
             document_id = request.data.get('document_id')
             assigned_to_id = request.data.get('assigned_to')
             status_id = request.data.get('status_sendback')
-            group_id = request.data.get('group_id')
+            group_id = request.data.get('assign_user_group')
 
 
             # Validate required fields
