@@ -161,22 +161,22 @@ class LoginUserSerializer(serializers.ModelSerializer):
 
 
 
-# class LoginSerializer(serializers.Serializer):
-#     username = serializers.CharField()
-#     password = serializers.CharField(write_only=True)
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
 
-#     def validate(self, data):
-#         username = data.get("username")
-#         password = data.get("password")
+    def validate(self, data):
+        username = data.get("username")
+        password = data.get("password")
 
-#         user = authenticate(username=username, password=password)
+        user = authenticate(username=username, password=password)
 
-#         if user:
-#             if user.login_count >= 3:
-#                 raise serializers.ValidationError({"status": False,"message": "Your account is blocked.","data": []})
-#             return user
-#         else:
-#             raise serializers.ValidationError({"status": False,"message": "Invalid credentials","data": []})
+        if user:
+            if user.login_count >= 3:
+                raise serializers.ValidationError({"status": False,"message": "Your account is blocked.","data": []})
+            return user
+        else:
+            raise serializers.ValidationError({"status": False,"message": "Invalid credentials","data": []})
 
 
 class ResetLoginCountSerializer(serializers.ModelSerializer):
