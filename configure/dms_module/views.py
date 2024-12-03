@@ -1685,11 +1685,12 @@ class DocumentTypeUpdateViewSet(viewsets.ModelViewSet):
 
 class DepartmentUsersViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'id'
 
     def list(self, request, *args, **kwargs):
         try:
             # Get the document ID from the request
-            document_id = request.data.get('document_id', None)
+            document_id = self.kwargs.get('document_id', None)
             if not document_id:
                 return Response({
                     "status": False,
