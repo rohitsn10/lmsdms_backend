@@ -65,6 +65,7 @@ class Document(models.Model):
     document_current_status = models.ForeignKey('DynamicStatus', on_delete=models.CASCADE,blank=True, null=True)
     select_template = models.ForeignKey(TemplateModel, on_delete=models.CASCADE, blank=True, null=True)
     assigned_to = models.ForeignKey(CustomUser, related_name="assigned_documents", on_delete=models.SET_NULL, blank=True, null=True)  # To track the user to whom the document is currently assigned 
+    assigned_to_group = models.TextField(blank=True, null=True)    
     workflow = models.ForeignKey(WorkFlowModel, on_delete=models.CASCADE)  
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)
@@ -115,6 +116,11 @@ class DocumentComments(models.Model):
     Comment_description = models.JSONField(blank=True, null=True)    
     created_at = models.DateTimeField(auto_now_add=True)
 
+class DocApprove(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
+    status_approve = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 class DocumentAuthorApproveAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -145,6 +151,7 @@ class DocumentSendBackAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,blank=True, null=True)
     document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     status_sendback = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE,blank=True, null=True)
+    group = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True,blank=True, null=True)
 
 class DocumentReleaseAction(models.Model):

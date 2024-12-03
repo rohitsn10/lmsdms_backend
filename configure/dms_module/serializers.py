@@ -55,21 +55,37 @@ class TemplateSerializer(serializers.ModelSerializer):
         model = TemplateModel
         fields = '__all__'
 
-class CustomUserdataSerializer(serializers.ModelSerializer):
-    group_id = serializers.SerializerMethodField()
-    group_name = serializers.SerializerMethodField()
+# class CustomUserdataSerializer(serializers.ModelSerializer):
+#     first_name = serializers.SerializerMethodField()
+#     group_id = serializers.SerializerMethodField()
 
-    class Meta:
-        model = CustomUser
-        fields = ['id', 'first_name', 'last_name', 'group_id', 'group_name']
+#     class Meta:
+#         model = CustomUser
+#         fields = ['id', 'first_name', 'group_id']
 
-    def get_group_id(self, obj):
-        # Assuming a user can belong to multiple groups; return the IDs as a list
-        return list(obj.groups.values_list('id', flat=True))
+#     def get_first_name(self, obj):
+#         # Get the first name of the user
+#         first_name = obj.first_name if obj.first_name else ''
+#         # Get the group name of the user
+#         group_name = ', '.join(obj.groups.values_list('name', flat=True)) if obj.groups.exists() else ''
+#         # Combine the first name and group name
+#         return f"{first_name}({group_name})" if group_name else first_name
 
-    def get_group_name(self, obj):
-        # Assuming a user can belong to multiple groups; return the names as a list
-        return list(obj.groups.values_list('name', flat=True))  
+#     def get_group_id(self, obj):
+#         # Get the group IDs as a list
+#         return list(obj.groups.values_list('id', flat=True))
+ 
+class CustomUserGroupSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    first_name = serializers.SerializerMethodField()
+    group_id = serializers.IntegerField()
+
+    def get_first_name(self, obj):
+        # Format first_name as "first_name(group_name)"
+        first_name = obj['first_name']
+        group_name = obj['group_name']
+        return f"{first_name}({group_name})"
+
 
 class DocumentviewSerializer(serializers.ModelSerializer):
     document_type_name = serializers.SerializerMethodField()

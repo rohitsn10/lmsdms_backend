@@ -935,6 +935,11 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
                 # documentdetails_approve=documentdetails,
                 status_approve=status
             )
+            approve_action = DocApprove.objects.create(
+                user=user,
+                document=document,
+                status_approve=status
+            )
             document.document_current_status = status
             document.form_status = None
             document.assigned_to = None
@@ -1004,6 +1009,11 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
                 document=document,
                 status_approve=status
             )
+            approve_action = DocApprove.objects.create(
+                user=user,
+                document=document,
+                status_approve=status
+            )
 
             # Check if all reviewers in the department have approved the document
             # approved_reviewers = DocumentReviewerAction.objects.filter(
@@ -1064,6 +1074,12 @@ class DocumentApproverActionCreateViewSet(viewsets.ModelViewSet):
                 document=document,
                 status_approve=status
             )
+            approve_action = DocApprove.objects.create(
+                user=user,
+                document=document,
+                status_approve=status
+            )
+
 
             # Update document current status only if all reviewers have approved
             # if all_reviewers_approved:
@@ -1116,6 +1132,12 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
                 status_approve=status
             )
 
+            approve_action = DocApprove.objects.create(
+                user=user,
+                document=document,
+                status_approve=status
+            )
+
             document.document_current_status = status
             document.save()
 
@@ -1137,6 +1159,8 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
             document_id = request.data.get('document_id')
             assigned_to_id = request.data.get('assigned_to')
             status_id = request.data.get('status_sendback')
+            group_id = request.data.get('group_id')
+
 
             # Validate required fields
             if not document_id or not assigned_to_id or not status_id:
@@ -1168,10 +1192,12 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
                 user=user,
                 document=document,
                 status_sendback=status,
+                group = group_id
             )
 
             # Update the document's assigned user and reason
             document.assigned_to = assigned_to
+            document.assigned_to_group = group_id
             document.document_current_status = status
             document.save()
             document_title = document.document_title
@@ -1598,9 +1624,53 @@ class DocumentTypeUpdateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": str(e), "data": []})
 
 
+# class DepartmentUsersViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     serializer_class = CustomUserdataSerializer
+
+#     def list(self, request, *args, **kwargs):
+#         try:
+#             # Get the document ID from the request
+#             document_id = request.data.get('document_id', None)
+#             if not document_id:
+#                 return Response({
+#                     "status": False,
+#                     "message": "Document ID is required.",
+#                     "data": []
+#                 })
+
+#             # Fetch the document and ensure it exists
+#             try:
+#                 document = Document.objects.get(id=document_id)
+#             except Document.DoesNotExist:
+#                 return Response({
+#                     "status": False,
+#                     "message": "Document not found.",
+#                     "data": []
+#                 })
+
+#             # Fetch users associated with the document from the DocApprove model
+#             approved_users = CustomUser.objects.filter(
+#                 docapprove__document=document
+#             ).distinct()
+
+#             # Serialize the filtered users
+#             serializer = self.serializer_class(approved_users, many=True, context={'request': request})
+#             return Response({
+#                 "status": True,
+#                 "message": "Users fetched successfully.",
+#                 "data": serializer.data,
+#             })
+#         except Exception as e:
+#             return Response({
+#                 "status": False,
+#                 "message": str(e),
+#                 "data": [],
+#             })
+
+
 class DepartmentUsersViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = CustomUserdataSerializer
 
     def list(self, request, *args, **kwargs):
         try:
@@ -1613,28 +1683,32 @@ class DepartmentUsersViewSet(viewsets.ModelViewSet):
                     "data": []
                 })
 
-            # Fetch the document and the user associated with it
-            try:
-                document = Document.objects.get(id=document_id)
-            except Document.DoesNotExist:
+            # Fetch the users linked to the document ID in the DocApprove model
+            approved_users = DocApprove.objects.filter(document_id=document_id).select_related('user')
+            if not approved_users.exists():
                 return Response({
                     "status": False,
-                    "message": "Document not found.",
+                    "message": "No users found for the given document ID.",
                     "data": []
                 })
 
-            # Filter users based on the department of the document's creator
-            created_user = document.user
-            department_users = CustomUser.objects.filter(
-                Q(department=created_user.department)
-            ).exclude(id=created_user.id)  # Exclude the creator if needed
+            # Prepare data for response
+            response_data = []
+            for approval in approved_users:
+                user = approval.user
+                user_groups = user.groups.all()
+                for group in user_groups:
+                    response_data.append({
+                        "id": user.id,
+                        "first_name": f"{user.first_name}({group.name})",
+                        "group_id": [group.id],
+                    })
 
-            # Serialize the filtered users
-            serializer = self.serializer_class(department_users, many=True, context={'request': request})
+            # Return the response
             return Response({
                 "status": True,
                 "message": "Users fetched successfully.",
-                "data": serializer.data,
+                "data": response_data,
             })
         except Exception as e:
             return Response({
@@ -1642,4 +1716,7 @@ class DepartmentUsersViewSet(viewsets.ModelViewSet):
                 "message": str(e),
                 "data": [],
             })
+
+
+
 
