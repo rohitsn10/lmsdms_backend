@@ -70,7 +70,7 @@ urlpatterns = [
    path('view_comment/<document_id>', DocumentCommentsViewSet.as_view({'get': 'list'}), name='view_comment'),
    path('delete_comment/<comment_id>', DocumentCommentDeleteViewSet.as_view({'delete': 'delete_comment'}), name='DeleteInventory'),
 
-   path('approved_status_users', DepartmentUsersViewSet.as_view({'get':'list'}),name='approved_status_users'),
+   path('approved_status_users/<document_id>', DepartmentUsersViewSet.as_view({'get':'list'}),name='approved_status_users'),
 
 
 
