@@ -8,10 +8,15 @@ class WorkFlowSerializer(serializers.ModelSerializer):
 
 class PrintRequestSerializer(serializers.ModelSerializer):
     document_title = serializers.CharField(source='sop_document_id.document_title', read_only=True)
+    status = serializers.SerializerMethodField()
 
     class Meta:
         model = PrintRequest
-        fields = ['id', 'user', 'sop_document_id', 'document_title','no_of_print', 'issue_type','reason_for_print','print_request_status','created_at']
+        fields = ['id', 'user', 'sop_document_id', 'document_title','no_of_print', 'issue_type','reason_for_print','print_request_status','created_at','status']
+
+    def get_status(self, obj):
+        approval = obj.approvals.order_by('-created_at').first()
+        return approval.status.status if approval and approval.status else None
 
 class DocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -91,10 +96,11 @@ class DocumentviewSerializer(serializers.ModelSerializer):
     document_type_name = serializers.SerializerMethodField()
     # formatted_created_at = serializers.SerializerMethodField()
     current_status_name = serializers.SerializerMethodField()
+    approval_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Document
-        fields = ['id', 'document_title','assigned_to', 'document_number', 'created_at', 'document_type_name','form_status','document_current_status','current_status_name','version','training_required']
+        fields = ['id', 'document_title','assigned_to', 'document_number', 'created_at', 'document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status']
 
     def get_document_type_name(self, obj):
         return obj.document_type.document_name if obj.document_type else None
@@ -104,6 +110,16 @@ class DocumentviewSerializer(serializers.ModelSerializer):
     
     def get_current_status_name(self, obj):
         return obj.document_current_status.status if obj.document_current_status else None
+    
+    def get_approval_status(self, obj):
+        # Fetch the latest status from PrintRequestApproval for this document
+        latest_approval = (
+            PrintRequestApproval.objects
+            .filter(print_request__sop_document_id=obj)
+            .order_by('-created_at')
+            .first()
+        )
+        return latest_approval.status.status if latest_approval and latest_approval.status else None
 
 class DocumentCommentSerializer(serializers.ModelSerializer):
     class Meta:
