@@ -1141,6 +1141,20 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
             document.document_current_status = status
             document.save()
 
+            # Log actions based on status
+            if status_id == 7:  
+                DocumentEffectiveAction.objects.create(
+                    user=user,
+                    documentdetails_effective=document,
+                    status_effective=status
+                )
+            elif status_id == 6:  
+                DocumentReleaseAction.objects.create(
+                    user=user,
+                    documentdetails_release=document,
+                    status_release=status
+                )
+
             return Response({
                 "status": True,
                 "message": "Document Doc Admin action created successfully",
@@ -1214,87 +1228,87 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
 
 
 
-class DocumentReleaseActionCreateViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    queryset = DocumentReleaseAction.objects.all()
+# class DocumentReleaseActionCreateViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     queryset = DocumentReleaseAction.objects.all()
 
-    def create(self, request, *args, **kwargs):
-        try:
-            user = request.user
-            document_id = request.data.get('documentdetails_release')
-            status_id = request.data.get('status_release')
+#     def create(self, request, *args, **kwargs):
+#         try:
+#             user = request.user
+#             document_id = request.data.get('documentdetails_release')
+#             status_id = request.data.get('status_release')
 
-            if not document_id:
-                return Response({"status": False, "message": "Document details are required"})
-            if not status_id:
-                return Response({"status": False, "message": "Status is required"})
+#             if not document_id:
+#                 return Response({"status": False, "message": "Document details are required"})
+#             if not status_id:
+#                 return Response({"status": False, "message": "Status is required"})
 
-            documentdetails_release = DocumentDetails.objects.get(id=document_id)
-            status_release = DynamicStatus.objects.get(id=status_id)
+#             documentdetails_release = DocumentDetails.objects.get(id=document_id)
+#             status_release = DynamicStatus.objects.get(id=status_id)
 
-            document_release_action = DocumentReleaseAction.objects.create(
-                user=user,
-                documentdetails_release=documentdetails_release,
-                status_release=status_release
-            )
+#             document_release_action = DocumentReleaseAction.objects.create(
+#                 user=user,
+#                 documentdetails_release=documentdetails_release,
+#                 status_release=status_release
+#             )
 
-            return Response({"status": True, "message": "Document release action created successfully"})
+#             return Response({"status": True, "message": "Document release action created successfully"})
 
-        except DocumentDetails.DoesNotExist:
-            return Response({"status": False, "message": "Invalid document details ID"})
-        except DynamicStatus.DoesNotExist:
-            return Response({"status": False, "message": "Invalid status ID"})
-        except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+#         except DocumentDetails.DoesNotExist:
+#             return Response({"status": False, "message": "Invalid document details ID"})
+#         except DynamicStatus.DoesNotExist:
+#             return Response({"status": False, "message": "Invalid status ID"})
+#         except Exception as e:
+#             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
-class DocumentEffectiveActionCreateViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    queryset = DocumentEffectiveAction.objects.all()
+# class DocumentEffectiveActionCreateViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     queryset = DocumentEffectiveAction.objects.all()
 
-    def create(self, request, *args, **kwargs):
-        try:
-            user = self.request.user
-            document_id = request.data.get('documentdetails_effective')
-            status_id = request.data.get('status_effective')
+#     def create(self, request, *args, **kwargs):
+#         try:
+#             user = self.request.user
+#             document_id = request.data.get('documentdetails_effective')
+#             status_id = request.data.get('status_effective')
 
-            if not document_id:
-                return Response({"status": False, "message": "Document details are required"})
-            if not status_id:
-                return Response({"status": False, "message": "Status is required"})
+#             if not document_id:
+#                 return Response({"status": False, "message": "Document details are required"})
+#             if not status_id:
+#                 return Response({"status": False, "message": "Status is required"})
 
-            documentdetails_effective = DocumentDetails.objects.get(id=document_id)
-            status_effective = DynamicStatus.objects.get(id=status_id)
+#             documentdetails_effective = DocumentDetails.objects.get(id=document_id)
+#             status_effective = DynamicStatus.objects.get(id=status_id)
 
-            document_effective_action = DocumentEffectiveAction.objects.create(
-                user=user,
-                documentdetails_effective=documentdetails_effective,
-                status_effective=status_effective
-            )
+#             document_effective_action = DocumentEffectiveAction.objects.create(
+#                 user=user,
+#                 documentdetails_effective=documentdetails_effective,
+#                 status_effective=status_effective
+#             )
 
-            return Response({"status": True, "message": "Document effective action created successfully"})
+#             return Response({"status": True, "message": "Document effective action created successfully"})
 
-        except DocumentDetails.DoesNotExist:
-            return Response({"status": False, "message": "Invalid document details ID"})
-        except DynamicStatus.DoesNotExist:
-            return Response({"status": False, "message": "Invalid status ID"})
-        except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+#         except DocumentDetails.DoesNotExist:
+#             return Response({"status": False, "message": "Invalid document details ID"})
+#         except DynamicStatus.DoesNotExist:
+#             return Response({"status": False, "message": "Invalid status ID"})
+#         except Exception as e:
+#             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
-    def list(self, request, *args, **kwargs):
-        try:
-            user = self.request.user
+#     def list(self, request, *args, **kwargs):
+#         try:
+#             user = self.request.user
 
-            queryset = DocumentEffectiveAction.objects.filter(user=user)
+#             queryset = DocumentEffectiveAction.objects.filter(user=user)
 
-            if queryset.exists():
-                serializer = DocumentEffectiveActionSerializer(queryset, many=True)
-                data = serializer.data
-                return Response({"status": True, "message": "Document effective actions fetched successfully", "data": data})
-            else:
-                return Response({"status": False, "message": "No document effective actions found", "data": []})
-        except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+#             if queryset.exists():
+#                 serializer = DocumentEffectiveActionSerializer(queryset, many=True)
+#                 data = serializer.data
+#                 return Response({"status": True, "message": "Document effective actions fetched successfully", "data": data})
+#             else:
+#                 return Response({"status": False, "message": "No document effective actions found", "data": []})
+#         except Exception as e:
+#             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
 class DocumentReviseActionCreateViewSet(viewsets.ModelViewSet):
