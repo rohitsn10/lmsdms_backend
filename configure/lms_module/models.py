@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-from user_profile.models import CustomUser
+from user_profile.models import CustomUser,Department
 from dms_module.models import *
 
 class Plant(models.Model):
@@ -9,14 +9,14 @@ class Plant(models.Model):
     plant_description = models.TextField()
     plant_created_at = models.DateTimeField(auto_now_add=True)
 
-class Department(models.Model):
-    department_name = models.TextField()
-    department_description = models.TextField()
-    department_created_at = models.DateTimeField(auto_now_add=True)
+# class Department(models.Model):
+#     department_name = models.TextField()
+#     department_description = models.TextField()
+#     department_created_at = models.DateTimeField(auto_now_add=True)
 
 class Area(models.Model):
     area_name = models.TextField()
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE,null=True,blank=True)
     area_description = models.TextField()
     area_created_at = models.DateTimeField(auto_now_add=True)
 
@@ -31,7 +31,7 @@ class Assessment(models.Model):
     title = models.TextField(blank=True, null=True)
     time_limit = models.TextField(blank=True, null=True)
     sop_selection = models.TextField(blank=True, null=True)
-    assign = models.TextField(blank=True, null=True)  # For Department/Any user
+    assign = models.TextField(blank=True, null=True)  
     pass_percentage = models.TextField(blank=True, null=True)
     number_of_attempts = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
@@ -40,7 +40,7 @@ class Assessment(models.Model):
         return self.title
 
 class AssessmentQuestion(models.Model):
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='questions')
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='questions',null=True,blank=True)
     sop = models.TextField(blank=True, null=True)  # Text field for SOP (Standard Operating Procedure)
     questions_data = models.JSONField()  # JSON field to store question, type, answers, etc.
     marks = models.TextField(blank=True, null=True)  # Text field for marks (e.g., "10 marks", "Pass/Fail", etc.)
