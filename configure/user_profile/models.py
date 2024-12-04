@@ -7,6 +7,12 @@ import os
 from django.utils.timezone import now
 from django.conf import settings
 
+
+class Department(models.Model):
+    department_name = models.TextField()
+    department_description = models.TextField()
+    department_created_at = models.DateTimeField(auto_now_add=True)
+
 class CustomUserManager(BaseUserManager):
     
     def create_user(self, username, email=None, password=None, **extra_fields):
@@ -38,7 +44,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     otp = models.CharField(max_length=6, null=True, blank=True)
     department = models.ForeignKey(
-        'lms_module.Department',  # String reference to avoid direct import
+        Department,  # String reference to avoid direct import
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
