@@ -26,8 +26,8 @@ class DashboardCountViewSet(viewsets.ViewSet):
             document_count = Document.objects.count()
             workflow_count = WorkFlowModel.objects.count()
             document_type_count = DocumentType.objects.count()
-            # user_count = CustomUser.objects.count()
-            # department_count = Department.objects.count()
+            user_count = CustomUser.objects.count()
+            department_count = Department.objects.count()
 
             return Response({
                 "status": True,
@@ -36,8 +36,8 @@ class DashboardCountViewSet(viewsets.ViewSet):
                     "document_count": document_count,
                     "workflow_count": workflow_count,
                     "document_type_count": document_type_count,
-                    # "user_count" : user_count,
-                    # "department_count" : department_count
+                    "user_count" : user_count,
+                    "department_count" : department_count
                 }
             })
         except Exception as e:
