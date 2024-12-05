@@ -12,6 +12,7 @@ class PrintRequestSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
     no_of_request_by_admin = serializers.SerializerMethodField()  # Include no_of_request_by_admin
     approved_date = serializers.SerializerMethodField()  # Rename created_at to approved_date
+    printer_name = serializers.SerializerMethodField()
 
     class Meta:
         model = PrintRequest
@@ -19,7 +20,7 @@ class PrintRequestSerializer(serializers.ModelSerializer):
             'id', 'user', 'first_name', 'sop_document_id', 'document_title',
             'no_of_print', 'issue_type', 'reason_for_print',
             'print_request_status', 'created_at', 'status',
-            'no_of_request_by_admin', 'approved_date'
+            'no_of_request_by_admin', 'approved_date','printer_name'
         ]
 
     def get_first_name(self, obj):
@@ -36,6 +37,10 @@ class PrintRequestSerializer(serializers.ModelSerializer):
     def get_approved_date(self, obj):
         approval = obj.approvals.order_by('-created_at').first()
         return approval.created_at if approval else None
+    
+    def get_printer_name(self, obj):
+        approval = obj.approvals.order_by('-created_at').first()
+        return approval.printer_name if approval else None
 
 
 class DocumentTypeSerializer(serializers.ModelSerializer):
