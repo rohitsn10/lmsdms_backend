@@ -160,3 +160,9 @@ class DocumentDetailSerializer(serializers.ModelSerializer):
         model = Document
         fields = ['id','document_title','document_number','document_type','document_description','revision_time','document_operation','select_template','workflow']
 
+class PrinterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PrinterMachinesModel
+        fields = ['id', 'printer_name', 'printer_description', 'created_at']
+
+
