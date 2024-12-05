@@ -679,8 +679,10 @@ class ListRequestUserGroupsViewSet(viewsets.ModelViewSet):
             })
         
 
-class UserGroupDropdownViewSet(viewsets.ViewSet):
-    # permission_classes = [IsAuthenticated] 
+class UserGroupDropdownViewSet(viewsets.ModelViewSet):
+
+    queryset = Group.objects.none()
+    serializer_class = GroupSerializer
 
     def create(self, request, *args, **kwargs):
         username = request.data.get("username")
@@ -691,11 +693,16 @@ class UserGroupDropdownViewSet(viewsets.ViewSet):
         if user is not None:
             # User authenticated, fetch groups
             groups = user.groups.all().order_by('name')
-            serializer = GroupSerializer(groups, many=True)
+            serializer = self.get_serializer(groups, many=True)
+
+            # Add the user's first name to the response
             return Response({
                 "status": True,
                 "message": "User Groups List Retrieved Successfully",
-                "data": serializer.data
+                "data": {
+                    "user_first_name": user.first_name,
+                    "groups": serializer.data
+                }
             })
         else:
             # Authentication failed
@@ -704,3 +711,4 @@ class UserGroupDropdownViewSet(viewsets.ViewSet):
                 "message": "Invalid username or password",
                 "data": []
             })
+
