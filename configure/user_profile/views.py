@@ -712,3 +712,32 @@ class UserGroupDropdownViewSet(viewsets.ModelViewSet):
                 "data": []
             })
 
+class SwitchRoleViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    def create(self, request):
+        user = request.user
+        group_id = request.data.get('group_id')
+        password = request.data.get('password')
+
+        # Validate input
+        if not group_id or not password:
+            return Response({"status": False, "message": "Group ID and password are required", "data": []})
+
+        if not user.check_password(password):
+            return Response({"status": False, "message": "Incorrect password", "data": []})
+
+        try:
+            # Fetch the group using group_id
+            group = Group.objects.get(id=group_id)
+            if not user.groups.filter(id=group.id).exists():
+                return Response({"status": False, "message": "User is not part of the requested group", "data": []})
+        except Group.DoesNotExist:
+            return Response({"status": False, "message": "Group not found", "data": []})
+
+        # Serialize the group and permissions
+        serializer = GroupPermissionSerializer(group)
+
+        return Response({"status": True, "message": "Permissions retrieved successfully", "data": serializer.data})
+
+
+

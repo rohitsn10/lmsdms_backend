@@ -1804,7 +1804,8 @@ class PrinterMachinesUpdate(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         try:
             printer_id = request.data.get('printer_id')   
-            if not PrinterMachinesModel.objects.filter(id=printer_id):
+
+            if not PrinterMachinesModel.objects.get(id=printer_id):
                 return Response({"status":False, "message":"Print machine id not found"})
                      
             printer_object = PrinterMachinesModel.objects.get(id=printer_id)
