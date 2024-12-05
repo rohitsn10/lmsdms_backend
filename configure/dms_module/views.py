@@ -172,6 +172,8 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
             no_of_print = request.data.get('no_of_print')
             issue_type = request.data.get('issue_type')
             reason_for_print = request.data.get('reason_for_print')
+            printer_id = request.data.get('printer_id')
+
 
             if not no_of_print:
                 return Response({'status': False, 'message': 'NO of print is required'})
@@ -179,18 +181,26 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
                 return Response({'status': False, 'message': 'Issue type is required'})
             if not reason_for_print:
                 return Response({'status': False, 'message': 'Reason is required'})
+            if not printer_id:
+                return Response({'status': False, 'message': 'Printer id is required'})
             
             try:
                 sop_document = Document.objects.get(id=sop_document_id)
             except Document.DoesNotExist:
                 return Response({'status': False, 'message': 'Invalid document id'})
+            
+            try:
+                printer = PrinterMachinesModel.objects.get(id=printer_id)
+            except Document.DoesNotExist:
+                return Response({'status': False, 'message': 'Invalid printer id'})
 
             printrequest_obj = PrintRequest.objects.create(
                 user = user,
                 no_of_print=no_of_print,
                 issue_type=issue_type,
                 reason_for_print=reason_for_print,
-                sop_document_id = sop_document
+                sop_document_id = sop_document,
+                printer = printer,
             )
             return Response({'status': True, 'message': 'Print requested successfully'})
         except Exception as e:

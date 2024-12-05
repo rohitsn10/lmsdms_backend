@@ -27,6 +27,7 @@ class PrintRequest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     master_copy_user = models.ManyToManyField(CustomUser, related_name='master_copy_requests', blank=True)
     other_user = models.ManyToManyField(CustomUser, related_name='other_user_requests', blank=True)
+    printer = models.ForeignKey("PrinterMachinesModel", on_delete=models.CASCADE,blank=True, null=True)  # Updated
 
     def __str__(self):
         return f"Print Request by {self.user.username} on {self.created_at}"
