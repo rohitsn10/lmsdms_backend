@@ -1731,6 +1731,89 @@ class DepartmentUsersViewSet(viewsets.ModelViewSet):
                 "data": [],
             })
 
+class PrinterMachines(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            printer_name = request.data.get('printer_name')
+            printer_description = request.data.get('printer_location')
+
+            if not printer_description:
+                return Response({'status':False,'message':'Print Location is required'})
+            
+            if not printer_name:
+                return Response({'status':False,'message':'Print Name is required'})
+            
+            printer_obj = PrinterMachinesModel.objects.create(
+                user = user,
+                printer_name = printer_name,
+                printer_description = printer_description
+            )
+            return Response({'status': True, 'message': 'Printer Added successfully'})
+        except Exception as e:
+            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+    
+    def list(self, request):
+        queryset = PrinterMachinesModel.objects.all().order_by('-id')
+        
+        try:
+            if queryset.exists():
+                serializer = PrinterSerializer(queryset, many=True)
+                return Response({
+                    "status": True,
+                    "message": "Printer Machine fetched successfully",
+                    'total': queryset.count(),
+                    'data': serializer.data
+                })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "No Printers found",
+                    "total": 0,
+                    "data": []
+                })
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+
+
+class PrinterMachinesUpdate(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'printer_id'
+
+    def update(self, request, *args, **kwargs):
+        try:
+            printer_id = self.kwargs.get("printer_id")
+            printer_name = request.data.get('printer_name')
+            printer_description = request.data.get('printer_location')
+    
+            printer_obj = PrinterMachinesModel.objects.get(id=printer_id)
+            if printer_name:
+                printer_obj.printer_name = printer_name
+            if printer_description:
+                printer_obj.printer_description = printer_description
+            printer_obj.save()
+    
+            return Response({'status': True, 'message': 'Print machine updated successfully'})
+        except PrinterMachinesModel.DoesNotExist:
+            return Response({'status': False, 'message': 'Print not found'})
+        except Exception as e:
+            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+        
+    def destroy(self, request, *args, **kwargs):
+        try:
+            printer_id = request.data.get('printer_id')   
+            if not PrinterMachinesModel.objects.filter(id=printer_id):
+                return Response({"status":False, "message":"Print machine id not found"})
+                     
+            printer_object = PrinterMachinesModel.objects.get(id=printer_id)
+            printer_object.delete()
+            return Response({"status":True, "message":"Printer deleted succesfully"})
+        except Exception as e:
+                return Response({"status": False,'message': 'Something went wrong','error': str(e)})
+
+
 
 
 

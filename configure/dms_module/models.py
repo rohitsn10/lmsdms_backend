@@ -181,6 +181,15 @@ class DynamicInventory(models.Model):
     def __str__(self):
         return self.inventory_name
     
+class PrinterMachinesModel(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    printer_name = models.TextField(blank=True, null=True)
+    printer_description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.Printer_name
+    
     
 
     

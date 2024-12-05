@@ -72,6 +72,8 @@ urlpatterns = [
 
    path('approved_status_users/<document_id>', DepartmentUsersViewSet.as_view({'get':'list'}),name='approved_status_users'),
 
-
+   path('create_get_Printer', PrinterMachines.as_view({'post': 'create','get':'list'}),name='create_get_Printer'),
+   path('update_Printer/<int:printer_id>',PrinterMachinesUpdate.as_view({'put': 'update'}),name='update_Printer'),
+   path('delete_Printer/<int:printer_id>',PrinterMachinesUpdate.as_view({'delete':'destroy'}),name='delete_Printer'),
 
 ]
