@@ -25,5 +25,9 @@ urlpatterns = [
     path('requestuser_group_list', ListRequestUserGroupsViewSet.as_view({'get':'list'}), name='requestuser_group_list'),
 
     path('group_list', UserGroupDropdownViewSet.as_view({'post':'create'}), name='group_list'),
+    path('user_switch_role', SwitchRoleViewSet.as_view({'post':'create'}), name='user_switch_role'),
+
+
+
 
 ]
