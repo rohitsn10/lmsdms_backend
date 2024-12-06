@@ -5,11 +5,12 @@ from .models import *
 from rest_framework.pagination import PageNumberPagination
 from .serializers import *
 from rest_framework import permissions
-from lms_module.models import Department
 from user_profile.function_call import *
 from django.contrib.auth.models import Group
 from django.core.mail import send_mail
 from user_profile.email_utils import *
+from django.db.models import Q
+
 
 class CustomPagination(PageNumberPagination):
     page_size = 10  # Number of items per page
@@ -159,8 +160,7 @@ class DocumentTypeCreateViewSet(viewsets.ModelViewSet):
             return Response({"status": True, "message": "Document type list fetched successfully", "data": serializer.data})
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
-        
-        
+                
 class PrintRequestViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = PrintRequest.objects.all().order_by('-id')
@@ -172,6 +172,8 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
             no_of_print = request.data.get('no_of_print')
             issue_type = request.data.get('issue_type')
             reason_for_print = request.data.get('reason_for_print')
+            printer_id = request.data.get('printer_id')
+
 
             if not no_of_print:
                 return Response({'status': False, 'message': 'NO of print is required'})
@@ -179,18 +181,26 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
                 return Response({'status': False, 'message': 'Issue type is required'})
             if not reason_for_print:
                 return Response({'status': False, 'message': 'Reason is required'})
+            if not printer_id:
+                return Response({'status': False, 'message': 'Printer id is required'})
             
             try:
                 sop_document = Document.objects.get(id=sop_document_id)
             except Document.DoesNotExist:
                 return Response({'status': False, 'message': 'Invalid document id'})
+            
+            try:
+                printer = PrinterMachinesModel.objects.get(id=printer_id)
+            except Document.DoesNotExist:
+                return Response({'status': False, 'message': 'Invalid printer id'})
 
             printrequest_obj = PrintRequest.objects.create(
                 user = user,
                 no_of_print=no_of_print,
                 issue_type=issue_type,
                 reason_for_print=reason_for_print,
-                sop_document_id = sop_document
+                sop_document_id = sop_document,
+                printer = printer,
             )
             user_department = user.department
             qa_group = Group.objects.get(name='QA')
@@ -308,6 +318,9 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             select_template = request.data.get('select_template')
             workflow = request.data.get('workflow')
             document_current_status_id = request.data.get('document_current_status_id')
+            training_required = request.data.get('training_required')
+
+
             # Validation for required fields
             if not document_title:
                 return Response({"status": False, "message": "Document title is required", "data": []})
@@ -337,7 +350,9 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 select_template_id=select_template,
                 workflow_id=workflow,
                 document_current_status=default_status,
-                version="1.0"
+                version="1.0",
+                training_required=training_required,
+
             )
             document.save()
             DocumentVersion.objects.create(
@@ -488,7 +503,17 @@ class DocumentViewSet(viewsets.ModelViewSet):
         try:
             user = request.user 
 
-            if user.department:
+             # Get the user's group IDs
+            user_group_ids = user.groups.values_list('id', flat=True)
+
+            # if user.department:
+            #     queryset = Document.objects.filter(user__department=user.department).order_by('-id')
+            # else:
+            #     queryset = Document.objects.none()
+
+            if user.groups.filter(name='Admin').exists():  # Check if the user is in the Admin group
+                queryset = Document.objects.all().order_by('-id')
+            elif user.department:  # Check if the user has a department
                 queryset = Document.objects.filter(user__department=user.department).order_by('-id')
             else:
                 queryset = Document.objects.none()
@@ -503,14 +528,17 @@ class DocumentViewSet(viewsets.ModelViewSet):
                     "status": True,
                     "message": "Documents fetched successfully",
                     'total': queryset.count(),
-                    'data': serializer.data
+                    'user_group_ids': list(user_group_ids) ,
+                    'data': serializer.data,
                 })
             else:
                 return Response({
                     "status": True,
                     "message": "No Documents found",
                     "total": 0,
-                    "data": []
+                    'user_group_ids': list(user_group_ids),  
+                    "data": [],
+
                 })
         except Exception as e:
             return Response({
@@ -922,17 +950,24 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
                 # documentdetails_approve=documentdetails,
                 status_approve=status
             )
+            approve_action = DocApprove.objects.create(
+                user=user,
+                document=document,
+                status_approve=status
+            )
             document.document_current_status = status
             document.form_status = None
             document.assigned_to = None
             document.save()
             
-            document_title = document.document_title
-            reviewer_group = Group.objects.get(name='Reviewer')
-            reviewers = CustomUser.objects.filter(groups=reviewer_group)
-            department_users = CustomUser.objects.filter(department=user.department)
-            users_to_notify = reviewers.union(department_users).distinct()
-            send_document_update_email(user, document_title, users_to_notify)
+            # document_title = document.document_title
+            # reviewer_group = Group.objects.get(name='Reviewer')
+            # reviewers = CustomUser.objects.filter(groups=reviewer_group)
+            # department_users = CustomUser.objects.filter(department=user.department)
+            # users_to_notify = reviewers.union(department_users).distinct()
+            # send_document_update_email(user, document_title, users_to_notify)
+            
+           
 
             return Response({"status": True, "message": "Document approval action created successfully"})
 
@@ -985,6 +1020,11 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
 
             # Create the reviewer action
             document_reviewer_action = DocumentReviewerAction.objects.create(
+                user=user,
+                document=document,
+                status_approve=status
+            )
+            approve_action = DocApprove.objects.create(
                 user=user,
                 document=document,
                 status_approve=status
@@ -1054,6 +1094,12 @@ class DocumentApproverActionCreateViewSet(viewsets.ModelViewSet):
                 document=document,
                 status_approve=status
             )
+            approve_action = DocApprove.objects.create(
+                user=user,
+                document=document,
+                status_approve=status
+            )
+
 
             # Update document current status only if all reviewers have approved
             # if all_reviewers_approved:
@@ -1106,8 +1152,28 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
                 status_approve=status
             )
 
+            approve_action = DocApprove.objects.create(
+                user=user,
+                document=document,
+                status_approve=status
+            )
+
             document.document_current_status = status
             document.save()
+
+            # Log actions based on status
+            if status_id == 7:  
+                DocumentEffectiveAction.objects.create(
+                    user=user,
+                    documentdetails_effective=document,
+                    status_effective=status
+                )
+            elif status_id == 6:  
+                DocumentReleaseAction.objects.create(
+                    user=user,
+                    documentdetails_release=document,
+                    status_release=status
+                )
 
             return Response({
                 "status": True,
@@ -1127,6 +1193,8 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
             document_id = request.data.get('document_id')
             assigned_to_id = request.data.get('assigned_to')
             status_id = request.data.get('status_sendback')
+            group_id = request.data.get('assign_user_group')
+
 
             # Validate required fields
             if not document_id or not assigned_to_id or not status_id:
@@ -1158,10 +1226,12 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
                 user=user,
                 document=document,
                 status_sendback=status,
+                group = group_id
             )
 
             # Update the document's assigned user and reason
             document.assigned_to = assigned_to
+            document.assigned_to_group = group_id
             document.document_current_status = status
             document.save()
             document_title = document.document_title
@@ -1178,93 +1248,89 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
 
 
 
-class DocumentReleaseActionCreateViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    queryset = DocumentReleaseAction.objects.all()
+# class DocumentReleaseActionCreateViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     queryset = DocumentReleaseAction.objects.all()
 
-    def create(self, request, *args, **kwargs):
-        try:
-            user = request.user
-            document_id = request.data.get('documentdetails_release')
-            status_id = request.data.get('status_release')
+#     def create(self, request, *args, **kwargs):
+#         try:
+#             user = request.user
+#             document_id = request.data.get('documentdetails_release')
+#             status_id = request.data.get('status_release')
 
-            if not document_id:
-                return Response({"status": False, "message": "Document details are required"})
-            if not status_id:
-                return Response({"status": False, "message": "Status is required"})
+#             if not document_id:
+#                 return Response({"status": False, "message": "Document details are required"})
+#             if not status_id:
+#                 return Response({"status": False, "message": "Status is required"})
 
-            documentdetails_release = DocumentDetails.objects.get(id=document_id)
-            status_release = DynamicStatus.objects.get(id=status_id)
+#             documentdetails_release = DocumentDetails.objects.get(id=document_id)
+#             status_release = DynamicStatus.objects.get(id=status_id)
 
-            document_release_action = DocumentReleaseAction.objects.create(
-                user=user,
-                documentdetails_release=documentdetails_release,
-                status_release=status_release
-            )
-
-            admin_group = Group.objects.get(name='Admin')
-            admin_users = CustomUser.objects.filter(groups=admin_group)
-
-            for admin_user in admin_users:
-                send_document_release_email(admin_user, documentdetails_release, status_release)
-
-            return Response({"status": True, "message": "Document release action created successfully"})
-
-        except DocumentDetails.DoesNotExist:
-            return Response({"status": False, "message": "Invalid document details ID"})
-        except DynamicStatus.DoesNotExist:
-            return Response({"status": False, "message": "Invalid status ID"})
-        except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+#             document_release_action = DocumentReleaseAction.objects.create(
+#                 user=user,
+#                 documentdetails_release=documentdetails_release,
+#                 status_release=status_release
+#             )
 
 
-class DocumentEffectiveActionCreateViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    queryset = DocumentEffectiveAction.objects.all()
+#             return Response({"status": True, "message": "Document release action created successfully"})
 
-    def create(self, request, *args, **kwargs):
-        try:
-            user = self.request.user
-            document_id = request.data.get('documentdetails_effective')
-            status_id = request.data.get('status_effective')
 
-            if not document_id:
-                return Response({"status": False, "message": "Document details are required"})
-            if not status_id:
-                return Response({"status": False, "message": "Status is required"})
+#         except DocumentDetails.DoesNotExist:
+#             return Response({"status": False, "message": "Invalid document details ID"})
+#         except DynamicStatus.DoesNotExist:
+#             return Response({"status": False, "message": "Invalid status ID"})
+#         except Exception as e:
+#             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
-            documentdetails_effective = DocumentDetails.objects.get(id=document_id)
-            status_effective = DynamicStatus.objects.get(id=status_id)
 
-            document_effective_action = DocumentEffectiveAction.objects.create(
-                user=user,
-                documentdetails_effective=documentdetails_effective,
-                status_effective=status_effective
-            )
+# class DocumentEffectiveActionCreateViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     queryset = DocumentEffectiveAction.objects.all()
 
-            return Response({"status": True, "message": "Document effective action created successfully"})
+#     def create(self, request, *args, **kwargs):
+#         try:
+#             user = self.request.user
+#             document_id = request.data.get('documentdetails_effective')
+#             status_id = request.data.get('status_effective')
 
-        except DocumentDetails.DoesNotExist:
-            return Response({"status": False, "message": "Invalid document details ID"})
-        except DynamicStatus.DoesNotExist:
-            return Response({"status": False, "message": "Invalid status ID"})
-        except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+#             if not document_id:
+#                 return Response({"status": False, "message": "Document details are required"})
+#             if not status_id:
+#                 return Response({"status": False, "message": "Status is required"})
+
+#             documentdetails_effective = DocumentDetails.objects.get(id=document_id)
+#             status_effective = DynamicStatus.objects.get(id=status_id)
+
+#             document_effective_action = DocumentEffectiveAction.objects.create(
+#                 user=user,
+#                 documentdetails_effective=documentdetails_effective,
+#                 status_effective=status_effective
+#             )
+
+#             return Response({"status": True, "message": "Document effective action created successfully"})
+
+#         except DocumentDetails.DoesNotExist:
+#             return Response({"status": False, "message": "Invalid document details ID"})
+#         except DynamicStatus.DoesNotExist:
+#             return Response({"status": False, "message": "Invalid status ID"})
+#         except Exception as e:
+#             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
-    def list(self, request, *args, **kwargs):
-        try:
-            user = self.request.user
+#     def list(self, request, *args, **kwargs):
+#         try:
+#             user = self.request.user
 
-            queryset = DocumentEffectiveAction.objects.filter(user=user)
+#             queryset = DocumentEffectiveAction.objects.filter(user=user)
 
-            if queryset.exists():
-                serializer = DocumentEffectiveActionSerializer(queryset, many=True)
-                data = serializer.data
-                return Response({"status": True, "message": "Document effective actions fetched successfully", "data": data})
-            else:
-                return Response({"status": False, "message": "No document effective actions found", "data": []})
-        except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+#             if queryset.exists():
+#                 serializer = DocumentEffectiveActionSerializer(queryset, many=True)
+#                 data = serializer.data
+#                 return Response({"status": True, "message": "Document effective actions fetched successfully", "data": data})
+#             else:
+#                 return Response({"status": False, "message": "No document effective actions found", "data": []})
+#         except Exception as e:
+#             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
 class DocumentReviseActionCreateViewSet(viewsets.ModelViewSet):
@@ -1385,21 +1451,45 @@ class DynamicInventoryUpdateViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         try:
+            # Retrieve the inventory_id from the URL
             inventory_id = self.kwargs.get('inventory_id')
-            dynamic_inventory = DynamicInventory.objects.get(id=inventory_id)
-            inventory_name = request.data.get('inventory_name')
-
-            if inventory_name is not None:
-                dynamic_inventory.inventory_name = inventory_name
             
+            # Retrieve inventory_name from the request data
+            inventory_name = request.data.get('inventory_name')
+            if not inventory_name:
+                raise ValidationError("The field 'inventory_name' is required and cannot be null.")
+
+            # Retrieve the inventory instance and update
+            dynamic_inventory = DynamicInventory.objects.get(id=inventory_id)
+            dynamic_inventory.inventory_name = inventory_name
             dynamic_inventory.save()
+
+            # Serialize and return the updated data
             serializer = DynamicInventorySerializer(dynamic_inventory)
-            return Response({"status": True, "message": "Dynamic inventory updated successfully", "data": serializer.data})
+            return Response({
+                "status": True, 
+                "message": "Dynamic inventory updated successfully", 
+                "data": serializer.data
+            })
 
         except DynamicInventory.DoesNotExist:
-            return Response({"status": False, "message": "Dynamic inventory not found"})
+            return Response({
+                "status": False, 
+                "message": "Dynamic inventory not found"
+            })
+
+        except ValidationError as ve:
+            return Response({
+                "status": False, 
+                "message": str(ve)
+            })
+
         except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+            return Response({
+                "status": False, 
+                "message": "Something went wrong", 
+                "error": str(e)
+            })
 
 class DynamicInventoryDeleteViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -1450,10 +1540,17 @@ class DocumentCommentsViewSet(viewsets.ModelViewSet):
     queryset = DocumentComments.objects.all().order_by('-created_at')
     serializer_class = DocumentCommentSerializer
     permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'document_id'
+
 
     def list(self, request, *args, **kwargs):
         try:
+            document_id = self.kwargs.get('document_id')
             queryset = self.filter_queryset(self.get_queryset())
+
+            if document_id:
+                queryset = queryset.filter(document_id=document_id)
+
             serializer = DocumentCommentSerializer(queryset, many=True)
             data = serializer.data
             return Response({"message": "Comment list fetched successfully", "data": data})
@@ -1534,3 +1631,219 @@ class DocumentDraftStatusViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+class DocumentTypeUpdateViewSet(viewsets.ModelViewSet):
+    serializer_class = DocumentTypeSerializer
+    queryset = DocumentType.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'document_type_id'       
+
+    def update(self, request, *args, **kwargs):
+        try:
+            # Get document_type_id and new document_name from the request
+            document_type_id = self.kwargs.get('document_type_id')
+            document_name = request.data.get('document_name')
+
+            # Validate document_type_id and document_name
+            if not document_type_id:
+                return Response({"status": False, "message": "Document type ID is required", "data": []})
+            if not document_name:
+                return Response({"status": False, "message": "Document name is required", "data": []})
+
+            # Fetch the DocumentType instance
+            document_type = DocumentType.objects.filter(id=document_type_id).first()
+            if not document_type:
+                return Response({"status": False, "message": "Document type not found", "data": []})
+
+            # Update the document_name
+            document_type.document_name = document_name
+            document_type.save()
+
+            # Serialize the updated instance
+            serializer = DocumentTypeSerializer(document_type)
+            return Response({"status": True, "message": "Document type updated successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": []})
+
+
+# class DepartmentUsersViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     serializer_class = CustomUserdataSerializer
+
+#     def list(self, request, *args, **kwargs):
+#         try:
+#             # Get the document ID from the request
+#             document_id = request.data.get('document_id', None)
+#             if not document_id:
+#                 return Response({
+#                     "status": False,
+#                     "message": "Document ID is required.",
+#                     "data": []
+#                 })
+
+#             # Fetch the document and ensure it exists
+#             try:
+#                 document = Document.objects.get(id=document_id)
+#             except Document.DoesNotExist:
+#                 return Response({
+#                     "status": False,
+#                     "message": "Document not found.",
+#                     "data": []
+#                 })
+
+#             # Fetch users associated with the document from the DocApprove model
+#             approved_users = CustomUser.objects.filter(
+#                 docapprove__document=document
+#             ).distinct()
+
+#             # Serialize the filtered users
+#             serializer = self.serializer_class(approved_users, many=True, context={'request': request})
+#             return Response({
+#                 "status": True,
+#                 "message": "Users fetched successfully.",
+#                 "data": serializer.data,
+#             })
+#         except Exception as e:
+#             return Response({
+#                 "status": False,
+#                 "message": str(e),
+#                 "data": [],
+#             })
+
+
+class DepartmentUsersViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'document_id'
+
+    def list(self, request, *args, **kwargs):
+        try:
+            # Get the document ID from the request
+            document_id = self.kwargs.get('document_id')
+            if not document_id:
+                return Response({
+                    "status": False,
+                    "message": "Document ID is required.",
+                    "data": []
+                })
+
+            # Fetch the users linked to the document ID in the DocApprove model
+            approved_users = DocApprove.objects.filter(document_id=document_id).select_related('user')
+            if not approved_users.exists():
+                return Response({
+                    "status": False,
+                    "message": "No users found for the given document ID.",
+                    "data": []
+                })
+
+            # Prepare data for response
+            response_data = []
+            for approval in approved_users:
+                user = approval.user
+                user_groups = user.groups.all()
+                for group in user_groups:
+                    response_data.append({
+                        "id": user.id,
+                        "first_name": f"{user.first_name}({group.name})",
+                        "group_id": [group.id],
+                    })
+
+            # Return the response
+            return Response({
+                "status": True,
+                "message": "Users fetched successfully.",
+                "data": response_data,
+            })
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": str(e),
+                "data": [],
+            })
+
+class PrinterMachines(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            printer_name = request.data.get('printer_name')
+            printer_description = request.data.get('printer_location')
+
+            if not printer_description:
+                return Response({'status':False,'message':'Print Location is required'})
+            
+            if not printer_name:
+                return Response({'status':False,'message':'Print Name is required'})
+            
+            printer_obj = PrinterMachinesModel.objects.create(
+                user = user,
+                printer_name = printer_name,
+                printer_description = printer_description
+            )
+            return Response({'status': True, 'message': 'Printer Added successfully'})
+        except Exception as e:
+            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+    
+    def list(self, request):
+        queryset = PrinterMachinesModel.objects.all().order_by('-id')
+        
+        try:
+            if queryset.exists():
+                serializer = PrinterSerializer(queryset, many=True)
+                return Response({
+                    "status": True,
+                    "message": "Printer Machine fetched successfully",
+                    'total': queryset.count(),
+                    'data': serializer.data
+                })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "No Printers found",
+                    "total": 0,
+                    "data": []
+                })
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+
+
+class PrinterMachinesUpdate(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'printer_id'
+
+    def update(self, request, *args, **kwargs):
+        try:
+            printer_id = self.kwargs.get("printer_id")
+            printer_name = request.data.get('printer_name')
+            printer_description = request.data.get('printer_location')
+    
+            printer_obj = PrinterMachinesModel.objects.get(id=printer_id)
+            if printer_name:
+                printer_obj.printer_name = printer_name
+            if printer_description:
+                printer_obj.printer_description = printer_description
+            printer_obj.save()
+    
+            return Response({'status': True, 'message': 'Print machine updated successfully'})
+        except PrinterMachinesModel.DoesNotExist:
+            return Response({'status': False, 'message': 'Print not found'})
+        except Exception as e:
+            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+        
+    def destroy(self, request, *args, **kwargs):
+        try:
+            printer_id = request.data.get('printer_id')   
+
+            if not PrinterMachinesModel.objects.get(id=printer_id):
+                return Response({"status":False, "message":"Print machine id not found"})
+                     
+            printer_object = PrinterMachinesModel.objects.get(id=printer_id)
+            printer_object.delete()
+            return Response({"status":True, "message":"Printer deleted succesfully"})
+        except Exception as e:
+                return Response({"status": False,'message': 'Something went wrong','error': str(e)})
+
+
+
+
+

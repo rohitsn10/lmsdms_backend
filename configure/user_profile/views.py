@@ -412,22 +412,76 @@ class UpdateUserViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": str(e), "data": []})
 
 
-class LoginAPIView(viewsets.ModelViewSet):
+# class LoginAPIView(viewsets.ModelViewSet):
+#     def create(self, request):
+#         serializer = LoginSerializer(data=request.data)
+#         if serializer.is_valid():
+#             user = serializer.validated_data
+#             if not user.is_reset_password:
+#                 user.increment_login_count()
+#                 if user.login_count >= 3:
+#                     return Response({"status": False,"message": "Your account is blocked.", "data": []})
+#             login(request, user)
+#             refresh = RefreshToken.for_user(user)
+#             serializer = CustomUserSerializer(user,context={'request': request})
+#             data = serializer.data
+#             data['token'] = str(refresh.access_token)
+#             return Response({"message": "Login successfully", "data": data})
+#         return Response({"status": False,"message": "Invalid credentials", "data": []})
+
+class LoginAPIView(viewsets.ViewSet):
     def create(self, request):
-        serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data
-            if not user.is_reset_password:
-                user.increment_login_count()
+        try:
+            username = request.data.get('username', '').strip()
+            password = request.data.get('password', '').strip()
+            group_id = request.data.get('group_id', None)
+
+            if not username:
+                return Response({"status": False, 'message': 'Username is required', "data": []})
+            if not password:
+                return Response({"status": False, 'message': 'Password is required', "data": []})
+            if not group_id:
+                return Response({"status": False, 'message': 'Group ID is required', "data": []})
+
+            user = CustomUser.objects.filter(username=username).first()
+            if not user:
+                return Response({"status": False, "message": "Invalid username or password!", "data": []})
+
+            if not user.is_active:
+                return Response({"status": False, "message": "Your account is blocked. Please contact support.", "data": []})
+
+            if not user.groups.filter(id=group_id).exists():
+                return Response({"status": False, "message": "Invalid group ID.", "data": []})
+
+            user_auth = authenticate(username=username, password=password)
+            if not user_auth:
+                # Increment failed login count
+                user.login_count += 1
+                user.save()
+
                 if user.login_count >= 3:
-                    return Response({"status": False,"message": "Your account is blocked.", "data": []})
-            login(request, user)
-            refresh = RefreshToken.for_user(user)
-            serializer = CustomUserSerializer(user,context={'request': request})
+                    user.is_blocked = True
+                    user.save()
+                    return Response({"status": False, "message": "Your account is blocked.", "data": []})
+
+                return Response({"status": False, "message": "Invalid username or password!", "data": []})
+
+            # Reset failed login count and log in user
+            user.login_count = 0
+            user.is_login = True
+            user.save()
+
+            refresh = RefreshToken.for_user(user_auth)
+            serializer = LoginUserSerializer(user_auth, context={'request': request})
             data = serializer.data
             data['token'] = str(refresh.access_token)
-            return Response({"message": "Login successfully", "data": data})
-        return Response({"status": False,"message": "Invalid credentials", "data": []})
+            return Response({"status": True, "message": "You are logged in!", "data": data})
+        
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Login error: {str(e)}", exc_info=True)
+            return Response({"status": False, 'message': "Something went wrong!", 'data': []})
 
 class ResetPasswordAPIView(viewsets.ModelViewSet):
     def update(self, request):
@@ -627,3 +681,67 @@ class ListRequestUserGroupsViewSet(viewsets.ModelViewSet):
                 "message": str(e),
                 "data": []
             })
+        
+
+class UserGroupDropdownViewSet(viewsets.ModelViewSet):
+
+    queryset = Group.objects.none()
+    serializer_class = GroupSerializer
+
+    def create(self, request, *args, **kwargs):
+        username = request.data.get("username")
+        password = request.data.get("password")
+
+        # Authenticate the user
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            # User authenticated, fetch groups
+            groups = user.groups.all().order_by('name')
+            serializer = self.get_serializer(groups, many=True)
+
+            # Add the user's first name to the response
+            return Response({
+                "status": True,
+                "message": "User Groups List Retrieved Successfully",
+                "data": {
+                    "user_first_name": user.first_name,
+                    "groups": serializer.data
+                }
+            })
+        else:
+            # Authentication failed
+            return Response({
+                "status": False,
+                "message": "Invalid username or password",
+                "data": []
+            })
+
+class SwitchRoleViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    def create(self, request):
+        user = request.user
+        group_id = request.data.get('group_id')
+        password = request.data.get('password')
+
+        # Validate input
+        if not group_id or not password:
+            return Response({"status": False, "message": "Group ID and password are required", "data": []})
+
+        if not user.check_password(password):
+            return Response({"status": False, "message": "Incorrect password", "data": []})
+
+        try:
+            # Fetch the group using group_id
+            group = Group.objects.get(id=group_id)
+            if not user.groups.filter(id=group.id).exists():
+                return Response({"status": False, "message": "User is not part of the requested group", "data": []})
+        except Group.DoesNotExist:
+            return Response({"status": False, "message": "Group not found", "data": []})
+
+        # Serialize the group and permissions
+        serializer = GroupPermissionSerializer(group)
+
+        return Response({"status": True, "message": "Permissions retrieved successfully", "data": serializer.data})
+
+
+

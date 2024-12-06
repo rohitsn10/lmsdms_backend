@@ -27,6 +27,7 @@ class PrintRequest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     master_copy_user = models.ManyToManyField(CustomUser, related_name='master_copy_requests', blank=True)
     other_user = models.ManyToManyField(CustomUser, related_name='other_user_requests', blank=True)
+    printer = models.ForeignKey("PrinterMachinesModel", on_delete=models.CASCADE,blank=True, null=True)  # Updated
 
     def __str__(self):
         return f"Print Request by {self.user.username} on {self.created_at}"
@@ -65,11 +66,13 @@ class Document(models.Model):
     document_current_status = models.ForeignKey('DynamicStatus', on_delete=models.CASCADE,blank=True, null=True)
     select_template = models.ForeignKey(TemplateModel, on_delete=models.CASCADE, blank=True, null=True)
     assigned_to = models.ForeignKey(CustomUser, related_name="assigned_documents", on_delete=models.SET_NULL, blank=True, null=True)  # To track the user to whom the document is currently assigned 
+    assigned_to_group = models.TextField(blank=True, null=True)    
     workflow = models.ForeignKey(WorkFlowModel, on_delete=models.CASCADE)  
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)
     version = models.CharField(max_length=10, default="1.0")
     is_revised = models.BooleanField(default=False)
+    training_required = models.BooleanField(default=False)  # New field added
 
     def __str__(self):
         return self.document_title
@@ -114,6 +117,11 @@ class DocumentComments(models.Model):
     Comment_description = models.JSONField(blank=True, null=True)    
     created_at = models.DateTimeField(auto_now_add=True)
 
+class DocApprove(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
+    status_approve = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 class DocumentAuthorApproveAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -144,6 +152,7 @@ class DocumentSendBackAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,blank=True, null=True)
     document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     status_sendback = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE,blank=True, null=True)
+    group = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True,blank=True, null=True)
 
 class DocumentReleaseAction(models.Model):
@@ -172,6 +181,15 @@ class DynamicInventory(models.Model):
 
     def __str__(self):
         return self.inventory_name
+    
+class PrinterMachinesModel(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    printer_name = models.TextField(blank=True, null=True)
+    printer_description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.Printer_name
     
     
 

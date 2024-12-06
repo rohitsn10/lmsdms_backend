@@ -7,11 +7,41 @@ class WorkFlowSerializer(serializers.ModelSerializer):
         fields = ['id', 'workflow_name', 'workflow_description', 'created_at', 'is_active']
 
 class PrintRequestSerializer(serializers.ModelSerializer):
+    first_name = serializers.SerializerMethodField()  # Include user's first name directly
     document_title = serializers.CharField(source='sop_document_id.document_title', read_only=True)
+    status = serializers.SerializerMethodField()
+    no_of_request_by_admin = serializers.SerializerMethodField()  # Include no_of_request_by_admin
+    approved_date = serializers.SerializerMethodField()  # Rename created_at to approved_date
+    printer_name = serializers.SerializerMethodField()
 
     class Meta:
         model = PrintRequest
-        fields = ['id', 'user', 'sop_document_id', 'document_title','no_of_print', 'issue_type','reason_for_print','print_request_status','created_at']
+        fields = [
+            'id', 'user', 'first_name', 'sop_document_id', 'document_title',
+            'no_of_print', 'issue_type', 'reason_for_print',
+            'print_request_status', 'created_at', 'status',
+            'no_of_request_by_admin', 'approved_date','printer_name'
+        ]
+
+    def get_first_name(self, obj):
+        return obj.user.first_name if obj.user else None
+
+    def get_status(self, obj):
+        approval = obj.approvals.order_by('-created_at').first()
+        return approval.status.status if approval and approval.status else None
+
+    def get_no_of_request_by_admin(self, obj):
+        approval = obj.approvals.order_by('-created_at').first()
+        return approval.no_of_request_by_admin if approval else None
+
+    def get_approved_date(self, obj):
+        approval = obj.approvals.order_by('-created_at').first()
+        return approval.created_at if approval else None
+    
+    def get_printer_name(self, obj):
+        approval = obj.approvals.order_by('-created_at').first()
+        return approval.printer_name if approval else None
+
 
 class DocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,23 +85,66 @@ class TemplateSerializer(serializers.ModelSerializer):
         model = TemplateModel
         fields = '__all__'
 
+# class CustomUserdataSerializer(serializers.ModelSerializer):
+#     first_name = serializers.SerializerMethodField()
+#     group_id = serializers.SerializerMethodField()
+
+#     class Meta:
+#         model = CustomUser
+#         fields = ['id', 'first_name', 'group_id']
+
+#     def get_first_name(self, obj):
+#         # Get the first name of the user
+#         first_name = obj.first_name if obj.first_name else ''
+#         # Get the group name of the user
+#         group_name = ', '.join(obj.groups.values_list('name', flat=True)) if obj.groups.exists() else ''
+#         # Combine the first name and group name
+#         return f"{first_name}({group_name})" if group_name else first_name
+
+#     def get_group_id(self, obj):
+#         # Get the group IDs as a list
+#         return list(obj.groups.values_list('id', flat=True))
+ 
+class CustomUserGroupSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    first_name = serializers.SerializerMethodField()
+    group_id = serializers.IntegerField()
+
+    def get_first_name(self, obj):
+        # Format first_name as "first_name(group_name)"
+        first_name = obj['first_name']
+        group_name = obj['group_name']
+        return f"{first_name}({group_name})"
+
+
 class DocumentviewSerializer(serializers.ModelSerializer):
     document_type_name = serializers.SerializerMethodField()
-    formatted_created_at = serializers.SerializerMethodField()
+    # formatted_created_at = serializers.SerializerMethodField()
     current_status_name = serializers.SerializerMethodField()
+    approval_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Document
-        fields = ['id', 'document_title', 'document_number', 'formatted_created_at', 'document_type_name','form_status','document_current_status','current_status_name']
+        fields = ['id', 'document_title','assigned_to', 'document_number', 'created_at', 'document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status']
 
     def get_document_type_name(self, obj):
         return obj.document_type.document_name if obj.document_type else None
 
-    def get_formatted_created_at(self, obj):
-        return obj.created_at.strftime('%d-%m-%Y')
+    # def get_formatted_created_at(self, obj):
+    #     return obj.created_at.strftime('%d-%m-%Y')
     
     def get_current_status_name(self, obj):
         return obj.document_current_status.status if obj.document_current_status else None
+    
+    def get_approval_status(self, obj):
+        # Fetch the latest status from PrintRequestApproval for this document
+        latest_approval = (
+            PrintRequestApproval.objects
+            .filter(print_request__sop_document_id=obj)
+            .order_by('-created_at')
+            .first()
+        )
+        return latest_approval.status.status if latest_approval and latest_approval.status else None
 
 class DocumentCommentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -111,4 +184,10 @@ class DocumentDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
         fields = ['id','document_title','document_number','document_type','document_description','revision_time','revision_date','document_operation','select_template','workflow']
+
+class PrinterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PrinterMachinesModel
+        fields = ['id', 'printer_name', 'printer_description', 'created_at']
+
 

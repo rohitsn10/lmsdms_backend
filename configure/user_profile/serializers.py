@@ -97,6 +97,70 @@ class CustomUserSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.profile_image.url)
         return None
     
+class LoginUserSerializer(serializers.ModelSerializer):
+    # groups_list = serializers.SerializerMethodField()
+    profile_image = serializers.SerializerMethodField()
+    user_permissions = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomUser
+        fields = [
+            'id', 'email', 'first_name', 'last_name', 'phone', 'department', 'is_active',
+            'is_staff', 'is_superuser', 'profile_image', 'user_permissions',
+            'username', 'is_reset_password', 'login_count'
+        ]
+
+    # def get_groups_list(self, obj):
+    #     """
+    #     Returns a list of groups with their IDs and names.
+    #     """
+    #     return [{'id': group.id, 'name': group.name} for group in obj.groups.all()]
+
+    def get_user_permissions(self, obj):
+        """
+        Returns permissions for the selected group.
+        """
+        request = self.context.get('request')
+        group_id = request.data.get('group_id') if request else None
+
+        # Ensure group_id is provided and valid
+        if not group_id:
+            return None
+
+        # Filter the user's groups to find the selected one
+        selected_group = obj.groups.filter(id=group_id).first()
+        if not selected_group:
+            return None
+
+        # Fetch permissions for the selected group
+        permissions = selected_group.permissions.select_related('content_type').all()
+
+        permission_list = []
+        for permission in permissions:
+            permission_list.append({
+                "id": permission.id,
+                "name": permission.codename
+            })
+
+        return {
+            "group": {
+                "id": selected_group.id,
+                "name": selected_group.name,
+            },
+            "permissions": permission_list if permission_list else None
+        }
+
+    def get_profile_image(self, obj):
+        """
+        Returns the absolute URL of the user's profile image if available.
+        """
+        if obj.profile_image and hasattr(obj.profile_image, 'url'):
+            request = self.context.get('request')
+            return request.build_absolute_uri(obj.profile_image.url) if request else None
+        return None
+
+
+
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
