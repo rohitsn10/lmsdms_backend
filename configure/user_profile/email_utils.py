@@ -103,3 +103,49 @@ def send_document_sendback_email(assigned_to, document_title):
 
     return {"status": True, "message": "Email sent successfully", "data": []}
 
+
+def send_document_release_email(admin_user, documentdetails_release, status_release):
+    context = {
+        'full_name': f'{admin_user.first_name} {admin_user.last_name}',
+        'document_title': documentdetails_release.document_title,
+        'status_name': status_release.status,
+        'current_time': timezone.now().strftime('%d-%m-%Y'),
+    }
+
+    send_dynamic_email('DOCUMENT_RELEASE_NOTIFICATION', admin_user.email, context)
+
+def send_document_approval_email(user, document_title, recipients):
+    for recipient in recipients:
+        context = {
+            'full_name': f'{recipient.first_name} {recipient.last_name}',
+            'first_name': recipient.first_name,  
+            'last_name': recipient.last_name,  
+            'document_name': document_title,
+            'current_time': timezone.now().strftime('%d-%m-%Y'),
+        }
+
+        send_dynamic_email('DOCUMENT_APPROVAL_NOTIFICATION', user.email, context)
+
+def send_document_revise_email(user, documentdetails_revise, status_revise):
+    context = {
+        'receiver_first_name': user.first_name,
+        'receiver_last_name': user.last_name, 
+        'document_title': documentdetails_revise.document_title,
+        'status_name': status_revise.status,
+        'current_time': timezone.now().strftime('%d-%m-%Y'),
+    }
+
+    send_dynamic_email('DOCUMENT_REVISE_NOTIFICATION', user.email, context)
+
+def send_print_request_email(user, no_of_print, reason_for_print, sop_document_id, issue_type, qa_users_in_department):
+    context = {
+        'receiver_first_name': qa_users_in_department.first_name,
+        'receiver_last_name': qa_users_in_department.last_name, 
+        'document_title': sop_document_id.document_title,
+        'no_of_print': no_of_print,
+        'reason_for_print': reason_for_print,
+        'issue_type': issue_type,
+        'current_time': timezone.now().strftime('%d-%m-%Y'),
+    }
+
+    send_dynamic_email('PRINT_REQUEST_NOTIFICATION', qa_users_in_department, context)

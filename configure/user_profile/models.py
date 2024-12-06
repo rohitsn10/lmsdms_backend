@@ -88,3 +88,10 @@ class EmailTemplate(models.Model):
 
     def __str__(self):
         return self.name
+    
+    
+class Reminder(models.Model):
+    reminder_minutes = models.JSONField(default=list)  # Stores a list of reminder minutes (e.g., [90, 60, 30, 15])
+
+    def __str__(self):
+        return f"Reminder Minutes: {', '.join(map(str, self.reminder_minutes))}"

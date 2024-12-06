@@ -265,7 +265,7 @@ class CreateUserViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            email = request.data.get('email')
+            email = request.data.get('email').lower()
             username = request.data.get('username')
             first_name = request.data.get('first_name')
             last_name = request.data.get('last_name')
@@ -276,6 +276,10 @@ class CreateUserViewSet(viewsets.ModelViewSet):
             
             if not email:
                 return Response({"status": False, 'message': 'Email is required', 'data': []})
+            if CustomUser.objects.filter(email=email).exists():
+                return Response({"status": False, 'message': 'Email already exists', 'data': []})
+            if CustomUser.objects.filter(username=username).exists():
+                return Response({"status": False, 'message': 'Username already exists', 'data': []})
             if not username:
                 return Response({"status": False, 'message': 'Username is required', 'data': []})
             if not department_id:

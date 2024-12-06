@@ -54,13 +54,13 @@ class TemplateModel(models.Model):
         return self.template_name
     
 class Document(models.Model):
-   
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     document_title = models.TextField(blank=True, null=True) 
     document_number = models.CharField(max_length=255) 
     document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE) 
     document_description = models.TextField(blank=True, null=True)  
     revision_time = models.CharField(max_length=50, blank=True, null=True)  
+    revision_date = models.DateTimeField(blank=True, null=True)
     document_operation = models.TextField(blank=True, null=True)  
     form_status = models.TextField(blank=True, null=True)
     document_current_status = models.ForeignKey('DynamicStatus', on_delete=models.CASCADE,blank=True, null=True)
@@ -71,8 +71,8 @@ class Document(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)
     version = models.CharField(max_length=10, default="1.0")
+    is_revised = models.BooleanField(default=False)
     training_required = models.BooleanField(default=False)  # New field added
-
 
     def __str__(self):
         return self.document_title
