@@ -192,6 +192,10 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
                 reason_for_print=reason_for_print,
                 sop_document_id = sop_document
             )
+            user_department = user.department
+            qa_group = Group.objects.get(name='QA')
+            qa_users_in_department = CustomUser.objects.filter(groups=qa_group, department=user_department)
+            send_print_request_email(user, no_of_print, reason_for_print, sop_document, issue_type, qa_users_in_department)
             return Response({'status': True, 'message': 'Print requested successfully'})
         except Exception as e:
             return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
@@ -299,6 +303,7 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             document_type = request.data.get('document_type')
             document_description = request.data.get('document_description', '')
             revision_time = request.data.get('revision_time', '')
+            revision_date = request.data.get('revision_date', '')
             document_operation = request.data.get('document_operation', '')
             select_template = request.data.get('select_template')
             workflow = request.data.get('workflow')
@@ -327,6 +332,7 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 document_type_id=document_type,
                 document_description=document_description,
                 revision_time=revision_time,
+                revision_date=revision_date,
                 document_operation=document_operation,
                 select_template_id=select_template,
                 workflow_id=workflow,
@@ -996,8 +1002,13 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
             # if all_reviewers_approved:
             document.document_current_status = status
             document.assigned_to = None
-
             document.save()
+            document_title  = document.document_title
+            approver_user = Group.objects.get(name='Approver')
+            approvers = CustomUser.objects.filter(groups=approver_user)
+            department_users = CustomUser.objects.filter(department=user.department)
+            users_to_notify = approvers.union(department_users).distinct()
+            send_document_approval_email(user, document_title, users_to_notify)
 
             return Response({
                 "status": True,
@@ -1191,6 +1202,12 @@ class DocumentReleaseActionCreateViewSet(viewsets.ModelViewSet):
                 status_release=status_release
             )
 
+            admin_group = Group.objects.get(name='Admin')
+            admin_users = CustomUser.objects.filter(groups=admin_group)
+
+            for admin_user in admin_users:
+                send_document_release_email(admin_user, documentdetails_release, status_release)
+
             return Response({"status": True, "message": "Document release action created successfully"})
 
         except DocumentDetails.DoesNotExist:
@@ -1273,6 +1290,12 @@ class DocumentReviseActionCreateViewSet(viewsets.ModelViewSet):
                 documentdetails_revise=documentdetails_revise,
                 status_revise=status_revise
             )
+            document = documentdetails_revise.document
+            document.is_revised = True
+            document.save()
+            all_users = CustomUser.objects.filter(department = documentdetails_revise.document.user.department)
+            for user in all_users:
+                send_document_revise_email(user, documentdetails_revise, status_revise)
 
             return Response({"status": True, "message": "Document revise action created successfully"})
 
