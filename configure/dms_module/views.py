@@ -203,7 +203,7 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
                 printer = printer,
             )
             user_department = user.department
-            qa_group = Group.objects.get(name='QA')
+            qa_group = Group.objects.get(name='Reviewer')
             qa_users_in_department = CustomUser.objects.filter(groups=qa_group, department=user_department)
             send_print_request_email(user, no_of_print, reason_for_print, sop_document, issue_type, qa_users_in_department)
             return Response({'status': True, 'message': 'Print requested successfully'})

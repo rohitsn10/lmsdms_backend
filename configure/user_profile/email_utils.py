@@ -137,14 +137,19 @@ def send_document_revise_email(user, documentdetails_revise, status_revise):
     send_dynamic_email('DOCUMENT_REVISE_NOTIFICATION', user.email, context)
 
 def send_print_request_email(user, no_of_print, reason_for_print, sop_document_id, issue_type, qa_users_in_department):
-    context = {
-        'receiver_first_name': qa_users_in_department.first_name,
-        'receiver_last_name': qa_users_in_department.last_name, 
-        'document_title': sop_document_id.document_title,
-        'no_of_print': no_of_print,
-        'reason_for_print': reason_for_print,
-        'issue_type': issue_type,
-        'current_time': timezone.now().strftime('%d-%m-%Y'),
-    }
+    current_time = timezone.now().strftime('%d-%m-%Y')
+    
+    # Loop through each user in qa_users_in_department
+    for qa_user in qa_users_in_department:
+        context = {
+            'receiver_first_name': qa_user.first_name,
+            'receiver_last_name': qa_user.last_name, 
+            'document_title': sop_document_id.document_title,
+            'no_of_print': no_of_print,
+            'reason_for_print': reason_for_print,
+            'issue_type': issue_type,
+            'current_time': current_time,
+        }
 
-    send_dynamic_email('PRINT_REQUEST_NOTIFICATION', qa_users_in_department, context)
+        # Send the email to each user individually
+        send_dynamic_email('PRINT_REQUEST_NOTIFICATION', [qa_user], context)  # Pass only the current qa_user here
