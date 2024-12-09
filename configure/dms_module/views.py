@@ -1286,6 +1286,11 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
 
             status_release = DynamicStatus.objects.get(id=status_id)
 
+            try:
+                document = Document.objects.get(id=document_id)
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Document ID"})
+
             # Determine which model to use based on status_id
             if status_id == 6:
                 document_release_action = DocumentReleaseAction.objects.create(
@@ -1293,6 +1298,9 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                     document_id=document_id,
                     status_release=status_release
                 )
+                # Update the document's current status
+                document.document_current_status = status_release
+                document.save()
                 return Response({"status": True, "message": "Document release action created successfully"})
             elif status_id == 7:
                 document_effective_action = DocumentEffectiveAction.objects.create(
@@ -1300,9 +1308,13 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                     document_id=document_id,
                     status_effective=status_release
                 )
+                # Update the document's current status
+                document.document_current_status = status_release
+                document.save()
                 return Response({"status": True, "message": "Document effective action created successfully"})
             else:
                 return Response({"status": False, "message": "Invalid status ID"})
+            
 
         except Document.DoesNotExist:
             return Response({"status": False, "message": "Invalid document ID"})
