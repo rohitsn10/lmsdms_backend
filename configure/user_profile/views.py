@@ -27,6 +27,7 @@ from django.contrib.auth.hashers import make_password
 import random
 import ipdb
 from lms_module.models import Department
+from user_profile.email_utils import *
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -319,13 +320,7 @@ class CreateUserViewSet(viewsets.ModelViewSet):
                 user.groups.add(group)
 
             # Send email with username and password
-            send_mail(
-                'Your account has been created',
-                f'Username: {username}\nPassword: {password}',
-                'kalpesh.g@n10tech.com',  # Replace with your sender email
-                [email],
-                fail_silently=False,
-            )
+            send_email_with_credentials(email, username, password, first_name)
 
             serializer = CustomUserSerializer(user,context={'request': request})
             data = serializer.data
@@ -745,3 +740,32 @@ class SwitchRoleViewSet(viewsets.ModelViewSet):
 
 
 
+class CreateReminderViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request):
+        try:
+            reminder_minutes = request.data.get('reminder_minutes',[])
+            if not reminder_minutes:
+                return Response({"status": False, "message": "Reminder minutes are required", "data": []})
+
+            user = self.request.user
+            reminder = Reminder.objects.create(user=user, reminder_minutes=reminder_minutes)
+            serializer = ReminderSerializer(reminder)
+            data = serializer.data
+
+            return Response({"status": True, "message": "Reminder created successfully", "data": data})
+
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": []})
+        
+    def list(self, request, *args, **kwargs):
+        try:
+            reminders = Reminder.objects.all()
+            serializer = ReminderSerializer(reminders, many=True)
+            data = serializer.data
+
+            return Response({"status": True, "message": "Reminders fetched successfully", "data": data})
+
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": []})

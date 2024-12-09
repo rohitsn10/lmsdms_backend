@@ -449,9 +449,7 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
                 document.document_operation = document_operation
             if workflow != '':
                 document.workflow = workflow
-            version = document.version
-            new_version = increment_version(version)
-            document.version = new_version
+            
             # Save the updated document
             document.save()
 
@@ -873,7 +871,9 @@ class DocumentDetailsUpdateViewSet(viewsets.ModelViewSet):
             
             # if document_id is not None:
             #     document_details.document_id = document_id
-
+            version_number = document_details.document.version  # Get the current version
+            new_version = increment_version(version_number)
+            document_details.document.version = new_version
             document_details.save() 
 
             return Response({

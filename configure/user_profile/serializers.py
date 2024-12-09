@@ -224,3 +224,9 @@ class GroupPermissionSerializer(serializers.ModelSerializer):
             permission_dict[model]["is_" + action] = "true"
         
         return list(permission_dict.values()) if permission_dict else None
+    
+
+class ReminderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Reminder
+        fields = ['id', 'user','reminder_minutes']

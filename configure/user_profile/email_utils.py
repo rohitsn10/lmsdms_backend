@@ -44,11 +44,11 @@ def send_email_forgot_password(email, full_name, username, otp):
     }
     send_dynamic_email('FORGOT_PASSWORD', email, context)
 
-def send_user_email(email, full_name, username):
+def send_email_with_credentials(email, username, password, first_name):
     context = {
-        'full_name': full_name,
+        'first_name': first_name,
         'username': username,
-        'login_url': 'http://127.0.0.1:8000/login'
+        'password': password,
     }
     send_dynamic_email('WELCOME_EMAIL', email, context)
 
@@ -60,7 +60,6 @@ def send_email_change_password(email, full_name):
     send_dynamic_email('CHANGE_PASSWORD', email, context)
 
 
-# email_utils.py
 
 def send_document_create_email(user, document_name, recipients):
     for recipient in recipients:
