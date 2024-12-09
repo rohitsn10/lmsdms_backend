@@ -769,3 +769,49 @@ class CreateReminderViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
+
+
+class DepartmentWiseUserViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            requesting_user = request.user
+
+            # Check if the requesting user has a department
+            if not hasattr(requesting_user, 'department') or not requesting_user.department:
+                return Response({
+                    "status": False,
+                    "message": "Requesting user does not have a department assigned",
+                    "data": []
+                })
+
+            # Get users in the "Reviewer" group and match the requester's department
+            reviewer_group = Group.objects.filter(name="Reviewer").first()
+            if not reviewer_group:
+                return Response({
+                    "status": False,
+                    "message": "Reviewer group does not exist",
+                    "data": []
+                })
+
+            queryset = CustomUser.objects.filter(
+                groups=reviewer_group,
+                department=requesting_user.department
+            ).order_by('-id')
+
+            # Serialize the data with minimal serializer
+            serializer = MinimalUserSerializer(queryset, many=True, context={'request': request})
+            data = serializer.data
+
+            return Response({
+                "status": True,
+                "message": "User List Retrieved Successfully",
+                "data": data
+            })
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": str(e),
+                "data": []
+            })
