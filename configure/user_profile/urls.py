@@ -29,6 +29,8 @@ urlpatterns = [
 
     path('create_reminder', CreateReminderViewSet.as_view({'post':'create','get':'list'}), name='create_reminder'),
 
+    path('department_wise_reviewer', DepartmentWiseUserViewSet.as_view({'get':'list'}), name='department_wise_reviewer'),
+
 
 
 
