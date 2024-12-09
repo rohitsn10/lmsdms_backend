@@ -91,6 +91,7 @@ class EmailTemplate(models.Model):
     
     
 class Reminder(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,null=True,blank=True)
     reminder_minutes = models.JSONField(default=list)  # Stores a list of reminder minutes (e.g., [90, 60, 30, 15])
 
     def __str__(self):
