@@ -157,13 +157,13 @@ class DocumentSendBackAction(models.Model):
 
 class DocumentReleaseAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    documentdetails_release = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     status_release = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
 class DocumentEffectiveAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    documentdetails_effective = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     status_effective = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 

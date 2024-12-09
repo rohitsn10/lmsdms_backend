@@ -47,7 +47,7 @@ urlpatterns = [
    path('view_document_details', DocumentDetailsViewSet.as_view({'get':'list'}),name='view_document_details'),
 
    path('document_send_back_status', DocumentSendBackActionCreateViewSet.as_view({'post': 'create'}),name='document_send_back_status'),
-   # path('document_release_status', DocumentReleaseActionCreateViewSet.as_view({'post': 'create'}),name='document_release_status'),
+   path('document_release_effective_status', DocumentStatusHandleViewSet.as_view({'post': 'create'}),name='document_release_effective_status'),
    # path('document_effective_status', DocumentEffectiveActionCreateViewSet.as_view({'post': 'create'}),name='document_effective_status'),
 
    path('document_approve_status', DocumentApproveActionCreateViewSet.as_view({'post': 'create'}),name='document_approve_status'),

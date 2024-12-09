@@ -312,14 +312,25 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             document_number = request.data.get('document_number')
             document_type = request.data.get('document_type')
             document_description = request.data.get('document_description', '')
-            revision_time = request.data.get('revision_time', '')
             revision_date = request.data.get('revision_date', '')
             document_operation = request.data.get('document_operation', '')
             select_template = request.data.get('select_template')
             workflow = request.data.get('workflow')
             document_current_status_id = request.data.get('document_current_status_id')
             training_required = request.data.get('training_required')
+            visible_to_users = request.data.get('visible_to_users', [])
 
+             # Ensure visible_to_users is parsed into a proper list
+            if isinstance(visible_to_users, str):
+                import json
+                try:
+                    visible_to_users = json.loads(visible_to_users)
+                except json.JSONDecodeError:
+                    return Response({
+                        "status": False,
+                        "message": "Invalid format for visible_to_users. Provide a valid list of IDs.",
+                        "data": []
+                    })
 
             # Validation for required fields
             if not document_title:
@@ -330,7 +341,17 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Workflow is required", "data": []})
             if not select_template:
                     return Response({"status": False, "message": "Template selection is required", "data": []})
-            
+
+            if revision_date:
+                try:
+                    revision_date = datetime.strptime(revision_date, "%Y-%m-%d").date()
+                except ValueError:
+                    return Response({
+                        "status": False,
+                        "message": "Invalid revision_date format. Use 'YYYY-MM-DD'.",
+                        "data": []
+                    })
+
             # Fetch the default status
             try:
                 default_status = DynamicStatus.objects.get(id=document_current_status_id)  # Assuming status with ID 1 is the default
@@ -344,7 +365,6 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 document_number=document_number,
                 document_type_id=document_type,
                 document_description=document_description,
-                revision_time=revision_time,
                 revision_date=revision_date,
                 document_operation=document_operation,
                 select_template_id=select_template,
@@ -354,6 +374,9 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 training_required=training_required,
 
             )
+            if visible_to_users:
+                document.visible_to_users.set(visible_to_users)
+
             document.save()
             DocumentVersion.objects.create(
                 document=document,
@@ -504,14 +527,15 @@ class DocumentViewSet(viewsets.ModelViewSet):
              # Get the user's group IDs
             user_group_ids = user.groups.values_list('id', flat=True)
 
-            # if user.department:
-            #     queryset = Document.objects.filter(user__department=user.department).order_by('-id')
-            # else:
-            #     queryset = Document.objects.none()
-
-            if user.groups.filter(name='Admin').exists():  # Check if the user is in the Admin group
+            # Initialize the queryset
+            if user.groups.filter(name='Admin').exists():
+                # Admins can see all documents
                 queryset = Document.objects.all().order_by('-id')
-            elif user.department:  # Check if the user has a department
+            elif user.groups.filter(name='Reviewer').exists():
+                # Reviewers can only see documents where they are in visible_to_users
+                queryset = Document.objects.filter(visible_to_users=user).order_by('-id')
+            elif user.department:
+                # Non-reviewer users with a department can see documents created by users in their department
                 queryset = Document.objects.filter(user__department=user.department).order_by('-id')
             else:
                 queryset = Document.objects.none()
@@ -544,7 +568,6 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 'message': 'Something went wrong',
                 'error': str(e)
             })
-
         
 class DocumentDeleteViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -1246,42 +1269,47 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
+class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DocumentReleaseAction.objects.all()
 
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            document_id = request.data.get('document_id')
+            status_id = request.data.get('status_id')
 
-# class DocumentReleaseActionCreateViewSet(viewsets.ModelViewSet):
-#     permission_classes = [permissions.IsAuthenticated]
-#     queryset = DocumentReleaseAction.objects.all()
+            if not document_id:
+                return Response({"status": False, "message": "Document details are required"})
+            if not status_id:
+                return Response({"status": False, "message": "Status is required"})
 
-#     def create(self, request, *args, **kwargs):
-#         try:
-#             user = request.user
-#             document_id = request.data.get('documentdetails_release')
-#             status_id = request.data.get('status_release')
+            status_release = DynamicStatus.objects.get(id=status_id)
 
-#             if not document_id:
-#                 return Response({"status": False, "message": "Document details are required"})
-#             if not status_id:
-#                 return Response({"status": False, "message": "Status is required"})
+            # Determine which model to use based on status_id
+            if status_id == 6:
+                document_release_action = DocumentReleaseAction.objects.create(
+                    user=user,
+                    document_id=document_id,
+                    status_release=status_release
+                )
+                return Response({"status": True, "message": "Document release action created successfully"})
+            elif status_id == 7:
+                document_effective_action = DocumentEffectiveAction.objects.create(
+                    user=user,
+                    document_id=document_id,
+                    status_effective=status_release
+                )
+                return Response({"status": True, "message": "Document effective action created successfully"})
+            else:
+                return Response({"status": False, "message": "Invalid status ID"})
 
-#             documentdetails_release = DocumentDetails.objects.get(id=document_id)
-#             status_release = DynamicStatus.objects.get(id=status_id)
-
-#             document_release_action = DocumentReleaseAction.objects.create(
-#                 user=user,
-#                 documentdetails_release=documentdetails_release,
-#                 status_release=status_release
-#             )
-
-
-#             return Response({"status": True, "message": "Document release action created successfully"})
-
-
-#         except DocumentDetails.DoesNotExist:
-#             return Response({"status": False, "message": "Invalid document details ID"})
-#         except DynamicStatus.DoesNotExist:
-#             return Response({"status": False, "message": "Invalid status ID"})
-#         except Exception as e:
-#             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        except Document.DoesNotExist:
+            return Response({"status": False, "message": "Invalid document ID"})
+        except DynamicStatus.DoesNotExist:
+            return Response({"status": False, "message": "Invalid status ID"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
 # class DocumentEffectiveActionCreateViewSet(viewsets.ModelViewSet):
