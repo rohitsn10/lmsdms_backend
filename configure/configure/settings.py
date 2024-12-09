@@ -138,10 +138,10 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'support@n10tech.com'
-EMAIL_HOST_PASSWORD = 'lbfiuicmvmutfosn'
-# EMAIL_HOST_USER = 'kalpesh.g@n10tech.com'
-# EMAIL_HOST_PASSWORD = 'lfnphacademrxert'
+# EMAIL_HOST_USER = 'support@n10tech.com'
+# EMAIL_HOST_PASSWORD = 'lbfiuicmvmutfosn'
+EMAIL_HOST_USER = 'kalpesh.g@n10tech.com'
+EMAIL_HOST_PASSWORD = 'lfnphacademrxert'
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60*24),

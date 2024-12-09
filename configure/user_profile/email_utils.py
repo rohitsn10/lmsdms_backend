@@ -44,11 +44,11 @@ def send_email_forgot_password(email, full_name, username, otp):
     }
     send_dynamic_email('FORGOT_PASSWORD', email, context)
 
-def send_user_email(email, full_name, username):
+def send_email_with_credentials(email, username, password, first_name):
     context = {
-        'full_name': full_name,
+        'first_name': first_name,
         'username': username,
-        'login_url': 'http://127.0.0.1:8000/login'
+        'password': password,
     }
     send_dynamic_email('WELCOME_EMAIL', email, context)
 
@@ -60,7 +60,6 @@ def send_email_change_password(email, full_name):
     send_dynamic_email('CHANGE_PASSWORD', email, context)
 
 
-# email_utils.py
 
 def send_document_create_email(user, document_name, recipients):
     for recipient in recipients:
@@ -138,14 +137,19 @@ def send_document_revise_email(user, documentdetails_revise, status_revise):
     send_dynamic_email('DOCUMENT_REVISE_NOTIFICATION', user.email, context)
 
 def send_print_request_email(user, no_of_print, reason_for_print, sop_document_id, issue_type, qa_users_in_department):
-    context = {
-        'receiver_first_name': qa_users_in_department.first_name,
-        'receiver_last_name': qa_users_in_department.last_name, 
-        'document_title': sop_document_id.document_title,
-        'no_of_print': no_of_print,
-        'reason_for_print': reason_for_print,
-        'issue_type': issue_type,
-        'current_time': timezone.now().strftime('%d-%m-%Y'),
-    }
+    current_time = timezone.now().strftime('%d-%m-%Y')
+    
+    # Loop through each user in qa_users_in_department
+    for qa_user in qa_users_in_department:
+        context = {
+            'receiver_first_name': qa_user.first_name,
+            'receiver_last_name': qa_user.last_name, 
+            'document_title': sop_document_id.document_title,
+            'no_of_print': no_of_print,
+            'reason_for_print': reason_for_print,
+            'issue_type': issue_type,
+            'current_time': current_time,
+        }
 
-    send_dynamic_email('PRINT_REQUEST_NOTIFICATION', qa_users_in_department, context)
+        # Send the email to each user individually
+        send_dynamic_email('PRINT_REQUEST_NOTIFICATION', [qa_user], context)  # Pass only the current qa_user here

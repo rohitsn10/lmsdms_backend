@@ -27,6 +27,8 @@ urlpatterns = [
     path('group_list', UserGroupDropdownViewSet.as_view({'post':'create'}), name='group_list'),
     path('user_switch_role', SwitchRoleViewSet.as_view({'post':'create'}), name='user_switch_role'),
 
+    path('create_reminder', CreateReminderViewSet.as_view({'post':'create','get':'list'}), name='create_reminder'),
+
 
 
 
