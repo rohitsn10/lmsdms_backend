@@ -1373,40 +1373,46 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
 #             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
-class DocumentReviseActionCreateViewSet(viewsets.ModelViewSet):
+         
+class DocumentReviseActionViewSet(viewsets.ModelViewSet):
+
     permission_classes = [permissions.IsAuthenticated]
     queryset = DocumentRevisionAction.objects.all()
 
     def create(self, request, *args, **kwargs):
         try:
             user = self.request.user
-            document_id = request.data.get('documentdetails_revise')
-            status_id = request.data.get('status_revise')
+            document_id = request.data.get('document_id')
+            status_id = request.data.get('status_id')
 
             if not document_id:
-                return Response({"status": False, "message": "Document details are required"})
+                return Response({"status": False, "message": "Document ID is required"})
             if not status_id:
-                return Response({"status": False, "message": "Status is required"})
+                return Response({"status": False, "message": "Status ID is required"})
 
-            documentdetails_revise = DocumentDetails.objects.get(id=document_id)
-            status_revise = DynamicStatus.objects.get(id=status_id)
+            document = Document.objects.get(id=document_id)
+            status_revision = DynamicStatus.objects.get(id=status_id)
 
-            document_revise_action = DocumentRevisionAction.objects.create(
+            revise_action = DocumentRevisionAction.objects.create(
                 user=user,
-                documentdetails_revise=documentdetails_revise,
-                status_revise=status_revise
+                document=document,
+                status_revision=status_revision
             )
-            document = documentdetails_revise.document
+
             document.is_revised = True
             document.save()
-            all_users = CustomUser.objects.filter(department = documentdetails_revise.document.user.department)
-            for user in all_users:
-                send_document_revise_email(user, documentdetails_revise, status_revise)
 
-            return Response({"status": True, "message": "Document revise action created successfully"})
+            return Response({
+                "status": True,
+                "message": "Revise action created successfully",
+            })
+        
+            # all_users = CustomUser.objects.filter(department = documentdetails_revise.document.user.department)
+            # for user in all_users:
+            #     send_document_revise_email(user, documentdetails_revise, status_revise)
 
-        except DocumentDetails.DoesNotExist:
-            return Response({"status": False, "message": "Invalid document details ID"})
+        except Document.DoesNotExist:
+            return Response({"status": False, "message": "Invalid document ID"})
         except DynamicStatus.DoesNotExist:
             return Response({"status": False, "message": "Invalid status ID"})
         except Exception as e:
@@ -1882,6 +1888,53 @@ class PrinterMachinesUpdate(viewsets.ModelViewSet):
             return Response({"status":True, "message":"Printer deleted succesfully"})
         except Exception as e:
                 return Response({"status": False,'message': 'Something went wrong','error': str(e)})
+
+
+class DocumentReviseRequestViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = DocumentRevisionRequestAction.objects.all()
+    serializer_class = DocumentRevisionRequestActionSerializer
+
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            document_id = request.data.get('document_id')
+            revise_description = request.data.get('revise_description')
+
+            if not document_id:
+                return Response({"status": False, "message": "Document ID is required"})
+            if not revise_description:
+                return Response({"status": False, "message": "Revise description is required"})
+
+            document = Document.objects.get(id=document_id)
+
+            revise_request = DocumentRevisionRequestAction.objects.create(
+                user=user,
+                document=document,
+                revise_description=revise_description
+            )
+
+            return Response({
+                "status": True,
+                "message": "Revise request created successfully",
+                "data": {}
+            })
+        except Document.DoesNotExist:
+            return Response({"status": False, "message": "Invalid document ID"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+    def list(self, request, *args, **kwargs):
+        queryset = DocumentRevisionRequestAction.objects.all()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            "status": True,
+            "message": "List of revise requests retrieved successfully",
+            "data": serializer.data
+        })
+
 
 
 

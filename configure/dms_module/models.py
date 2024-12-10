@@ -169,10 +169,15 @@ class DocumentEffectiveAction(models.Model):
 
 class DocumentRevisionAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    documentdetails_revision = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     status_revision = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
+class DocumentRevisionRequestAction(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
+    revise_description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 class DynamicInventory(models.Model):
     inventory_name = models.CharField(max_length=100)
