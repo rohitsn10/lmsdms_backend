@@ -445,6 +445,12 @@ class LoginAPIView(viewsets.ViewSet):
             if not user.is_active:
                 return Response({"status": False, "message": "Your account is blocked. Please contact support.", "data": []})
 
+            if user.is_password_expired():
+                return Response({"status": False, "message": "Your password has expired. Please reset it.", "data": [], "is_password_expired": True})
+
+            if not user.groups.filter(id=group_id).exists():
+                return Response({"status": False, "message": "Invalid group ID.", "data": []})
+
             if not user.groups.filter(id=group_id).exists():
                 return Response({"status": False, "message": "Invalid group ID.", "data": []})
 
@@ -517,7 +523,12 @@ class ConfirmOTPAndSetPassword(viewsets.ModelViewSet):
         if new_password != confirm_password:
             return Response({"status": False, "message": "Password and confirm password do not match", "data": []})
 
+        if check_password(new_password, user.old_password):
+            return Response({"status": False, "message": "New password cannot be the same as the old password", "data": []})
+
+        user.old_password = new_password
         user.password = make_password(new_password)
+        user.password_updated_at = now()
         user.otp = None  
         user.is_reset_password = True
         user.login_count = 0
