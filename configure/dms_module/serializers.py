@@ -39,8 +39,7 @@ class PrintRequestSerializer(serializers.ModelSerializer):
         return approval.created_at if approval else None
     
     def get_printer_name(self, obj):
-        approval = obj.approvals.order_by('-created_at').first()
-        return approval.printer_name if approval else None
+        return obj.printer.printer_name if obj.printer else None
 
 
 class DocumentTypeSerializer(serializers.ModelSerializer):

@@ -37,13 +37,18 @@ class PermissionSerializer(serializers.ModelSerializer):
 
 class CustomUserdataSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
+    groups_list = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['id','email','full_name','first_name','last_name','phone','username','created_at']
+        fields = ['id','email','full_name','first_name','last_name','phone','username','created_at','groups_list']
     
     def get_full_name(self, obj):
         return f"{obj.first_name} {obj.last_name}".strip()
+    
+    def get_groups_list(self, obj):
+        groups_data = [{'id': group.id, 'name': group.name} for group in obj.groups.all()]
+        return groups_data if groups_data else None
 
 class CustomUserSerializer(serializers.ModelSerializer):
     groups_list = serializers.SerializerMethodField()
