@@ -10,7 +10,7 @@ from django.conf import settings
 
 class Department(models.Model):
     department_name = models.TextField()
-    department_description = models.TextField()
+    department_description = models.TextField(null=True, blank=True)
     department_created_at = models.DateTimeField(auto_now_add=True)
 
 class CustomUserManager(BaseUserManager):
