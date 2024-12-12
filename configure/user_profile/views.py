@@ -334,17 +334,29 @@ class ListUserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = CustomUser.objects.all().order_by('-id')
     serializer_class = CustomUserdataSerializer
-    search_fields = ['email','username','first_name','last_name','phone']
-    ordering_fields = ['email','username','first_name','last_name','phone']
+    search_fields = ['email', 'username', 'first_name', 'last_name', 'phone']
+    ordering_fields = ['email', 'username', 'first_name', 'last_name', 'phone']
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        # Exclude superadmin users from the queryset
+        queryset = CustomUser.objects.exclude(groups__name='superadmin')
+
+        # Allow only Admin users to see all details, others see only their details
+        if user.groups.filter(name='Admin').exists():
+            return queryset
+        else:
+            return queryset.filter(id=user.id)  # Restrict others to their own data
 
     def list(self, request, *args, **kwargs):
         try:
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = CustomUserdataSerializer(queryset, many=True,context={'request': request})
+            serializer = self.serializer_class(queryset, many=True, context={'request': request})
             data = serializer.data
-            return Response({"status": True,"message":"User List Successfully","data":data})
+            return Response({"status": True, "message": "User List Successfully", "data": data})
         except Exception as e:
-            return Response({"status": False,"message": str(e),"data":[]})
+            return Response({"status": False, "message": str(e), "data": []})
 
 from rest_framework import viewsets
 from rest_framework.response import Response
