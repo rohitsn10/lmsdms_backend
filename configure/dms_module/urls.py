@@ -29,7 +29,6 @@ urlpatterns = [
    path('delete_Document', DocumentDeleteViewSet.as_view({'delete':'destroy'}),name='delete_Document'),
    path('document_details_id/<document_id>', DocumentDetailViewSet.as_view({'get':'list'}),name='document_details_id'),
 
-
    path('GetTemplate/<document_id>', DocumentTemplateViewSet.as_view({'get':'list'}),name='GetTemplate'),
    path('GetTemplateOnId/<template_id>', TemplateDocumentViewSet.as_view({'get': 'list'}),name='GetTemplateOnId'),
 
@@ -48,7 +47,7 @@ urlpatterns = [
    path('view_document_details', DocumentDetailsViewSet.as_view({'get':'list'}),name='view_document_details'),
 
    path('document_send_back_status', DocumentSendBackActionCreateViewSet.as_view({'post': 'create'}),name='document_send_back_status'),
-   # path('document_release_status', DocumentReleaseActionCreateViewSet.as_view({'post': 'create'}),name='document_release_status'),
+   path('document_release_effective_status', DocumentStatusHandleViewSet.as_view({'post': 'create'}),name='document_release_effective_status'),
    # path('document_effective_status', DocumentEffectiveActionCreateViewSet.as_view({'post': 'create'}),name='document_effective_status'),
 
    path('document_approve_status', DocumentApproveActionCreateViewSet.as_view({'post': 'create'}),name='document_approve_status'),
@@ -70,13 +69,15 @@ urlpatterns = [
    path('view_comment/<document_id>', DocumentCommentsViewSet.as_view({'get': 'list'}), name='view_comment'),
    path('delete_comment/<comment_id>', DocumentCommentDeleteViewSet.as_view({'delete': 'delete_comment'}), name='DeleteInventory'),
 
-   path('document_revision_action_create', DocumentReviseActionCreateViewSet.as_view({'post': 'create'}), name='document_revision_action_create'),
    path('approved_status_users/<document_id>', DepartmentUsersViewSet.as_view({'get':'list'}),name='approved_status_users'),
 
    path('create_printer', PrinterMachines.as_view({'post': 'create'}),name='create_Printer'),
    path('get_printer', PrinterMachines.as_view({'get':'list'}),name='get_printer'),
    path('update_Printer/<int:printer_id>',PrinterMachinesUpdate.as_view({'put': 'update'}),name='update_Printer'),
    path('delete_Printer/<int:printer_id>',PrinterMachinesUpdate.as_view({'delete':'destroy'}),name='delete_Printer'),
+
+   path('revise_request', DocumentReviseRequestViewSet.as_view({'post': 'create','get':'list'}),name='revise_request'),
+   path('approve_revise', DocumentReviseActionViewSet.as_view({'post': 'create'}),name='approve_revise')
 
 
 ]

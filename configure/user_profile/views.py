@@ -334,17 +334,29 @@ class ListUserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = CustomUser.objects.all().order_by('-id')
     serializer_class = CustomUserdataSerializer
-    search_fields = ['email','username','first_name','last_name','phone']
-    ordering_fields = ['email','username','first_name','last_name','phone']
+    search_fields = ['email', 'username', 'first_name', 'last_name', 'phone']
+    ordering_fields = ['email', 'username', 'first_name', 'last_name', 'phone']
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        # Exclude superadmin users from the queryset
+        queryset = CustomUser.objects.exclude(groups__name='superadmin')
+
+        # Allow only Admin users to see all details, others see only their details
+        if user.groups.filter(name='Admin').exists():
+            return queryset
+        else:
+            return queryset.filter(id=user.id)  # Restrict others to their own data
 
     def list(self, request, *args, **kwargs):
         try:
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = CustomUserdataSerializer(queryset, many=True,context={'request': request})
+            serializer = self.serializer_class(queryset, many=True, context={'request': request})
             data = serializer.data
-            return Response({"status": True,"message":"User List Successfully","data":data})
+            return Response({"status": True, "message": "User List Successfully", "data": data})
         except Exception as e:
-            return Response({"status": False,"message": str(e),"data":[]})
+            return Response({"status": False, "message": str(e), "data": []})
 
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -445,6 +457,12 @@ class LoginAPIView(viewsets.ViewSet):
             if not user.is_active:
                 return Response({"status": False, "message": "Your account is blocked. Please contact support.", "data": []})
 
+            if user.is_password_expired():
+                return Response({"status": False, "message": "Your password has expired. Please reset it.", "data": [], "is_password_expired": True})
+
+            if not user.groups.filter(id=group_id).exists():
+                return Response({"status": False, "message": "Invalid group ID.", "data": []})
+
             if not user.groups.filter(id=group_id).exists():
                 return Response({"status": False, "message": "Invalid group ID.", "data": []})
 
@@ -517,7 +535,12 @@ class ConfirmOTPAndSetPassword(viewsets.ModelViewSet):
         if new_password != confirm_password:
             return Response({"status": False, "message": "Password and confirm password do not match", "data": []})
 
+        if check_password(new_password, user.old_password):
+            return Response({"status": False, "message": "New password cannot be the same as the old password", "data": []})
+
+        user.old_password = new_password
         user.password = make_password(new_password)
+        user.password_updated_at = now()
         user.otp = None  
         user.is_reset_password = True
         user.login_count = 0
@@ -769,3 +792,49 @@ class CreateReminderViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
+
+
+class DepartmentWiseUserViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            requesting_user = request.user
+
+            # Check if the requesting user has a department
+            if not hasattr(requesting_user, 'department') or not requesting_user.department:
+                return Response({
+                    "status": False,
+                    "message": "Requesting user does not have a department assigned",
+                    "data": []
+                })
+
+            # Get users in the "Reviewer" group and match the requester's department
+            reviewer_group = Group.objects.filter(name="Reviewer").first()
+            if not reviewer_group:
+                return Response({
+                    "status": False,
+                    "message": "Reviewer group does not exist",
+                    "data": []
+                })
+
+            queryset = CustomUser.objects.filter(
+                groups=reviewer_group,
+                department=requesting_user.department
+            ).order_by('-id')
+
+            # Serialize the data with minimal serializer
+            serializer = MinimalUserSerializer(queryset, many=True, context={'request': request})
+            data = serializer.data
+
+            return Response({
+                "status": True,
+                "message": "User List Retrieved Successfully",
+                "data": data
+            })
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": str(e),
+                "data": []
+            })

@@ -11,7 +11,7 @@ urlpatterns = [
 
     path('login', LoginAPIView.as_view({'post':'create'}), name='login'),
     path('reset_password', ResetPasswordAPIView.as_view({'put':'update'}), name='reset_password'),
-    path('Otp_ResetPassword', ConfirmOTPAndSetPassword.as_view({'put':'update'}), name='Otp_ResetPassword'),
+    path('otp_resetpassword', ConfirmOTPAndSetPassword.as_view({'put':'update'}), name='otp_resetpassword'),
     path('admin_can_reset_passowrd/<int:user_id>', AdminResetLoginCountAPIView.as_view({'put':'update'}), name='admin_reset_login_count'),
     path('request_forgot_password_otp', RequestOTPViewSet.as_view({'post':'create'}), name='request_forgot_password_otp'),
     path('forgot_password_otp', VerifyOTPAndResetPasswordViewSet.as_view({'post':'create'}), name='forgot_password_otp'),
@@ -28,6 +28,8 @@ urlpatterns = [
     path('user_switch_role', SwitchRoleViewSet.as_view({'post':'create'}), name='user_switch_role'),
 
     path('create_reminder', CreateReminderViewSet.as_view({'post':'create','get':'list'}), name='create_reminder'),
+
+    path('department_wise_reviewer', DepartmentWiseUserViewSet.as_view({'get':'list'}), name='department_wise_reviewer'),
 
 
 

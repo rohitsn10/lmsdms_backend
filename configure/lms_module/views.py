@@ -21,13 +21,10 @@ class DepartmentAddView(viewsets.ModelViewSet):
     def create(self,request):
             try:
                 department_name = request.data.get('department_name')
-                department_description = request.data.get('department_description')
+                department_description = request.data.get('department_description',None)
 
                 if not department_name:
                     return Response({'status': False,'message': 'Department name is required'})
-                if not department_description:
-                    return Response({'status': False,'message': 'Department description is required'})
-                    
 
                 department_obj = Department.objects.create(department_name=department_name,department_description=department_description)
                 department_obj.save()

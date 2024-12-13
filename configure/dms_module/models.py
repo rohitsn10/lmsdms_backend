@@ -59,8 +59,7 @@ class Document(models.Model):
     document_number = models.CharField(max_length=255) 
     document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE) 
     document_description = models.TextField(blank=True, null=True)  
-    revision_time = models.CharField(max_length=50, blank=True, null=True)  
-    revision_date = models.DateTimeField(blank=True, null=True)
+    revision_date = models.DateField(blank=True, null=True)
     document_operation = models.TextField(blank=True, null=True)  
     form_status = models.TextField(blank=True, null=True)
     document_current_status = models.ForeignKey('DynamicStatus', on_delete=models.CASCADE,blank=True, null=True)
@@ -74,6 +73,7 @@ class Document(models.Model):
     is_revised = models.BooleanField(default=False)
     training_required = models.BooleanField(default=False)  # New field added
     last_action_time = models.DateTimeField(blank=True, null=True, default=None)
+    visible_to_users = models.ManyToManyField(CustomUser, related_name="visible_documents")
 
     # def __str__(self):
     #     return self.document_title
@@ -159,22 +159,27 @@ class DocumentSendBackAction(models.Model):
 
 class DocumentReleaseAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    documentdetails_release = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     status_release = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
 class DocumentEffectiveAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    documentdetails_effective = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     status_effective = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
 class DocumentRevisionAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    documentdetails_revision = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     status_revision = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
+class DocumentRevisionRequestAction(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
+    revise_description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 class DynamicInventory(models.Model):
     inventory_name = models.CharField(max_length=100)

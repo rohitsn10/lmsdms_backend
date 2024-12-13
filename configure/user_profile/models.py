@@ -4,13 +4,13 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseU
 from .models import *
 from django.core.validators import EmailValidator
 import os
-from django.utils.timezone import now
+from django.utils.timezone import now,timedelta
 from django.conf import settings
 
 
 class Department(models.Model):
     department_name = models.TextField()
-    department_description = models.TextField()
+    department_description = models.TextField(null=True, blank=True)
     department_created_at = models.DateTimeField(auto_now_add=True)
 
 class CustomUserManager(BaseUserManager):
@@ -51,9 +51,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         related_name='users'
     )
 
-
+    old_password = models.CharField(max_length=128, null=True, blank=True)
+    password_updated_at = models.DateTimeField(null=True, blank=True)  # Track when the password was last updated
     is_reset_password = models.BooleanField(default=False, null=True)
     login_count = models.IntegerField(default=0)
+    is_password_expired = models.BooleanField(default=False)
 
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -77,6 +79,15 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         self.login_count = 0
         self.save()
 
+    def is_password_expired(self):
+        """Check if the password is expired based on the password_updated_at field."""
+        if self.password_updated_at:
+            # Check if the password is expired (i.e. after 1 minute)
+            if now() > self.password_updated_at + timedelta(days=90):
+                self.is_password_expired = True
+                self.save()  # Update the field to True when the time expires
+                return True
+        return False
 
 
 class EmailTemplate(models.Model):

@@ -37,13 +37,18 @@ class PermissionSerializer(serializers.ModelSerializer):
 
 class CustomUserdataSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
+    groups_list = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['id','email','full_name','first_name','last_name','phone','username','created_at']
+        fields = ['id','email','full_name','first_name','last_name','phone','username','created_at','groups_list']
     
     def get_full_name(self, obj):
         return f"{obj.first_name} {obj.last_name}".strip()
+    
+    def get_groups_list(self, obj):
+        groups_data = [{'id': group.id, 'name': group.name} for group in obj.groups.all()]
+        return groups_data if groups_data else None
 
 class CustomUserSerializer(serializers.ModelSerializer):
     groups_list = serializers.SerializerMethodField()
@@ -107,7 +112,7 @@ class LoginUserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'email', 'first_name', 'last_name', 'phone', 'department', 'is_active',
             'is_staff', 'is_superuser', 'profile_image', 'user_permissions',
-            'username', 'is_reset_password', 'login_count'
+            'username', 'is_reset_password', 'login_count','is_password_expired'
         ]
 
     # def get_groups_list(self, obj):
@@ -230,3 +235,8 @@ class ReminderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reminder
         fields = ['id', 'user','reminder_minutes']
+
+class MinimalUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'first_name']

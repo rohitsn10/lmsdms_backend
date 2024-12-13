@@ -39,8 +39,7 @@ class PrintRequestSerializer(serializers.ModelSerializer):
         return approval.created_at if approval else None
     
     def get_printer_name(self, obj):
-        approval = obj.approvals.order_by('-created_at').first()
-        return approval.printer_name if approval else None
+        return obj.printer.printer_name if obj.printer else None
 
 
 class DocumentTypeSerializer(serializers.ModelSerializer):
@@ -147,9 +146,14 @@ class DocumentviewSerializer(serializers.ModelSerializer):
         return latest_approval.status.status if latest_approval and latest_approval.status else None
 
 class DocumentCommentSerializer(serializers.ModelSerializer):
+    user_first_name = serializers.SerializerMethodField()
+    
     class Meta:
         model = DocumentComments
-        fields = ['id', 'user', 'document', 'Comment_description', 'created_at']
+        fields = ['id', 'user','user_first_name', 'document', 'Comment_description', 'created_at']
+
+    def get_user_first_name(self, obj):
+        return obj.user.first_name if obj.user else None
 
 class DynamicStatusSerializer(serializers.ModelSerializer):
     class Meta:
@@ -190,4 +194,10 @@ class PrinterSerializer(serializers.ModelSerializer):
         model = PrinterMachinesModel
         fields = ['id', 'printer_name', 'printer_description', 'created_at']
 
+class DocumentRevisionRequestActionSerializer(serializers.ModelSerializer):
+    user_first_name = serializers.CharField(source='user.first_name', read_only=True)
+
+    class Meta:
+        model = DocumentRevisionRequestAction
+        fields = ['id', 'user_first_name', 'document', 'revise_description', 'created_at']
 
