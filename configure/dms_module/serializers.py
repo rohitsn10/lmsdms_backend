@@ -222,8 +222,7 @@ class DocumentSerializer(serializers.ModelSerializer):
             'user',
             'revise_description',
             'status',
-            'document_type',
-            'printer_id', 
+            'document_type', 
             'revise_request_id',
             'revision_created_at',
         ]
