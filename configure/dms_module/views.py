@@ -252,13 +252,37 @@ class PrintApprovalViewSet(viewsets.ModelViewSet):
                 dynamic_status = DynamicStatus.objects.get(id=status)
             except DynamicStatus.DoesNotExist:
                 return Response({'status': False, 'message': 'Invalid status value provided'})
+            
+            # Generate the unique approval number
+            base_format = "BPL-Dms-"
+
+            # Track the last approval for the current print_request
+            last_approval = PrintRequestApproval.objects.filter(print_request=print_request).order_by('-id').first()
+
+            # Initialize the copy number for the first approval
+            if last_approval:
+                # Extract the last copy number and increment it
+                last_copy_number = int(last_approval.approval_number.split('-')[-2])
+                new_copy_number = last_copy_number + 1
+            else:
+                # If no approval exists yet, start from 01
+                new_copy_number = 1
+
+            # Ensure that the generated approval number is unique
+            approval_number = f"{base_format}{str(new_copy_number).zfill(2)}-{no_of_request_by_admin}"
+
+            # Check if the generated approval number already exists, and keep incrementing until it's unique
+            while PrintRequestApproval.objects.filter(approval_number=approval_number).exists():
+                new_copy_number += 1
+                approval_number = f"{base_format}{str(new_copy_number).zfill(2)}-{no_of_request_by_admin}"
 
             # Create PrintRequestApproval object
             print_request_approval = PrintRequestApproval.objects.create(
                 user=user,
                 print_request=print_request,
                 no_of_request_by_admin=no_of_request_by_admin,
-                status=dynamic_status
+                status=dynamic_status,
+                approval_number=approval_number
             )
             
             return Response({'status': True, 'message': f'Print request successfully'})
@@ -1281,8 +1305,12 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
 
             if not document_id:
                 return Response({"status": False, "message": "Document details are required"})
-            if not status_id:
-                return Response({"status": False, "message": "Status is required"})
+            # if not status_id:
+            #     return Response({"status": False, "message": "Status is required"})
+            try:
+                status_id = int(status_id)
+            except (TypeError, ValueError):
+                return Response({"status": False, "message": f"Invalid status ID: {status_id}"})
 
             status_release = DynamicStatus.objects.get(id=status_id)
 
@@ -1290,7 +1318,9 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                 document = Document.objects.get(id=document_id)
             except Document.DoesNotExist:
                 return Response({"status": False, "message": "Invalid Document ID"})
-
+            
+            current_date = now().date()
+            
             # Determine which model to use based on status_id
             if status_id == 6:
                 document_release_action = DocumentReleaseAction.objects.create(
@@ -1298,7 +1328,6 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                     document_id=document_id,
                     status_release=status_release
                 )
-                # Update the document's current status
                 document.document_current_status = status_release
                 document.save()
                 return Response({"status": True, "message": "Document release action created successfully"})
@@ -1309,12 +1338,12 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                     status_effective=status_release
                 )
                 # Update the document's current status
+                document.effective_date = current_date
                 document.document_current_status = status_release
                 document.save()
                 return Response({"status": True, "message": "Document effective action created successfully"})
             else:
-                return Response({"status": False, "message": "Invalid status ID"})
-            
+                return Response({"status": False, "message": "Invalid status ID"})            
 
         except Document.DoesNotExist:
             return Response({"status": False, "message": "Invalid document ID"})

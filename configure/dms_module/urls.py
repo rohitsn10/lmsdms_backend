@@ -76,7 +76,7 @@ urlpatterns = [
    path('update_Printer/<int:printer_id>',PrinterMachinesUpdate.as_view({'put': 'update'}),name='update_Printer'),
    path('delete_Printer/<int:printer_id>',PrinterMachinesUpdate.as_view({'delete':'destroy'}),name='delete_Printer'),
 
-   path('revise_request', DocumentReviseRequestViewSet.as_view({'post': 'create','get':'list'}),name='revise_request'),
+   path('revise_request', DocumentReviseRequestViewSet.as_view({'post': 'create'}),name='revise_request'),
    path('approve_revise', DocumentReviseActionViewSet.as_view({'post': 'create'}),name='approve_revise'),
 
    path('revise_request_get', DocumentReviseRequestGetViewSet.as_view({'get':'list'}),name='revise_request_get'),
