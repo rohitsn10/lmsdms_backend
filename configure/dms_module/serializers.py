@@ -208,6 +208,7 @@ class DocumentSerializer(serializers.ModelSerializer):
     revise_description = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     document_current_status_name = serializers.CharField(source='document_current_status.status', read_only=True)
+    document_type = serializers.CharField(source='document_type.document_name', read_only=True)  # Adjust 'name' to the appropriate field on DocumentType
 
     class Meta:
         model = Document
@@ -219,6 +220,7 @@ class DocumentSerializer(serializers.ModelSerializer):
             'user',
             'revise_description',
             'status',
+            'document_type',
         ]
 
     def get_user(self, obj):
