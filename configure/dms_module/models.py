@@ -156,6 +156,7 @@ class DocumentSendBackAction(models.Model):
     group = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True,blank=True, null=True)
     reminder_sent = models.BooleanField(default=False)
+    reminder_sent_times = models.JSONField(default=list)
 
 class DocumentReleaseAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
