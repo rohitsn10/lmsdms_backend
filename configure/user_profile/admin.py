@@ -5,5 +5,6 @@ admin.site.register(CustomUser)
 admin.site.register(EmailTemplate)
 admin.site.register(Department)
 admin.site.register(Reminder)
+admin.site.register(ReminderAfterNoACtionTaken)
 
 

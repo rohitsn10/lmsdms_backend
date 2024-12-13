@@ -72,10 +72,11 @@ class Document(models.Model):
     version = models.CharField(max_length=10, default="1.0")
     is_revised = models.BooleanField(default=False)
     training_required = models.BooleanField(default=False)  # New field added
+    last_action_time = models.DateTimeField(blank=True, null=True, default=None)
     visible_to_users = models.ManyToManyField(CustomUser, related_name="visible_documents")
 
-    def __str__(self):
-        return self.document_title
+    # def __str__(self):
+    #     return self.document_title
     
 class UploadedDocument(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE)  
@@ -154,6 +155,7 @@ class DocumentSendBackAction(models.Model):
     status_sendback = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE,blank=True, null=True)
     group = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True,blank=True, null=True)
+    reminder_sent = models.BooleanField(default=False)
 
 class DocumentReleaseAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
