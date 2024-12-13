@@ -53,7 +53,6 @@ class Command(BaseCommand):
         """ Helper method to send a reminder email. """
         user = action.document.assigned_to
         document_title = action.document.document_title
-        ipdb.set_trace()
         # Send the email using the utility function (assumed to be defined)
         send_document_sendback_reminder_email(user, document_title)
 
