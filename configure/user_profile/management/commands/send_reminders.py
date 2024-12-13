@@ -18,12 +18,14 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         logger.info("Reminder service started...")
-        
+
         # Start the reminder loop
         while True:
             now = timezone.now()  # Get current time
+
             # Fetch all DocumentSendBackAction objects that have not had reminders sent
             actions = DocumentSendBackAction.objects.filter(reminder_sent=False)
+
             # Loop through actions and send reminders if the time has passed
             for action in actions:
                 created_at = action.created_at
@@ -33,18 +35,31 @@ class Command(BaseCommand):
                 reminder_settings = ReminderAfterNoACtionTaken.objects.first()  # Assuming there's one global setting
 
                 if reminder_settings:
+                    reminder_minutes = reminder_settings.reminder_minutes  # List of reminder intervals in minutes
+                    sent_reminders = action.reminder_sent_times or []  # List of intervals for which reminders have been sent
+
                     # Loop through each reminder minute interval stored in reminder_minutes
-                    for minutes in reminder_settings.reminder_minutes:
-                        # Calculate the reminder time by adding the reminder minutes to the created_at time
+                    for minutes in reminder_minutes:
                         reminder_time = created_at + timedelta(minutes=minutes)
 
-                        # If the current time is greater than or equal to the reminder time, send the reminder email
-                        if now >= reminder_time and not action.reminder_sent:
+                        # If the current time is greater than or equal to the reminder time and the reminder hasn't been sent
+                        if now >= reminder_time and minutes not in sent_reminders:
+                            # Send the reminder email
                             self.send_reminder(action)
-                            action.reminder_sent = True  # Mark as reminder sent
+
+                            # Track the reminder time for this interval
+                            sent_reminders.append(minutes)
+
+                            logger.info(f"Reminder sent to {user.email} for document '{action.document.document_title}' at {minutes} minute(s).")
+
+                            # Save the list of sent reminder intervals to the action
+                            action.reminder_sent_times = sent_reminders
                             action.save()
 
-                            logger.info(f"Reminder sent to {user.email} for document '{action.document.document_title}'")
+                    # After sending reminders for all intervals, mark as completed
+                    if len(sent_reminders) == len(reminder_minutes):
+                        action.reminder_sent = True
+                        action.save()
 
             # Sleep for 60 seconds before checking again
             time.sleep(60)
