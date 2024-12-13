@@ -10,6 +10,7 @@ from django.contrib.auth.models import Group
 from django.core.mail import send_mail
 from user_profile.email_utils import *
 from django.db.models import Q
+import ipdb
 
 
 class CustomPagination(PageNumberPagination):
@@ -1375,46 +1376,60 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
 
          
 class DocumentReviseActionViewSet(viewsets.ModelViewSet):
-
     permission_classes = [permissions.IsAuthenticated]
     queryset = DocumentRevisionAction.objects.all()
 
     def create(self, request, *args, **kwargs):
         try:
             user = self.request.user
-            document_id = request.data.get('document_id')
-            status_id = request.data.get('status_id')
+            document_id = request.data.get('document_id',None)
+            status_id = request.data.get('status_id',None)
+            request_action_id = request.data.get('request_action_id',None)
+            action_status = request.data.get('action_status',None)
 
             if not document_id:
                 return Response({"status": False, "message": "Document ID is required"})
             if not status_id:
                 return Response({"status": False, "message": "Status ID is required"})
-
+            if not request_action_id:
+                return Response({"status": False, "message": "Revision request ID is required"})
+            if not action_status or action_status not in ['approved', 'rejected']:
+                return Response({"status": False, "message": "Action status is required and must be 'approved' or 'rejected'"})
+            
             document = Document.objects.get(id=document_id)
             status_revision = DynamicStatus.objects.get(id=status_id)
-
+            revision_request = DocumentRevisionRequestAction.objects.get(id=request_action_id)
+            revision_request.status = action_status
+            revision_request.save()
             revise_action = DocumentRevisionAction.objects.create(
                 user=user,
                 document=document,
                 status_revision=status_revision
             )
-
+            revise_action.save()
             document.is_revised = True
             document.save()
 
+                # return Response({
+                #     "status": True,
+                #     "message": "Revise action created successfully",
+                # })
+            message = "Revision request successfully " + ("approved" if action_status == "approved" else "rejected")
             return Response({
                 "status": True,
-                "message": "Revise action created successfully",
+                "message": message,
             })
-        
-            # all_users = CustomUser.objects.filter(department = documentdetails_revise.document.user.department)
-            # for user in all_users:
-            #     send_document_revise_email(user, documentdetails_revise, status_revise)
+            
+                # all_users = CustomUser.objects.filter(department = documentdetails_revise.document.user.department)
+                # for user in all_users:
+                #     send_document_revise_email(user, documentdetails_revise, status_revise)
 
         except Document.DoesNotExist:
             return Response({"status": False, "message": "Invalid document ID"})
         except DynamicStatus.DoesNotExist:
             return Response({"status": False, "message": "Invalid status ID"})
+        except DocumentRevisionRequestAction.DoesNotExist:
+            return Response({"status": False, "message": "Invalid revision request ID"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
@@ -1893,7 +1908,6 @@ class PrinterMachinesUpdate(viewsets.ModelViewSet):
 class DocumentReviseRequestViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = DocumentRevisionRequestAction.objects.all()
-    serializer_class = DocumentRevisionRequestActionSerializer
 
 
     def create(self, request, *args, **kwargs):
@@ -1926,12 +1940,21 @@ class DocumentReviseRequestViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
+class DocumentReviseRequestGetViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentSerializer
+
+    def get_queryset(self):
+        # Filter Document objects where current status ID is 7
+        return Document.objects.filter(document_current_status_id=7)
+
     def list(self, request, *args, **kwargs):
-        queryset = DocumentRevisionRequestAction.objects.all()
+        # Use the filtered queryset
+        queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response({
             "status": True,
-            "message": "List of revise requests retrieved successfully",
+            "message": "List of documents with current status ID 7 retrieved successfully",
             "data": serializer.data
         })
 

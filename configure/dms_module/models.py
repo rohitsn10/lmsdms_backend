@@ -6,9 +6,6 @@ class WorkFlowModel(models.Model):
     workflow_description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
-
-    def __str__(self):
-        return self.workflow_name
     
 
 class DocumentType(models.Model):
@@ -29,8 +26,7 @@ class PrintRequest(models.Model):
     other_user = models.ManyToManyField(CustomUser, related_name='other_user_requests', blank=True)
     printer = models.ForeignKey("PrinterMachinesModel", on_delete=models.CASCADE,blank=True, null=True)  # Updated
 
-    def __str__(self):
-        return f"Print Request by {self.user.username} on {self.created_at}"
+
     
 class PrintRequestApproval(models.Model):
 
@@ -40,8 +36,7 @@ class PrintRequestApproval(models.Model):
     status = models.ForeignKey('DynamicStatus', on_delete=models.CASCADE,blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)  # Auto-populated created date
 
-    def __str__(self):
-        return f"Approval for Print Request ID {self.print_request.id} by {self.user.username} on {self.created_at}"
+
 
 class TemplateModel(models.Model):
     template_name = models.CharField(max_length=255)  
@@ -50,8 +45,6 @@ class TemplateModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True) 
 
-    def __str__(self):
-        return self.template_name
     
 class Document(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -74,16 +67,12 @@ class Document(models.Model):
     training_required = models.BooleanField(default=False)  # New field added
     visible_to_users = models.ManyToManyField(CustomUser, related_name="visible_documents")
 
-    def __str__(self):
-        return self.document_title
     
 class UploadedDocument(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE)  
     word_file = models.FileField(upload_to='uploaded_docs/') 
     uploaded_at = models.DateTimeField(auto_now_add=True) 
 
-    def __str__(self):
-        return f"Uploaded document for {self.document.document_title}"
     
 class DocumentVersion(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name="versions")
@@ -91,16 +80,12 @@ class DocumentVersion(models.Model):
     updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     updated_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"Version {self.version_number} of {self.document.document_title}"
+    
 class DynamicStatus(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     status = models.CharField(max_length=50)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.user.username} -: {self.status}"
     
 class DocumentDetails(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE)  
@@ -108,8 +93,7 @@ class DocumentDetails(models.Model):
     document_data = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"Document for {self.user.username} at {self.created_at}"
+
     
 class DocumentComments(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -174,9 +158,11 @@ class DocumentRevisionAction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 class DocumentRevisionRequestAction(models.Model):
+
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     revise_description = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20)
     created_at = models.DateTimeField(auto_now_add=True)
 
 class DynamicInventory(models.Model):
@@ -184,8 +170,6 @@ class DynamicInventory(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return self.inventory_name
     
 class PrinterMachinesModel(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -193,8 +177,6 @@ class PrinterMachinesModel(models.Model):
     printer_description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return self.Printer_name
     
     
 
