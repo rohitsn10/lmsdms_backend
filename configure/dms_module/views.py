@@ -10,7 +10,7 @@ from django.contrib.auth.models import Group
 from django.core.mail import send_mail
 from user_profile.email_utils import *
 from django.db.models import Q
-
+import ipdb
 
 class CustomPagination(PageNumberPagination):
     page_size = 10  # Number of items per page
