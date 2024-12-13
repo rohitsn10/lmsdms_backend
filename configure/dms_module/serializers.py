@@ -209,7 +209,8 @@ class DocumentSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
     document_current_status_name = serializers.CharField(source='document_current_status.status', read_only=True)
     document_type = serializers.CharField(source='document_type.document_name', read_only=True)  # Adjust 'name' to the appropriate field on DocumentType
-    printer_id = serializers.SerializerMethodField()
+    revise_request_id = serializers.SerializerMethodField()  # Field for revision request ID
+    revision_created_at = serializers.SerializerMethodField()  # Field for revision created_at
 
     class Meta:
         model = Document
@@ -223,6 +224,8 @@ class DocumentSerializer(serializers.ModelSerializer):
             'status',
             'document_type',
             'printer_id', 
+            'revise_request_id',
+            'revision_created_at',
         ]
 
     def get_user(self, obj):
@@ -237,10 +240,14 @@ class DocumentSerializer(serializers.ModelSerializer):
         action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
         return action.status if action else None
     
-    def get_printer_id(self, obj):
-        # Get the related PrintRequest object for the current document
-        print_request = PrintRequest.objects.filter(sop_document_id=obj).first()
-        return print_request.printer.id if print_request and print_request.printer else None
+    def get_revise_request_id(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.id if action else None
+
+    def get_revision_created_at(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.created_at if action else None
+
 
 
 
