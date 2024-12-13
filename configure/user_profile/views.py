@@ -339,15 +339,16 @@ class ListUserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        
-        # Exclude superadmin users from the queryset
+
+        # Exclude Superadmin users from the queryset
         queryset = CustomUser.objects.exclude(groups__name='superadmin')
 
-        # Allow only Admin users to see all details, others see only their details
         if user.groups.filter(name='Admin').exists():
+            # Admin can see all data, including other Admin users
             return queryset
         else:
-            return queryset.filter(id=user.id)  # Restrict others to their own data
+            # Other users can see all data except Admin and Superadmin users
+            return queryset.exclude(groups__name='Admin')
 
     def list(self, request, *args, **kwargs):
         try:
@@ -357,7 +358,8 @@ class ListUserViewSet(viewsets.ModelViewSet):
             return Response({"status": True, "message": "User List Successfully", "data": data})
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
-
+        
+        
 from rest_framework import viewsets
 from rest_framework.response import Response
 from django.contrib.auth.models import Group
@@ -794,22 +796,12 @@ class CreateReminderViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": str(e), "data": []})
 
 
-class DepartmentWiseUserViewSet(viewsets.ModelViewSet):
+class ReviewerUserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request, *args, **kwargs):
         try:
-            requesting_user = request.user
-
-            # Check if the requesting user has a department
-            if not hasattr(requesting_user, 'department') or not requesting_user.department:
-                return Response({
-                    "status": False,
-                    "message": "Requesting user does not have a department assigned",
-                    "data": []
-                })
-
-            # Get users in the "Reviewer" group and match the requester's department
+            # Get the "Reviewer" group
             reviewer_group = Group.objects.filter(name="Reviewer").first()
             if not reviewer_group:
                 return Response({
@@ -818,18 +810,16 @@ class DepartmentWiseUserViewSet(viewsets.ModelViewSet):
                     "data": []
                 })
 
-            queryset = CustomUser.objects.filter(
-                groups=reviewer_group,
-                department=requesting_user.department
-            ).order_by('-id')
+            # Fetch users in the "Reviewer" group
+            queryset = CustomUser.objects.filter(groups=reviewer_group).order_by('-id')
 
-            # Serialize the data with minimal serializer
+            # Serialize the data with MinimalUserSerializer
             serializer = MinimalUserSerializer(queryset, many=True, context={'request': request})
             data = serializer.data
 
             return Response({
                 "status": True,
-                "message": "User List Retrieved Successfully",
+                "message": "Reviewer User List Retrieved Successfully",
                 "data": data
             })
         except Exception as e:

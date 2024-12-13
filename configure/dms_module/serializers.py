@@ -194,10 +194,44 @@ class PrinterSerializer(serializers.ModelSerializer):
         model = PrinterMachinesModel
         fields = ['id', 'printer_name', 'printer_description', 'created_at']
 
-class DocumentRevisionRequestActionSerializer(serializers.ModelSerializer):
-    user_first_name = serializers.CharField(source='user.first_name', read_only=True)
+# class DocumentRevisionRequestActionSerializer(serializers.ModelSerializer):
+#     user_first_name = serializers.CharField(source='user.first_name', read_only=True)
+
+#     class Meta:
+#         model = DocumentRevisionRequestAction
+#         fields = ['id', 'user_first_name', 'document', 'revise_description', 'created_at']
+
+class DocumentSerializer(serializers.ModelSerializer):
+    document_id = serializers.IntegerField(source='id', read_only=True)
+    document_title = serializers.CharField(read_only=True)
+    user = serializers.SerializerMethodField()
+    revise_description = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    document_current_status_name = serializers.CharField(source='document_current_status.status', read_only=True)
 
     class Meta:
-        model = DocumentRevisionRequestAction
-        fields = ['id', 'user_first_name', 'document', 'revise_description', 'created_at']
+        model = Document
+        fields = [
+            'document_id',
+            'document_title',
+            'document_current_status',
+            'document_current_status_name',  # Added field for the status name
+            'user',
+            'revise_description',
+            'status',
+        ]
+
+    def get_user(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.user.id if action else None
+
+    def get_revise_description(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.revise_description if action else None
+
+    def get_status(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.status if action else None
+
+
 
