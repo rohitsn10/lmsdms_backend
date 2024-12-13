@@ -14,6 +14,7 @@ from datetime import timedelta
 import os
 from pathlib import Path
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -47,8 +48,12 @@ INSTALLED_APPS = [
     'user_profile.apps.UserProfileConfig',
     'lms_module.apps.LmsModuleConfig',
     'dms_module.apps.DmsModuleConfig',
-    'corsheaders'
+    'django_cron',
+    # 'corsheaders'
     
+]
+CRONJOBS = [
+    ('*/1 * * * *', 'user_profile.cron.DocumentReminderCronJob'),  # Run the cron job every minute
 ]
 
 MIDDLEWARE = [

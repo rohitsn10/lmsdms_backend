@@ -12,6 +12,9 @@
 # import pytz
 # from django.utils.dateformat import format
 
+# from user_profile.email_utils import *
+
+
 # # Set up logging
 # logger = logging.getLogger(__name__)
 
@@ -121,3 +124,39 @@
 #     # Reset the flag to prevent recursion
 #     updating_document = False
 
+
+
+
+
+# @receiver(post_save, sender=DocumentSendBackAction)
+# def send_reminder_if_needed(sender, instance, created, **kwargs):
+#     """
+#     Signal handler to send reminders based on the created_at time and
+#     the reminder_minutes settings from ReminderAfterNoACtionTaken model.
+#     """
+#     if created:
+#         document = instance.document
+#         user = document.assigned_to
+
+#         # Fetch the reminder settings for the assigned user
+#         reminder_settings = ReminderAfterNoACtionTaken.objects.filter(user=user).first()
+
+#         if reminder_settings:
+#             now = timezone.now()
+#             created_at = instance.created_at  # The time when the document was sent back
+
+#             # Loop through the reminder intervals in the `reminder_minutes` field
+#             for minutes in reminder_settings.reminder_minutes:
+#                 reminder_time = created_at + timedelta(minutes=minutes)
+
+#                 # Check if the current time is past the reminder time
+#                 if now >= reminder_time and not instance.reminder_sent:
+#                     # Send the reminder email
+#                     send_document_sendback_email(user, document.document_title)
+
+#                     # Mark the action as having had its reminder sent
+#                     instance.reminder_sent = True
+#                     instance.save()
+
+#                     # Log or print if needed
+#                     print(f"Reminder sent to {user.email} for document '{document.document_title}'")

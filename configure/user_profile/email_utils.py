@@ -7,7 +7,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import Group
-
+import ipdb
 import threading
 
 def send_email_in_background(subject, message, from_email, recipient_list):
@@ -103,6 +103,17 @@ def send_document_sendback_email(assigned_to, document_title):
     return {"status": True, "message": "Email sent successfully", "data": []}
 
 
+def send_document_sendback_reminder_email(assigned_to, document_title):
+    context = {
+        'full_name': f'{assigned_to.first_name} {assigned_to.last_name}',
+        'document_title': document_title,
+        'current_time': timezone.now().strftime('%d-%m-%Y'),
+    }
+
+    send_dynamic_email('DOCUMENT_SEND_BACK_REMINDER_NOTIFICATION', assigned_to.email, context)
+
+    return {"status": True, "message": "Email sent successfully", "data": []}
+
 def send_document_release_email(admin_user, documentdetails_release, status_release):
     context = {
         'full_name': f'{admin_user.first_name} {admin_user.last_name}',
@@ -153,3 +164,11 @@ def send_print_request_email(user, no_of_print, reason_for_print, sop_document_i
 
         # Send the email to each user individually
         send_dynamic_email('PRINT_REQUEST_NOTIFICATION', [qa_user], context)  # Pass only the current qa_user here
+
+
+def send_reminder_email(assigned_user, document_title):
+    # Email context
+    subject = "Reminder: Take Action on Document"
+    message = f"Dear {assigned_user.first_name},\n\nPlease take action on the document titled '{document_title}'.\nThis is a reminder to take action if you haven't done so yet."
+
+    send_mail(subject, message, [assigned_user.email])
