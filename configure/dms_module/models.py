@@ -164,7 +164,7 @@ class DocumentRevisionRequestAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     revise_description = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=20)
+    status = models.CharField(max_length=20, default="Pending")
     created_at = models.DateTimeField(auto_now_add=True)
 
 class DynamicInventory(models.Model):
