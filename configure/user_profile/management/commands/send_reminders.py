@@ -24,7 +24,6 @@ class Command(BaseCommand):
             now = timezone.now()  # Get current time
             # Fetch all DocumentSendBackAction objects that have not had reminders sent
             actions = DocumentSendBackAction.objects.filter(reminder_sent=False)
-            ipdb.set_trace()
             # Loop through actions and send reminders if the time has passed
             for action in actions:
                 created_at = action.created_at
