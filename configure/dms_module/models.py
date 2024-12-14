@@ -34,9 +34,13 @@ class PrintRequestApproval(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='approved_print_requests')  # Foreign key to CustomUser (admin who approves)
     no_of_request_by_admin = models.IntegerField()  # Field for number of requests approved by admin
     status = models.ForeignKey('DynamicStatus', on_delete=models.CASCADE,blank=True, null=True)
-    approval_number = models.CharField(max_length=255, unique=True, blank=True, null=True)  # New field for unique number
+    # approval_number = models.CharField(max_length=255, unique=True, blank=True, null=True)  # New field for unique number
     created_at = models.DateTimeField(auto_now_add=True)  # Auto-populated created date
+    approval_numbers = models.ManyToManyField('ApprovalNumber', blank=True)  # Many-to-many field for unique numbers
 
+class ApprovalNumber(models.Model):
+    number = models.CharField(max_length=255, unique=True)  # Unique approval number
+    created_at = models.DateTimeField(auto_now_add=True) 
 
 
 class TemplateModel(models.Model):

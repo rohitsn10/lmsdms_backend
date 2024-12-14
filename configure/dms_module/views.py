@@ -219,6 +219,77 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": str(e), "data": []})
         
 
+# class PrintApprovalViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     queryset = PrintRequestApproval.objects.all().order_by('-id')
+
+#     def create(self, request, *args, **kwargs):
+#         try:
+#             user = self.request.user
+#             print_request_id = request.data.get('print_request_id')
+#             no_of_request_by_admin = request.data.get('no_of_request_by_admin')
+#             status = request.data.get('status')
+
+#             # Validate that the print_request_id is provided
+#             if not print_request_id:
+#                 return Response({'status': False, 'message': 'Print request ID is required'})
+            
+#             # Fetch the associated PrintRequest object
+#             try:
+#                 print_request = PrintRequest.objects.get(id=print_request_id)
+#             except PrintRequest.DoesNotExist:
+#                 return Response({'status': False, 'message': 'Invalid Print Request ID'})
+            
+#             if not no_of_request_by_admin:
+#                 return Response({'status': False, 'message': 'No of request by admin is required when approving'})
+            
+#             # Ensure no_of_request_by_admin does not exceed no_of_print from PrintRequest
+#             if int(no_of_request_by_admin) > print_request.no_of_print:
+#                 return Response({'status': False, 'message': f'No of request by admin cannot exceed {print_request.no_of_print}'})
+            
+#             # Fetch the DynamicStatus object for the provided status
+#             try:
+#                 dynamic_status = DynamicStatus.objects.get(id=status)
+#             except DynamicStatus.DoesNotExist:
+#                 return Response({'status': False, 'message': 'Invalid status value provided'})
+            
+#             # Generate the unique approval number
+#             base_format = "BPL-Dms-"
+
+#             # Track the last approval for the current print_request
+#             last_approval = PrintRequestApproval.objects.filter(print_request=print_request).order_by('-id').first()
+
+#             # Initialize the copy number for the first approval
+#             if last_approval:
+#                 # Extract the last copy number and increment it
+#                 last_copy_number = int(last_approval.approval_number.split('-')[-2])
+#                 new_copy_number = last_copy_number + 1
+#             else:
+#                 # If no approval exists yet, start from 01
+#                 new_copy_number = 1
+
+#             # Ensure that the generated approval number is unique
+#             approval_number = f"{base_format}{str(new_copy_number).zfill(2)}-{no_of_request_by_admin}"
+
+#             # Check if the generated approval number already exists, and keep incrementing until it's unique
+#             while PrintRequestApproval.objects.filter(approval_number=approval_number).exists():
+#                 new_copy_number += 1
+#                 approval_number = f"{base_format}{str(new_copy_number).zfill(2)}-{no_of_request_by_admin}"
+
+#             # Create PrintRequestApproval object
+#             print_request_approval = PrintRequestApproval.objects.create(
+#                 user=user,
+#                 print_request=print_request,
+#                 no_of_request_by_admin=no_of_request_by_admin,
+#                 status=dynamic_status,
+#                 approval_number=approval_number
+#             )
+            
+#             return Response({'status': True, 'message': f'Print request successfully'})
+        
+#         except Exception as e:
+#             return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+
 class PrintApprovalViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = PrintRequestApproval.objects.all().order_by('-id')
@@ -253,28 +324,21 @@ class PrintApprovalViewSet(viewsets.ModelViewSet):
             except DynamicStatus.DoesNotExist:
                 return Response({'status': False, 'message': 'Invalid status value provided'})
             
-            # Generate the unique approval number
+            # Generate unique approval numbers
             base_format = "BPL-Dms-"
+            approval_numbers = []
+            for i in range(int(no_of_request_by_admin)):
+                new_copy_number = 1  # Start from 1
+                approval_number = f"{base_format}{str(new_copy_number).zfill(2)}-{i+1}"
 
-            # Track the last approval for the current print_request
-            last_approval = PrintRequestApproval.objects.filter(print_request=print_request).order_by('-id').first()
+                # Ensure uniqueness in the database
+                while ApprovalNumber.objects.filter(number=approval_number).exists():
+                    new_copy_number += 1
+                    approval_number = f"{base_format}{str(new_copy_number).zfill(2)}-{i+1}"
 
-            # Initialize the copy number for the first approval
-            if last_approval:
-                # Extract the last copy number and increment it
-                last_copy_number = int(last_approval.approval_number.split('-')[-2])
-                new_copy_number = last_copy_number + 1
-            else:
-                # If no approval exists yet, start from 01
-                new_copy_number = 1
-
-            # Ensure that the generated approval number is unique
-            approval_number = f"{base_format}{str(new_copy_number).zfill(2)}-{no_of_request_by_admin}"
-
-            # Check if the generated approval number already exists, and keep incrementing until it's unique
-            while PrintRequestApproval.objects.filter(approval_number=approval_number).exists():
-                new_copy_number += 1
-                approval_number = f"{base_format}{str(new_copy_number).zfill(2)}-{no_of_request_by_admin}"
+                # Create or get the unique approval number
+                approval_number_obj, _ = ApprovalNumber.objects.get_or_create(number=approval_number)
+                approval_numbers.append(approval_number_obj)
 
             # Create PrintRequestApproval object
             print_request_approval = PrintRequestApproval.objects.create(
@@ -282,13 +346,19 @@ class PrintApprovalViewSet(viewsets.ModelViewSet):
                 print_request=print_request,
                 no_of_request_by_admin=no_of_request_by_admin,
                 status=dynamic_status,
-                approval_number=approval_number
             )
+
+            # Add approval numbers to the ManyToManyField
+            print_request_approval.approval_numbers.add(*approval_numbers)
             
-            return Response({'status': True, 'message': f'Print request successfully'})
+            return Response({
+                'status': True,
+                'message': 'Print request successfully approved',
+            })
         
         except Exception as e:
             return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+
         
 
 class PrintRequestUpdateViewSet(viewsets.ModelViewSet):
