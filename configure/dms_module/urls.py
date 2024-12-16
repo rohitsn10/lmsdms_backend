@@ -81,5 +81,8 @@ urlpatterns = [
 
    path('revise_request_get', DocumentReviseRequestGetViewSet.as_view({'get':'list'}),name='revise_request_get'),
 
+   path('get_approved_print_list', ApprovedPrintRequestViewSet.as_view({'get':'list'}),name='get_approved_print_list'),
+   # path('print_approval/<int:print_request_approval_id>',ApprovalNumberViewSet.as_view({'get': 'list'}),name='print_approval'),
+
 
 ]
