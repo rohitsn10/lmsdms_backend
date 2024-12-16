@@ -267,7 +267,7 @@ class ApprovedPrintRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PrintRequestApproval
-        fields = ['document_title', 'no_of_print', 'no_of_request_by_admin', 'status', 'created_at']
+        fields = ['id', 'document_title', 'no_of_print', 'no_of_request_by_admin', 'status', 'created_at']
 
 
 class ApprovalNumberSerializer(serializers.ModelSerializer):
