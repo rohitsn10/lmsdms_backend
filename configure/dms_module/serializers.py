@@ -13,6 +13,7 @@ class PrintRequestSerializer(serializers.ModelSerializer):
     no_of_request_by_admin = serializers.SerializerMethodField()  # Include no_of_request_by_admin
     approved_date = serializers.SerializerMethodField()  # Rename created_at to approved_date
     printer_name = serializers.SerializerMethodField()
+    approval_numbers = serializers.SerializerMethodField()  # Include many-to-many approval numbers
 
     class Meta:
         model = PrintRequest
@@ -20,7 +21,8 @@ class PrintRequestSerializer(serializers.ModelSerializer):
             'id', 'user', 'first_name', 'sop_document_id', 'document_title',
             'no_of_print', 'issue_type', 'reason_for_print',
             'print_request_status', 'created_at', 'status',
-            'no_of_request_by_admin', 'approved_date','printer_name'
+            'no_of_request_by_admin', 'approved_date', 'printer_name',
+            'approval_numbers'  # Add approval_numbers to the response
         ]
 
     def get_first_name(self, obj):
@@ -37,9 +39,18 @@ class PrintRequestSerializer(serializers.ModelSerializer):
     def get_approved_date(self, obj):
         approval = obj.approvals.order_by('-created_at').first()
         return approval.created_at if approval else None
-    
+
     def get_printer_name(self, obj):
         return obj.printer.printer_name if obj.printer else None
+
+    def get_approval_numbers(self, obj):
+        # Get the latest approval for the PrintRequest
+        approval = obj.approvals.order_by('-created_at').first()
+        if approval:
+            # Extract and return the list of approval numbers
+            return [approval_number.number for approval_number in approval.approval_numbers.all()]
+        return []
+
 
 
 class DocumentTypeSerializer(serializers.ModelSerializer):
@@ -194,10 +205,76 @@ class PrinterSerializer(serializers.ModelSerializer):
         model = PrinterMachinesModel
         fields = ['id', 'printer_name', 'printer_description', 'created_at']
 
-class DocumentRevisionRequestActionSerializer(serializers.ModelSerializer):
-    user_first_name = serializers.CharField(source='user.first_name', read_only=True)
+# class DocumentRevisionRequestActionSerializer(serializers.ModelSerializer):
+#     user_first_name = serializers.CharField(source='user.first_name', read_only=True)
+
+#     class Meta:
+#         model = DocumentRevisionRequestAction
+#         fields = ['id', 'user_first_name', 'document', 'revise_description', 'created_at']
+
+class DocumentSerializer(serializers.ModelSerializer):
+    document_id = serializers.IntegerField(source='id', read_only=True)
+    document_title = serializers.CharField(read_only=True)
+    user = serializers.SerializerMethodField()
+    revise_description = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    document_current_status_name = serializers.CharField(source='document_current_status.status', read_only=True)
+    document_type = serializers.CharField(source='document_type.document_name', read_only=True)  # Adjust 'name' to the appropriate field on DocumentType
+    revise_request_id = serializers.SerializerMethodField()  # Field for revision request ID
+    revision_created_at = serializers.SerializerMethodField()  # Field for revision created_at
 
     class Meta:
-        model = DocumentRevisionRequestAction
-        fields = ['id', 'user_first_name', 'document', 'revise_description', 'created_at']
+        model = Document
+        fields = [
+            'document_id',
+            'document_title',
+            'document_current_status',
+            'document_current_status_name',  # Added field for the status name
+            'user',
+            'revise_description',
+            'status',
+            'document_type', 
+            'revise_request_id',
+            'revision_created_at',
+        ]
+
+    def get_user(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.user.id if action else None
+
+    def get_revise_description(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.revise_description if action else None
+
+    def get_status(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.status if action else None
+    
+    def get_revise_request_id(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.id if action else None
+
+    def get_revision_created_at(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.created_at if action else None
+
+class ApprovedPrintRequestSerializer(serializers.ModelSerializer):
+    document_title = serializers.CharField(source='print_request.sop_document_id.document_title')
+    no_of_print = serializers.IntegerField(source='print_request.no_of_print')
+    no_of_request_by_admin = serializers.IntegerField()
+    status = serializers.CharField(source='status.status', allow_null=True)
+    created_at = serializers.DateTimeField()
+
+    class Meta:
+        model = PrintRequestApproval
+        fields = ['document_title', 'no_of_print', 'no_of_request_by_admin', 'status', 'created_at']
+
+
+class ApprovalNumberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApprovalNumber
+        fields = ['number']
+
+
+
 

@@ -13,6 +13,7 @@ from django.db.models import Q
 import ipdb
 import logging
 import time
+
 logger = logging.getLogger(__name__)
 
 class CustomPagination(PageNumberPagination):
@@ -222,6 +223,77 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": str(e), "data": []})
         
 
+# class PrintApprovalViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     queryset = PrintRequestApproval.objects.all().order_by('-id')
+
+#     def create(self, request, *args, **kwargs):
+#         try:
+#             user = self.request.user
+#             print_request_id = request.data.get('print_request_id')
+#             no_of_request_by_admin = request.data.get('no_of_request_by_admin')
+#             status = request.data.get('status')
+
+#             # Validate that the print_request_id is provided
+#             if not print_request_id:
+#                 return Response({'status': False, 'message': 'Print request ID is required'})
+            
+#             # Fetch the associated PrintRequest object
+#             try:
+#                 print_request = PrintRequest.objects.get(id=print_request_id)
+#             except PrintRequest.DoesNotExist:
+#                 return Response({'status': False, 'message': 'Invalid Print Request ID'})
+            
+#             if not no_of_request_by_admin:
+#                 return Response({'status': False, 'message': 'No of request by admin is required when approving'})
+            
+#             # Ensure no_of_request_by_admin does not exceed no_of_print from PrintRequest
+#             if int(no_of_request_by_admin) > print_request.no_of_print:
+#                 return Response({'status': False, 'message': f'No of request by admin cannot exceed {print_request.no_of_print}'})
+            
+#             # Fetch the DynamicStatus object for the provided status
+#             try:
+#                 dynamic_status = DynamicStatus.objects.get(id=status)
+#             except DynamicStatus.DoesNotExist:
+#                 return Response({'status': False, 'message': 'Invalid status value provided'})
+            
+#             # Generate the unique approval number
+#             base_format = "BPL-Dms-"
+
+#             # Track the last approval for the current print_request
+#             last_approval = PrintRequestApproval.objects.filter(print_request=print_request).order_by('-id').first()
+
+#             # Initialize the copy number for the first approval
+#             if last_approval:
+#                 # Extract the last copy number and increment it
+#                 last_copy_number = int(last_approval.approval_number.split('-')[-2])
+#                 new_copy_number = last_copy_number + 1
+#             else:
+#                 # If no approval exists yet, start from 01
+#                 new_copy_number = 1
+
+#             # Ensure that the generated approval number is unique
+#             approval_number = f"{base_format}{str(new_copy_number).zfill(2)}-{no_of_request_by_admin}"
+
+#             # Check if the generated approval number already exists, and keep incrementing until it's unique
+#             while PrintRequestApproval.objects.filter(approval_number=approval_number).exists():
+#                 new_copy_number += 1
+#                 approval_number = f"{base_format}{str(new_copy_number).zfill(2)}-{no_of_request_by_admin}"
+
+#             # Create PrintRequestApproval object
+#             print_request_approval = PrintRequestApproval.objects.create(
+#                 user=user,
+#                 print_request=print_request,
+#                 no_of_request_by_admin=no_of_request_by_admin,
+#                 status=dynamic_status,
+#                 approval_number=approval_number
+#             )
+            
+#             return Response({'status': True, 'message': f'Print request successfully'})
+        
+#         except Exception as e:
+#             return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+
 class PrintApprovalViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = PrintRequestApproval.objects.all().order_by('-id')
@@ -255,19 +327,42 @@ class PrintApprovalViewSet(viewsets.ModelViewSet):
                 dynamic_status = DynamicStatus.objects.get(id=status)
             except DynamicStatus.DoesNotExist:
                 return Response({'status': False, 'message': 'Invalid status value provided'})
+            
+            # Generate unique approval numbers
+            base_format = "BPL-Dms-"
+            approval_numbers = []
+            for i in range(int(no_of_request_by_admin)):
+                new_copy_number = 1  # Start from 1
+                approval_number = f"{base_format}{str(new_copy_number).zfill(2)}-{i+1}"
+
+                # Ensure uniqueness in the database
+                while ApprovalNumber.objects.filter(number=approval_number).exists():
+                    new_copy_number += 1
+                    approval_number = f"{base_format}{str(new_copy_number).zfill(2)}-{i+1}"
+
+                # Create or get the unique approval number
+                approval_number_obj, _ = ApprovalNumber.objects.get_or_create(number=approval_number)
+                approval_numbers.append(approval_number_obj)
 
             # Create PrintRequestApproval object
             print_request_approval = PrintRequestApproval.objects.create(
                 user=user,
                 print_request=print_request,
                 no_of_request_by_admin=no_of_request_by_admin,
-                status=dynamic_status
+                status=dynamic_status,
             )
+
+            # Add approval numbers to the ManyToManyField
+            print_request_approval.approval_numbers.add(*approval_numbers)
             
-            return Response({'status': True, 'message': f'Print request successfully'})
+            return Response({
+                'status': True,
+                'message': 'Print request successfully approved',
+            })
         
         except Exception as e:
             return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+
         
 
 class PrintRequestUpdateViewSet(viewsets.ModelViewSet):
@@ -1284,8 +1379,12 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
 
             if not document_id:
                 return Response({"status": False, "message": "Document details are required"})
-            if not status_id:
-                return Response({"status": False, "message": "Status is required"})
+            # if not status_id:
+            #     return Response({"status": False, "message": "Status is required"})
+            try:
+                status_id = int(status_id)
+            except (TypeError, ValueError):
+                return Response({"status": False, "message": f"Invalid status ID: {status_id}"})
 
             status_release = DynamicStatus.objects.get(id=status_id)
 
@@ -1293,7 +1392,9 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                 document = Document.objects.get(id=document_id)
             except Document.DoesNotExist:
                 return Response({"status": False, "message": "Invalid Document ID"})
-
+            
+            current_date = now().date()
+            
             # Determine which model to use based on status_id
             if status_id == 6:
                 document_release_action = DocumentReleaseAction.objects.create(
@@ -1301,7 +1402,6 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                     document_id=document_id,
                     status_release=status_release
                 )
-                # Update the document's current status
                 document.document_current_status = status_release
                 document.save()
                 return Response({"status": True, "message": "Document release action created successfully"})
@@ -1312,12 +1412,12 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                     status_effective=status_release
                 )
                 # Update the document's current status
+                document.effective_date = current_date
                 document.document_current_status = status_release
                 document.save()
                 return Response({"status": True, "message": "Document effective action created successfully"})
             else:
-                return Response({"status": False, "message": "Invalid status ID"})
-            
+                return Response({"status": False, "message": "Invalid status ID"})            
 
         except Document.DoesNotExist:
             return Response({"status": False, "message": "Invalid document ID"})
@@ -1378,46 +1478,60 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
 
          
 class DocumentReviseActionViewSet(viewsets.ModelViewSet):
-
     permission_classes = [permissions.IsAuthenticated]
     queryset = DocumentRevisionAction.objects.all()
 
     def create(self, request, *args, **kwargs):
         try:
             user = self.request.user
-            document_id = request.data.get('document_id')
-            status_id = request.data.get('status_id')
+            document_id = request.data.get('document_id',None)
+            status_id = request.data.get('status_id',None)
+            request_action_id = request.data.get('request_action_id',None)
+            action_status = request.data.get('action_status',None)
 
             if not document_id:
                 return Response({"status": False, "message": "Document ID is required"})
             if not status_id:
                 return Response({"status": False, "message": "Status ID is required"})
-
+            if not request_action_id:
+                return Response({"status": False, "message": "Revision request ID is required"})
+            if not action_status or action_status not in ['approved', 'rejected']:
+                return Response({"status": False, "message": "Action status is required and must be 'approved' or 'rejected'"})
+            
             document = Document.objects.get(id=document_id)
             status_revision = DynamicStatus.objects.get(id=status_id)
-
+            revision_request = DocumentRevisionRequestAction.objects.get(id=request_action_id)
+            revision_request.status = action_status
+            revision_request.save()
             revise_action = DocumentRevisionAction.objects.create(
                 user=user,
                 document=document,
                 status_revision=status_revision
             )
-
+            revise_action.save()
             document.is_revised = True
             document.save()
 
+                # return Response({
+                #     "status": True,
+                #     "message": "Revise action created successfully",
+                # })
+            message = "Revision request successfully " + ("approved" if action_status == "approved" else "rejected")
             return Response({
                 "status": True,
-                "message": "Revise action created successfully",
+                "message": message,
             })
-        
-            # all_users = CustomUser.objects.filter(department = documentdetails_revise.document.user.department)
-            # for user in all_users:
-            #     send_document_revise_email(user, documentdetails_revise, status_revise)
+            
+                # all_users = CustomUser.objects.filter(department = documentdetails_revise.document.user.department)
+                # for user in all_users:
+                #     send_document_revise_email(user, documentdetails_revise, status_revise)
 
         except Document.DoesNotExist:
             return Response({"status": False, "message": "Invalid document ID"})
         except DynamicStatus.DoesNotExist:
             return Response({"status": False, "message": "Invalid status ID"})
+        except DocumentRevisionRequestAction.DoesNotExist:
+            return Response({"status": False, "message": "Invalid revision request ID"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
@@ -1896,7 +2010,6 @@ class PrinterMachinesUpdate(viewsets.ModelViewSet):
 class DocumentReviseRequestViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = DocumentRevisionRequestAction.objects.all()
-    serializer_class = DocumentRevisionRequestActionSerializer
 
 
     def create(self, request, *args, **kwargs):
@@ -1929,16 +2042,87 @@ class DocumentReviseRequestViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
+class DocumentReviseRequestGetViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentSerializer
+
+    def get_queryset(self):
+        # Filter Document objects where current status ID is 7
+        return Document.objects.filter(document_current_status_id=7)
+
     def list(self, request, *args, **kwargs):
-        queryset = DocumentRevisionRequestAction.objects.all()
+        # Use the filtered queryset
+        queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response({
             "status": True,
-            "message": "List of revise requests retrieved successfully",
+            "message": "List of documents with current status ID 7 retrieved successfully",
             "data": serializer.data
         })
 
+class ApprovedPrintRequestViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = PrintRequestApproval.objects.filter(status_id=9)  
+    serializer_class = ApprovedPrintRequestSerializer
 
+    def list(self, request, *args, **kwargs):
+        """List only approved print requests (status ID = 9)."""
+        try:
+            queryset = self.get_queryset()
+            if queryset.exists():
+                serializer = self.get_serializer(queryset, many=True)
+                return Response({
+                    "status": True,
+                    "message": "Approved print requests fetched successfully",
+                    'total': queryset.count(),
+                    'data': serializer.data
+                })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "No approved print requests found",
+                    "total": 0,
+                    "data": []
+                })
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+
+
+# class ApprovalNumberViewSet(viewsets.ModelViewSet):
+
+#     permission_classes = [permissions.IsAuthenticated]
+#     serializer_class = ApprovalNumberSerializer
+#     queryset = ApprovalNumber.objects.all()
+#     lookup_field = 'print_request_approval_id'
+
+
+#     def list(self, request, *args, **kwargs):
+#         print_request_approval_id = self.kwargs.get('print_request_approval_id')
+
+#         if print_request_approval_id is None:
+#             return Response(
+#                 {"error": "PrintRequestApproval ID is required."}            )
+
+#         try:
+#             # Fetch the PrintRequestApproval object
+#             approval = PrintRequestApproval.objects.get(pk=print_request_approval_id)
+
+#             # Get all related approval numbers
+#             approval_numbers = approval.approval_numbers.all()
+
+#             # Serialize the approval numbers
+#             serializer = ApprovalNumberSerializer(approval_numbers, many=True)
+
+#             # Return both PrintRequestApproval id and approval_numbers
+#             return Response({
+#                 'id': approval.id,
+#                 'approval_numbers': serializer.data
+#             })
+
+#         except PrintRequestApproval.DoesNotExist:
+#             return Response(
+#                 {"error": "PrintRequestApproval with the given ID does not exist."}
+#             )
 
 
 
