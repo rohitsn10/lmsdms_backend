@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'lms_module.apps.LmsModuleConfig',
     'dms_module.apps.DmsModuleConfig',
     'django_cron',
-    'corsheaders'
+    # 'corsheaders'
     
 ]
 CRONJOBS = [
