@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'lms_module.apps.LmsModuleConfig',
     'dms_module.apps.DmsModuleConfig',
     'django_cron',
-    # 'corsheaders'
+    'corsheaders'
     
 ]
 CRONJOBS = [
@@ -146,7 +146,7 @@ EMAIL_USE_TLS = True
 # EMAIL_HOST_USER = 'support@n10tech.com'
 # EMAIL_HOST_PASSWORD = 'lbfiuicmvmutfosn'
 EMAIL_HOST_USER = 'kalpesh.g@n10tech.com'
-EMAIL_HOST_PASSWORD = 'lfnphacademrxert'
+EMAIL_HOST_PASSWORD = 'tpahwwdnkbacwxqw'
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60*24),

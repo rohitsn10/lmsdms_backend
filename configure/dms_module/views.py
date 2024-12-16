@@ -11,6 +11,9 @@ from django.core.mail import send_mail
 from user_profile.email_utils import *
 from django.db.models import Q
 import ipdb
+import logging
+import time
+logger = logging.getLogger(__name__)
 
 class CustomPagination(PageNumberPagination):
     page_size = 10  # Number of items per page

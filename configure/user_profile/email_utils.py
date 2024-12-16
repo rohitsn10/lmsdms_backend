@@ -149,7 +149,6 @@ def send_document_revise_email(user, documentdetails_revise, status_revise):
 
 def send_print_request_email(user, no_of_print, reason_for_print, sop_document_id, issue_type, qa_users_in_department):
     current_time = timezone.now().strftime('%d-%m-%Y')
-    
     # Loop through each user in qa_users_in_department
     for qa_user in qa_users_in_department:
         context = {
@@ -163,7 +162,7 @@ def send_print_request_email(user, no_of_print, reason_for_print, sop_document_i
         }
 
         # Send the email to each user individually
-        send_dynamic_email('PRINT_REQUEST_NOTIFICATION', [qa_user], context)  # Pass only the current qa_user here
+        send_dynamic_email('PRINT_REQUEST_NOTIFICATION', [qa_user.email], context)  # Pass only the current qa_user here
 
 
 def send_reminder_email(assigned_user, document_title):
@@ -172,3 +171,20 @@ def send_reminder_email(assigned_user, document_title):
     message = f"Dear {assigned_user.first_name},\n\nPlease take action on the document titled '{document_title}'.\nThis is a reminder to take action if you haven't done so yet."
 
     send_mail(subject, message, [assigned_user.email])
+
+def send_print_request_reminder_email(qa_users_in_department, sop_document, no_of_print, reason_for_print, issue_type):
+    current_time = timezone.now().strftime('%d-%m-%Y')
+    # Loop through each user in qa_users_in_department
+    for qa_user in qa_users_in_department:
+        context = {
+            'receiver_first_name': qa_user.first_name,
+            'receiver_last_name': qa_user.last_name, 
+            'document_title': sop_document.document_title,
+            'no_of_print': no_of_print,
+            'reason_for_print': reason_for_print,
+            'issue_type': issue_type,
+            'current_time': current_time,
+        }
+
+        # Send the email to each user individually
+        send_dynamic_email('PRINT_REQUEST_REMINDER_NOTIFICATION', [qa_user.email], context)
