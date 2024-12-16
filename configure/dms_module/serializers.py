@@ -258,6 +258,23 @@ class DocumentSerializer(serializers.ModelSerializer):
         action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
         return action.created_at if action else None
 
+class ApprovedPrintRequestSerializer(serializers.ModelSerializer):
+    document_title = serializers.CharField(source='print_request.sop_document_id.document_title')
+    no_of_print = serializers.IntegerField(source='print_request.no_of_print')
+    no_of_request_by_admin = serializers.IntegerField()
+    status = serializers.CharField(source='status.status', allow_null=True)
+    created_at = serializers.DateTimeField()
+
+    class Meta:
+        model = PrintRequestApproval
+        fields = ['document_title', 'no_of_print', 'no_of_request_by_admin', 'status', 'created_at']
+
+
+class ApprovalNumberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApprovalNumber
+        fields = ['number']
+
 
 
 
