@@ -25,6 +25,8 @@ class PrintRequest(models.Model):
     master_copy_user = models.ManyToManyField(CustomUser, related_name='master_copy_requests', blank=True)
     other_user = models.ManyToManyField(CustomUser, related_name='other_user_requests', blank=True)
     printer = models.ForeignKey("PrinterMachinesModel", on_delete=models.CASCADE,blank=True, null=True)  # Updated
+    reminder_sent = models.BooleanField(default=False)
+    reminder_sent_times = models.JSONField(default=list)
 
 
     
