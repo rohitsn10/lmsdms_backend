@@ -2209,6 +2209,51 @@ class RetrivalNumbersViewSet(viewsets.ModelViewSet):
             return Response(
                 {"message": "PrintRequestApproval with the given ID does not exist."}
             )
+        
+        
+class DocumentwiseIdViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            document_id = self.kwargs.get('document_id', None)
+
+            if document_id:
+                queryset = Document.objects.filter(id=document_id)
+            else:
+                return Response({
+                    "status": False,
+                    "message": "Document ID is required",
+                }, status=400)
+
+            queryset = self.filter_queryset(queryset)
+
+            if queryset.exists():
+                serializer = self.serializer_class(queryset, many=True)
+                return Response({
+                    "status": True,
+                    "message": "Documents fetched successfully",
+                    'total': queryset.count(),
+                    "data": serializer.data,
+                })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "No Documents found",
+                    "total": 0,
+                    "data": [],
+                })
+        except Exception as e:
+            return Response({
+                "status": False,
+                'message': 'Something went wrong',
+                'error': str(e)
+            })
+
+
 
 
 
