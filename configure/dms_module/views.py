@@ -528,6 +528,19 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             revision_time = request.data.get('revision_time')
             document_operation = request.data.get('document_operation')
             workflow_id = request.data.get('workflow')
+            visible_to_users = request.data.get('visible_to_users', [])
+
+            # Validate and parse visible_to_users
+            if isinstance(visible_to_users, str):
+                import json
+                try:
+                    visible_to_users = json.loads(visible_to_users)
+                except json.JSONDecodeError:
+                    return Response({
+                        "status": False,
+                        "message": "Invalid format for visible_to_users. Provide a valid list of user IDs.",
+                        "data": []
+                    })
 
             if not document_title:
                 return Response({"status": False, "message": "Document title is required", "data": []})
@@ -570,6 +583,11 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
                 document.document_operation = document_operation
             if workflow != '':
                 document.workflow = workflow
+
+
+            # Update visible_to_users if provided
+            if visible_to_users:
+                document.visible_to_users.set(visible_to_users)    
             
             # Save the updated document
             document.save()
@@ -578,7 +596,6 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
         
         except Exception as e:
             return Response({"status": False, "message": 'Something went wrong', 'error': str(e)})
-        
 
 # class DocumentViewSet(viewsets.ModelViewSet):
 #     permission_classes = [permissions.IsAuthenticated]
