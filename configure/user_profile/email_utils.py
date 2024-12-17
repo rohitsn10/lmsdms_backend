@@ -165,12 +165,17 @@ def send_print_request_email(user, no_of_print, reason_for_print, sop_document_i
         send_dynamic_email('PRINT_REQUEST_NOTIFICATION', [qa_user.email], context)  # Pass only the current qa_user here
 
 
-def send_reminder_email(assigned_user, document_title):
-    # Email context
-    subject = "Reminder: Take Action on Document"
-    message = f"Dear {assigned_user.first_name},\n\nPlease take action on the document titled '{document_title}'.\nThis is a reminder to take action if you haven't done so yet."
-
-    send_mail(subject, message, [assigned_user.email])
+def send_before_revised_reminder_email(recipients, document, reminder):
+    current_time = timezone.now().strftime('%d-%m-%Y')
+    for recipient in recipients:
+        context = {
+            'receiver_first_name': recipient.first_name,
+            'receiver_last_name': recipient.last_name,
+            'document_title': document.document_title,
+            'reminder_minutes': reminder.reminder_minutes,
+            'current_time': current_time,
+        }
+        send_dynamic_email('BEFORE_REVISION_REMINDER_NOTIFICATION', [recipient.email], context)
 
 def send_print_request_reminder_email(qa_users_in_department, sop_document, no_of_print, reason_for_print, issue_type):
     current_time = timezone.now().strftime('%d-%m-%Y')
