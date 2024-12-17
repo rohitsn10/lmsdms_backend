@@ -4,3 +4,4 @@ from .models import *
 # Register your models here.
 admin.site.register(DynamicStatus)
 admin.site.register(DocumentSendBackAction)
+admin.site.register(Document)

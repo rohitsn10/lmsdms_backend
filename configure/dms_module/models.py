@@ -59,7 +59,7 @@ class Document(models.Model):
     document_number = models.CharField(max_length=255) 
     document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE) 
     document_description = models.TextField(blank=True, null=True)  
-    revision_date = models.DateField(blank=True, null=True)
+    revision_date = models.DateTimeField(blank=True, null=True)
     document_operation = models.TextField(blank=True, null=True)  
     form_status = models.TextField(blank=True, null=True)
     document_current_status = models.ForeignKey('DynamicStatus', on_delete=models.CASCADE,blank=True, null=True)
@@ -74,7 +74,7 @@ class Document(models.Model):
     training_required = models.BooleanField(default=False)  # New field added
     last_action_time = models.DateTimeField(blank=True, null=True, default=None)
     visible_to_users = models.ManyToManyField(CustomUser, related_name="visible_documents")
-    effective_date = models.DateField(blank=True, null=True)  # New field added
+    effective_date = models.DateTimeField(blank=True, null=True)  # New field added
 
 
     
