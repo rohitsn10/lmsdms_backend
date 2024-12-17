@@ -132,10 +132,12 @@ class DocumentviewSerializer(serializers.ModelSerializer):
     # formatted_created_at = serializers.SerializerMethodField()
     current_status_name = serializers.SerializerMethodField()
     approval_status = serializers.SerializerMethodField()
+    approval_numbers = serializers.SerializerMethodField()  # Add this
+    no_of_request_by_admin = serializers.SerializerMethodField() 
 
     class Meta:
         model = Document
-        fields = ['id', 'document_title','assigned_to', 'document_number', 'created_at', 'document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users']
+        fields = ['id', 'document_title','assigned_to', 'document_number', 'created_at', 'document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin']
 
     def get_document_type_name(self, obj):
         return obj.document_type.document_name if obj.document_type else None
@@ -155,6 +157,22 @@ class DocumentviewSerializer(serializers.ModelSerializer):
             .first()
         )
         return latest_approval.status.status if latest_approval and latest_approval.status else None
+    
+    def get_approval_numbers(self, obj):
+        # Fetch all approval numbers related to this document
+        approval_numbers = ApprovalNumber.objects.filter(
+            printrequestapproval__print_request__sop_document_id=obj
+        ).values_list('number', flat=True)
+        return list(approval_numbers) if approval_numbers else None
+
+    def get_no_of_request_by_admin(self, obj):
+        # Aggregate the sum of `no_of_request_by_admin` from related approvals
+        total_requests = (
+            PrintRequestApproval.objects
+            .filter(print_request__sop_document_id=obj)
+            .aggregate(total=models.Sum('no_of_request_by_admin'))
+        )
+        return total_requests['total'] if total_requests['total'] is not None else None
 
 class DocumentCommentSerializer(serializers.ModelSerializer):
     user_first_name = serializers.SerializerMethodField()
