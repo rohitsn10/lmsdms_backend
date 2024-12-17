@@ -2181,6 +2181,34 @@ class PrintRequestApprovalViewSet(viewsets.ModelViewSet):
             "message": "Retrival numbers added successfully",
         })
 
+class RetrivalNumbersViewSet(viewsets.ModelViewSet):
+
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = RetrivalNumberSerializer
+    queryset = RetrivalNumber.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        print_request_approval_id = self.kwargs.get('print_request_approval_id')
+
+        if not print_request_approval_id:
+            return Response({"message": "PrintRequestApproval ID is required."}, status=400)
+
+        try:
+            print_request_approval = PrintRequestApproval.objects.get(id=print_request_approval_id)
+
+            retrival_numbers = print_request_approval.retrival_numbers.all()
+
+            serializer = self.get_serializer(retrival_numbers, many=True)
+
+            return Response({
+                "print_request_approval_id": print_request_approval_id,
+                "retrival_numbers": serializer.data
+            })
+
+        except PrintRequestApproval.DoesNotExist:
+            return Response(
+                {"message": "PrintRequestApproval with the given ID does not exist."}
+            )
 
 
 
