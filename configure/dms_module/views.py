@@ -2086,43 +2086,78 @@ class ApprovedPrintRequestViewSet(viewsets.ModelViewSet):
                 })
         except Exception as e:
             return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+        
+
+class ApprovalNumberViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ApprovalNumberSerializer
+    queryset = ApprovalNumber.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        print_request_approval_id = self.kwargs.get('print_request_approval_id')
+
+        if not print_request_approval_id:
+            return Response({"message": "PrintRequestApproval ID is required."})
+
+        try:
+            # Get the ApprovalNumbers related to the given PrintRequestApproval
+            approval_numbers = ApprovalNumber.objects.filter(
+                printrequestapproval__id=print_request_approval_id
+            )
+
+            # Get the retrival_numbers associated with the given PrintRequestApproval
+            retrival_numbers = RetrivalNumber.objects.filter(
+                printrequestapproval__id=print_request_approval_id
+            ).values_list('retrival_number', flat=True)
+
+            # Filter out the ApprovalNumbers whose number is already in RetrivalNumbers
+            filtered_approval_numbers = approval_numbers.exclude(
+                number__in=retrival_numbers
+            )
+
+            # Serialize the filtered ApprovalNumbers
+            serializer = self.get_serializer(filtered_approval_numbers, many=True)
+
+            return Response({
+                'print_request_approval_id': print_request_approval_id,
+                'approval_numbers': serializer.data
+            })
+
+        except PrintRequestApproval.DoesNotExist:
+            return Response({"message": "PrintRequestApproval with the given ID does not exist."})
 
 
-# class ApprovalNumberViewSet(viewsets.ModelViewSet):
+class PrintRequestApprovalViewSet(viewsets.ModelViewSet):
+    queryset = PrintRequestApproval.objects.all()
+    serializer_class = RetrivalNumberSerializer
 
-#     permission_classes = [permissions.IsAuthenticated]
-#     serializer_class = ApprovalNumberSerializer
-#     queryset = ApprovalNumber.objects.all()
-#     lookup_field = 'print_request_approval_id'
+    def create(self, request, *args, **kwargs):
 
+        print_request_approval_id = request.data.get('print_request_approval_id')
+        retrival_numbers_data = request.data.get('retrival_numbers', [])
 
-#     def list(self, request, *args, **kwargs):
-#         print_request_approval_id = self.kwargs.get('print_request_approval_id')
+        if not print_request_approval_id:
+            return Response({"error": "print_request_approval_id is required"})
+        if not isinstance(retrival_numbers_data, list):
+            return Response({"error": "retrival_numbers should be a list"})
 
-#         if print_request_approval_id is None:
-#             return Response(
-#                 {"error": "PrintRequestApproval ID is required."}            )
+        try:
+            print_request_approval = PrintRequestApproval.objects.get(id=print_request_approval_id)
+        except PrintRequestApproval.DoesNotExist:
+            return Response({"error": "PrintRequestApproval not found"})
 
-#         try:
-#             # Fetch the PrintRequestApproval object
-#             approval = PrintRequestApproval.objects.get(pk=print_request_approval_id)
+        # Validate and create RetrivalNumber instances
+        added_numbers = []
+        for number in retrival_numbers_data:
+            retrival_number, created = RetrivalNumber.objects.get_or_create(retrival_number=number)
+            print_request_approval.retrival_numbers.add(retrival_number)
+            added_numbers.append(retrival_number.retrival_number)
 
-#             # Get all related approval numbers
-#             approval_numbers = approval.approval_numbers.all()
+        return Response({
+            "status": True,
+            "message": "Retrival numbers added successfully",
+        })
 
-#             # Serialize the approval numbers
-#             serializer = ApprovalNumberSerializer(approval_numbers, many=True)
-
-#             # Return both PrintRequestApproval id and approval_numbers
-#             return Response({
-#                 'id': approval.id,
-#                 'approval_numbers': serializer.data
-#             })
-
-#         except PrintRequestApproval.DoesNotExist:
-#             return Response(
-#                 {"error": "PrintRequestApproval with the given ID does not exist."}
-#             )
 
 
 

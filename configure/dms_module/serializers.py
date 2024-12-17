@@ -275,6 +275,11 @@ class ApprovalNumberSerializer(serializers.ModelSerializer):
         model = ApprovalNumber
         fields = ['number']
 
+class RetrivalNumberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RetrivalNumber
+        fields = ['id', 'retrival_number', 'created_at']
+
 
 
 
