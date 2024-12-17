@@ -2071,9 +2071,15 @@ class DocumentReviseRequestGetViewSet(viewsets.ModelViewSet):
         # Use the filtered queryset
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
+
+        # Get the group ID of the requested user
+        user_groups = request.user.groups.values_list('id', flat=True)  # Get all group IDs
+        group_id = user_groups[0] if user_groups else None  # Take the first group if available
+
         return Response({
             "status": True,
             "message": "List of documents with current status ID 7 retrieved successfully",
+            "user_group_id": group_id, 
             "data": serializer.data
         })
 
