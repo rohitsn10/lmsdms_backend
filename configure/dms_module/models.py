@@ -39,9 +39,14 @@ class PrintRequestApproval(models.Model):
     # approval_number = models.CharField(max_length=255, unique=True, blank=True, null=True)  # New field for unique number
     created_at = models.DateTimeField(auto_now_add=True)  # Auto-populated created date
     approval_numbers = models.ManyToManyField('ApprovalNumber', blank=True)  # Many-to-many field for unique numbers
+    retrival_numbers = models.ManyToManyField('RetrivalNumber', blank=True)  # Many-to-many field for unique numbers
 
 class ApprovalNumber(models.Model):
     number = models.CharField(max_length=255, unique=True)  # Unique approval number
+    created_at = models.DateTimeField(auto_now_add=True) 
+
+class RetrivalNumber(models.Model):
+    retrival_number = models.CharField(max_length=255, unique=True)  # Unique approval number
     created_at = models.DateTimeField(auto_now_add=True) 
 
 
