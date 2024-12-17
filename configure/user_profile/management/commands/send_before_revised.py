@@ -1,95 +1,114 @@
-import threading
 import time
 from datetime import timedelta
-from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+from django.utils import timezone
+from django.core.management.base import BaseCommand
 from user_profile.models import CustomUser
 from dms_module.models import Document, Reminder
 import logging
-import pytz
-from django.core.management.base import BaseCommand
-
+from datetime import datetime, date
+import ipdb
 # Set up logging
 logger = logging.getLogger(__name__)
+import datetime
+from datetime import timedelta
+from django.core.mail import send_mail
+from django.utils import timezone
+import time
+import pytz
 
-# Global variable to track if the reminder thread is running
-reminder_thread_running = False
+logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = 'Send revision reminders to doc_admin users based on document revision dates'
+    help = 'Send revision reminders to users based on document revision dates'
 
     def handle(self, *args, **options):
-        """Handle the command logic"""
+        """Handle the command logic, running continuously"""
         self.stdout.write(self.style.SUCCESS("Starting the revision reminder process..."))
-        self.run_reminder_thread()
+        try:
+            self.send_revision_reminder()
+        except KeyboardInterrupt:
+            self.stdout.write(self.style.SUCCESS("Reminder service stopped manually."))
 
-    def run_reminder_thread(self):
-        """Start a background thread to send revision reminders."""
-        global reminder_thread_running
+    def send_revision_reminder(self):
+        """ Continuously checks for documents and sends reminders to users"""
+        while True:
+            # Get current system time and convert it to Asia/Kolkata timezone (since that's your local timezone)
+            current_time = timezone.localtime(timezone.now())  # Convert to Asia/Kolkata timezone
+            print(f"current_time================: {current_time}")
 
-        reminder_thread_running = True
+            # Fetch all reminder objects (in case there are multiple reminder objects stored in the DB)
+            reminder_objects = Reminder.objects.all()
 
-        def send_revision_reminder():
-            while reminder_thread_running:
-                current_time = timezone.now()
+            if not reminder_objects:
+                logger.warning("No reminder object found in the database.")
+                time.sleep(60)  # Sleep for a minute before checking again
+                continue
 
-                # Fetch all reminder objects (in case there are multiple reminder objects stored in the DB)
-                reminder_objects = Reminder.objects.all()
+            # Fetch documents that need reminders based on revision_date
+            reminder_documents = Document.objects.filter(
+                revision_date__gt=current_time,  # Only documents that are still in the future
+                is_revised=False  # Only send reminder if the document is not yet revised
+            )
 
-                if not reminder_objects:
-                    logger.warning("No reminder object found in the database.")
-                    time.sleep(60)  # Sleep for a minute before checking again
-                    continue
+            for reminder_obj in reminder_objects:
+                reminder_minutes = reminder_obj.reminder_minutes  # Get the list of reminder minutes
 
-                # Fetch documents that need reminders based on revision_date and is_revised
-                reminder_documents = Document.objects.filter(
-                    revision_date__gt=current_time,
-                    is_revised=False  # Only send reminder if the document is not yet revised
-                )
+                for document in reminder_documents:
+                    try:
+                        # Ensure revision_date is a timezone-aware datetime
+                        revision_date = document.revision_date
+                        print(f"revision_date===== 111 =======: {revision_date}")
 
-                for reminder_obj in reminder_objects:
-                    reminder_minutes = reminder_obj.reminder_minutes  # Get the list of reminder minutes
+                        # Check if revision_date is naive (without timezone info), if so, make it aware
+                        if timezone.is_naive(revision_date):
+                            # Make revision_date timezone aware using the current timezone
+                            revision_date = timezone.make_aware(revision_date, timezone.get_current_timezone())
+                            print(f"revision_date===== 222 =======: {revision_date}")
+                        
+                        # Convert revision_date to Asia/Kolkata timezone (if it isn't already in that timezone)
+                        kolkata_tz = timezone.get_fixed_timezone(5 * 60 + 30)  # Asia/Kolkata is UTC+5:30
+                        revision_date = revision_date.astimezone(kolkata_tz)
+                        print(f"revision_date (Asia/Kolkata timezone): {revision_date}")
 
-                    for document in reminder_documents:
-                        try:
-                            # Loop through each reminder minute
-                            for reminder in reminder_minutes:
-                                reminder_time = document.revision_date - timedelta(minutes=reminder)
+                        # Loop through each reminder minute and send emails if the current time is within the window
+                        for reminder in reminder_minutes:
+                            reminder_time = revision_date - timedelta(minutes=reminder)
+                            print(f"reminder_time===== 333 =======: {reminder_time}")
 
-                                # Check if the current time is within the reminder window
-                                if current_time >= reminder_time and current_time < reminder_time + timedelta(minutes=1):
-                                    # Find the user who created the document
-                                    user = document.user  # The user who created the document
-                                    department = user.department  # Get the department of the document creator
+                            # Check if the current time is within the reminder window (1 minute before reminder_time)
+                            if current_time >= reminder_time and current_time < reminder_time + timedelta(minutes=1):
+                                # Find the user who created the document
+                                user = document.user  # The user who created the document
+                                department = user.department  # Get the department of the document creator
 
-                                    # Find the 'doc_admin' users from the same department
-                                    doc_admin_users = CustomUser.objects.filter(
-                                        department=department,
-                                        groups__name='doc_admin'  # Assuming the 'doc_admin' group exists
+                                # Find all users from the same department
+                                users_in_department = CustomUser.objects.filter(
+                                    department=department
+                                )
+                                print(f"users_in_department============: {users_in_department}")
+
+                                # Send reminder emails to users from the same department
+                                for recipient in users_in_department:
+                                    # Create the email content
+                                    subject = f"Reminder: Document '{document.document_title}' Revision Due Soon"
+                                    message = (
+                                        f"Dear {recipient.first_name} {recipient.last_name},\n\n"
+                                        f"This is a reminder that the document '{document.document_title}' created by {user.username} "
+                                        f"is due for revision in {reminder} minute(s) (Revision Date: {revision_date}). "
+                                        f"Please make sure to update it accordingly.\n\nBest regards,\nYour Team"
                                     )
+                                    from_email = settings.EMAIL_HOST_USER
+                                    recipient_list = [recipient.email]
 
-                                    # Send reminder emails to doc_admin users
-                                    for doc_admin in doc_admin_users:
-                                        subject = f"Reminder: Document '{document.document_title}' Revision Due Soon"
-                                        message = f"Dear {doc_admin.username},\n\nThis is a reminder that the document '{document.document_title}' created by {user.username} is due for revision in {reminder} minutes. Please make sure to update it accordingly.\n\nBest regards,\nYour Team"
-                                        from_email = settings.EMAIL_HOST_USER
-                                        recipient_list = [doc_admin.email]
+                                    # Send the email
+                                    send_mail(subject, message, from_email, recipient_list, fail_silently=False)
+                                    self.stdout.write(self.style.SUCCESS(f"Sent revision reminder email to {recipient.email} about document '{document.document_title}' created by {user.username} for {reminder} minutes"))
 
-                                        # Send the email to the 'doc_admin' user
-                                        send_mail(subject, message, from_email, recipient_list, fail_silently=False)
-                                        logger.info(f"Sent revision reminder email to {doc_admin.email} about document '{document.document_title}' created by {user.username} for {reminder} minutes")
+                    except Exception as e:
+                        logger.error(f"Failed to send reminder email about document {document.document_title}: {str(e)}")
 
-                        except Exception as e:
-                            logger.error(f"Failed to send reminder email to doc_admin about document {document.document_title}: {str(e)}")
+            # Sleep for a minute before checking again
+            time.sleep(60)
 
-                # Sleep for a minute before checking again
-                time.sleep(60)
-
-        # Start the background thread for reminders
-        reminder_thread = threading.Thread(target=send_revision_reminder)
-        reminder_thread.daemon = True  # Set as a daemon so it will exit when the main process exits
-        reminder_thread.start()
-        self.stdout.write(self.style.SUCCESS("Revision reminder thread has started..."))
