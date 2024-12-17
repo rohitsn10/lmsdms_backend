@@ -98,6 +98,7 @@ class EmailTemplate(models.Model):
     signature = models.CharField(max_length=255, default='Bharat Parenterals Ltd.')
 
     def __str__(self):
+        
         return self.name
     
 

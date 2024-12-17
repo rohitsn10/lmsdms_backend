@@ -9,14 +9,8 @@ from dms_module.models import Document, Reminder
 import logging
 from datetime import datetime, date
 import ipdb
-# Set up logging
-logger = logging.getLogger(__name__)
-import datetime
-from datetime import timedelta
-from django.core.mail import send_mail
-from django.utils import timezone
-import time
-import pytz
+from user_profile.email_utils import *
+
 
 logger = logging.getLogger(__name__)
 
@@ -84,27 +78,8 @@ class Command(BaseCommand):
                                 department = user.department  # Get the department of the document creator
 
                                 # Find all users from the same department
-                                users_in_department = CustomUser.objects.filter(
-                                    department=department
-                                )
-                                print(f"users_in_department============: {users_in_department}")
-
-                                # Send reminder emails to users from the same department
-                                for recipient in users_in_department:
-                                    # Create the email content
-                                    subject = f"Reminder: Document '{document.document_title}' Revision Due Soon"
-                                    message = (
-                                        f"Dear {recipient.first_name} {recipient.last_name},\n\n"
-                                        f"This is a reminder that the document '{document.document_title}' created by {user.username} "
-                                        f"is due for revision in {reminder} minute(s) (Revision Date: {revision_date}). "
-                                        f"Please make sure to update it accordingly.\n\nBest regards,\nYour Team"
-                                    )
-                                    from_email = settings.EMAIL_HOST_USER
-                                    recipient_list = [recipient.email]
-
-                                    # Send the email
-                                    send_mail(subject, message, from_email, recipient_list, fail_silently=False)
-                                    self.stdout.write(self.style.SUCCESS(f"Sent revision reminder email to {recipient.email} about document '{document.document_title}' created by {user.username} for {reminder} minutes"))
+                                users_in_department = CustomUser.objects.filter(department=department)
+                                send_before_revised_reminder_email(users_in_department, document, reminder)
 
                     except Exception as e:
                         logger.error(f"Failed to send reminder email about document {document.document_title}: {str(e)}")

@@ -21,8 +21,8 @@ class Command(BaseCommand):
 
         # Start the reminder loop
         while True:
-            now = timezone.now()  # Get current time
-
+            current_time = timezone.localtime(timezone.now())  # Get current time
+            
             # Fetch all DocumentSendBackAction objects that have not had reminders sent
             actions = DocumentSendBackAction.objects.filter(reminder_sent=False)
 
@@ -43,7 +43,7 @@ class Command(BaseCommand):
                         reminder_time = created_at + timedelta(minutes=minutes)
 
                         # If the current time is greater than or equal to the reminder time and the reminder hasn't been sent
-                        if now >= reminder_time and minutes not in sent_reminders:
+                        if current_time >= reminder_time and minutes not in sent_reminders:
                             # Send the reminder email
                             self.send_reminder(action)
 
@@ -80,7 +80,7 @@ class Command(BaseCommand):
                         reminder_time = created_at + timedelta(minutes=minutes)
 
                         # If the current time is greater than or equal to the reminder time and the reminder hasn't been sent
-                        if now >= reminder_time and minutes not in sent_reminders:
+                        if current_time >= reminder_time and minutes not in sent_reminders:
                             # Send the reminder email to reviewers
                             self.send_print_request_reminder(request)
 
