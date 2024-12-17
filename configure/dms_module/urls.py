@@ -88,5 +88,7 @@ urlpatterns = [
 
    path('print_retrival/<int:print_request_approval_id>',RetrivalNumbersViewSet.as_view({'get': 'list'}),name='print_retrival'),
 
+   path('document_wise_id/<int:document_id>',DocumentwiseIdViewSet.as_view({'get': 'list'}),name='document_wise_id'),
+
 
 ]
