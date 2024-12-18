@@ -80,6 +80,8 @@ class Document(models.Model):
     last_action_time = models.DateTimeField(blank=True, null=True, default=None)
     visible_to_users = models.ManyToManyField(CustomUser, related_name="visible_documents")
     effective_date = models.DateTimeField(blank=True, null=True)  # New field added
+    reminder_sent = models.BooleanField(default=False)
+    reminder_sent_times = models.JSONField(default=list)
 
 
     
@@ -128,13 +130,17 @@ class DocumentAuthorApproveAction(models.Model):
     # documentdetails_approve = models.ForeignKey(DocumentDetails, on_delete=models.CASCADE)  
     status_approve = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+    reminder_sent = models.BooleanField(default=False)
+    reminder_sent_times = models.JSONField(default=list)
 
 class DocumentReviewerAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     status_approve = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    reminder_sent = models.BooleanField(default=False)
+    reminder_sent_times = models.JSONField(default=list)
+    
 class DocumentApproverAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
