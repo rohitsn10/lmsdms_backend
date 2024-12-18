@@ -12,9 +12,9 @@ jobs:
     - name: executing remote ssh commands using password
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.PROD_HOST }}
+        host: ${{ secrets.LMSDMS_HOST }}
         username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.PROD_KEY }}
+        key: ${{ secrets.LMMSDMS_KEY }}
         port: ${{ secrets.PORT }}
         script_stop: true
         script: |
