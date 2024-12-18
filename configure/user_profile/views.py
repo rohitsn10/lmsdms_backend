@@ -35,22 +35,20 @@ class StandardResultsSetPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     lookup_url_kwarg = 'pk'
     
-
+    
 class GroupIdWisePermissionListAPIView(APIView):
     permission_classes = [IsAuthenticated]
-    # filterset_class = PermissionFilter
-   
-    def get(self, request):
-        # if not request.user.has_perm('auth.view_permission'):
-        #     return Response({'status': False, 'message': "You don't have permission to perform this action"})
 
+    def get(self, request):
         group_id = request.query_params.get('group_id')
         user = request.user
 
         group_permissions_ids = []
+        group_name = None
         if group_id is not None:
             try:
                 group = Group.objects.get(id=group_id)
+                group_name = group.name
                 group_permissions_ids = group.permissions.values_list('id', flat=True)
             except Group.DoesNotExist:
                 return Response({'status': False, 'message': 'Group not found!'})
@@ -95,8 +93,11 @@ class GroupIdWisePermissionListAPIView(APIView):
         return Response({
             'status': True,
             'message': 'Permission List!',
+            'group_id': group_id,
+            'group_name': group_name,
             'data': permission_data
         })
+
 
 
 class PermissionListAPIView(APIView):
