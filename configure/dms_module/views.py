@@ -207,7 +207,7 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
                 printer = printer,
             )
             user_department = user.department
-            qa_group = Group.objects.get(name='Reviewer')
+            qa_group = Group.objects.get(name='Doc Admin')
             qa_users_in_department = CustomUser.objects.filter(groups=qa_group, department=user_department)
             send_print_request_email(user, no_of_print, reason_for_print, sop_document, issue_type, qa_users_in_department)
             return Response({'status': True, 'message': 'Print requested successfully'})
@@ -355,6 +355,9 @@ class PrintApprovalViewSet(viewsets.ModelViewSet):
             # Add approval numbers to the ManyToManyField
             print_request_approval.approval_numbers.add(*approval_numbers)
             
+            #send email to the user who requested the print in PrintRequest
+            user = print_request.user
+            send_print_request_approval_email(user, print_request, no_of_request_by_admin, dynamic_status)
             return Response({
                 'status': True,
                 'message': 'Print request successfully approved',
@@ -1098,15 +1101,13 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
             document.assigned_to = None
             document.save()
             
-            # document_title = document.document_title
-            # reviewer_group = Group.objects.get(name='Reviewer')
-            # reviewers = CustomUser.objects.filter(groups=reviewer_group)
-            # department_users = CustomUser.objects.filter(department=user.department)
-            # users_to_notify = reviewers.union(department_users).distinct()
-            # send_document_update_email(user, document_title, users_to_notify)
+            document_title = document.document_title
+            reviewer_group = Group.objects.get(name='Reviewer')
+            reviewers = CustomUser.objects.filter(groups=reviewer_group)
+            department_users = CustomUser.objects.filter(department=user.department)
+            users_to_notify = reviewers.union(department_users).distinct()
+            send_document_update_email(user, document_title, users_to_notify)
             
-           
-
             return Response({"status": True, "message": "Document approval action created successfully"})
 
         except DocumentDetails.DoesNotExist:
@@ -1184,7 +1185,7 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
             document_title  = document.document_title
             approver_user = Group.objects.get(name='Approver')
             approvers = CustomUser.objects.filter(groups=approver_user)
-            department_users = CustomUser.objects.filter(department=user.department)
+            department_users = CustomUser.objects.filter(department=document.user.department)
             users_to_notify = approvers.union(department_users).distinct()
             send_document_approval_email(user, document_title, users_to_notify)
 
@@ -1244,7 +1245,12 @@ class DocumentApproverActionCreateViewSet(viewsets.ModelViewSet):
             document.document_current_status = status
             document.assigned_to = None
             document.save()
-
+            document_title  = document.document_title
+            approver_user = Group.objects.get(name='Doc Admin')
+            approvers = CustomUser.objects.filter(groups=approver_user)
+            department_users = CustomUser.objects.filter(department=document.user.department)
+            users_to_notify = approvers.union(department_users).distinct()
+            send_document_approval_email(user, document_title, users_to_notify)
             return Response({
                 "status": True,
                 "message": "Document approver action created successfully",
@@ -1274,13 +1280,13 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
             try:
                 document = Document.objects.get(id=document_id)
             except Document.DoesNotExist:
-                return Response({"status": False, "message": "Invalid Document ID"})
+                return Response({"status": False, "message": "Invalid Document ID", "data": []})
 
             # Fetch the status
             try:
                 status = DynamicStatus.objects.get(id=status_id)
             except DynamicStatus.DoesNotExist:
-                return Response({"status": False, "message": "Invalid Status ID"})
+                return Response({"status": False, "message": "Invalid Status ID", "data": []})
 
            
             # Create the reviewer action
@@ -1306,17 +1312,22 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
                     documentdetails_effective=document,
                     status_effective=status
                 )
+                user_department = document.user.department
+                department_users = CustomUser.objects.filter(department=user_department)
+                for department_user in department_users:
+                    send_document_doc_admin_effective_email(department_user, document, status)
+
             elif status_id == 6:  
                 DocumentReleaseAction.objects.create(
                     user=user,
                     documentdetails_release=document,
                     status_release=status
                 )
-
-            return Response({
-                "status": True,
-                "message": "Document Doc Admin action created successfully",
-            })
+                user_department = document.user.department
+                department_users = CustomUser.objects.filter(department=user_department)
+                for department_user in department_users:
+                    send_document_doc_admin_release_email(department_user, document, status)
+            return Response({"status": True,"message": "Document Doc Admin action created successfully", "data": []})
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
@@ -1421,6 +1432,11 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                 )
                 document.document_current_status = status_release
                 document.save()
+                # send email to the all user who's department is same as the who created the document
+                user_department = document.user.department
+                department_users = CustomUser.objects.filter(department=user_department)
+                for department_user in department_users:
+                    send_document_release_email(department_user, document, status_release)
                 return Response({"status": True, "message": "Document release action created successfully"})
             elif status_id == 7:
                 document_effective_action = DocumentEffectiveAction.objects.create(
@@ -1432,6 +1448,10 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                 document.effective_date = current_date
                 document.document_current_status = status_release
                 document.save()
+                user_department = document.user.department
+                department_users = CustomUser.objects.filter(department=user_department)
+                for department_user in department_users:
+                    send_document_effective_email(department_user, document, status_release)
                 return Response({"status": True, "message": "Document effective action created successfully"})
             else:
                 return Response({"status": False, "message": "Invalid status ID"})            

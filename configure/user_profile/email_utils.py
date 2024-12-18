@@ -61,13 +61,13 @@ def send_email_change_password(email, full_name):
 
 
 
-def send_document_create_email(user, document_name, recipients):
+def send_document_create_email(user, document_title, recipients):
     for recipient in recipients:
         context = {
             'full_name': f'{recipient.first_name} {recipient.last_name}',
             'first_name': recipient.first_name,  
             'last_name': recipient.last_name,  
-            'document_name': document_name,
+            'document_name': document_title,
             'current_time': timezone.now().strftime('%d-%m-%Y'),
         }
 
@@ -76,14 +76,13 @@ def send_document_create_email(user, document_name, recipients):
     return {"status": True, "message": "Emails sent successfully", "data": []}
 
 
-def send_document_update_email(user, document_name, recipients):
-    for recipient in recipients:
+def send_document_update_email(user, document_title, users_to_notify):
+    for recipient in users_to_notify:
         context = {
-            'full_name': f'{recipient.first_name} {recipient.last_name}',
-            'first_name': recipient.first_name,  
-            'last_name': recipient.last_name,  
-            'document_name': document_name,
+            'full_name': f'{recipient.first_name} {recipient.last_name}', 
+            'document_name': document_title,
             'current_time': timezone.now().strftime('%d-%m-%Y'),
+            'user_full_name': f'{user.first_name} {user.last_name}',
         }
 
         send_dynamic_email('DOCUMENT_UPDATED', recipient.email, context)
@@ -114,27 +113,74 @@ def send_document_sendback_reminder_email(assigned_to, document_title):
 
     return {"status": True, "message": "Email sent successfully", "data": []}
 
-def send_document_release_email(admin_user, documentdetails_release, status_release):
+def send_document_release_email(department_user, document, status_release):
+    # Constructing context with relevant document and user details
     context = {
-        'full_name': f'{admin_user.first_name} {admin_user.last_name}',
-        'document_title': documentdetails_release.document_title,
+        'full_name': f'{department_user.first_name} {department_user.last_name}',
+        'document_title': document.document_title,
         'status_name': status_release.status,
         'current_time': timezone.now().strftime('%d-%m-%Y'),
     }
 
-    send_dynamic_email('DOCUMENT_RELEASE_NOTIFICATION', admin_user.email, context)
+    # Call the function to send an email, assuming send_dynamic_email handles the template logic
+    send_dynamic_email('DOCUMENT_RELEASE_NOTIFICATION', department_user.email, context)
+
+    return {"status": True, "message": "Email sent successfully", "data": []}
+
+def send_document_effective_email(department_user, document, status_release):
+    # Constructing context with relevant document and user details
+    context = {
+        'full_name': f'{department_user.first_name} {department_user.last_name}',
+        'document_title': document.document_title,
+        'status_name': status_release.status,
+        'current_time': timezone.now().strftime('%d-%m-%Y'),
+    }
+
+    # Call the function to send an email, assuming send_dynamic_email handles the template logic
+    send_dynamic_email('DOCUMENT_EFFECTIVE_NOTIFICATION', department_user.email, context)
+
+    return {"status": True, "message": "Email sent successfully", "data": []}
+
+
+def send_document_doc_admin_effective_email(department_user, document, status):
+    # Constructing context with relevant document and user details
+    context = {
+        'full_name': f'{department_user.first_name} {department_user.last_name}',
+        'document_title': document.document_title,
+        'status_name': status.status,
+        'current_time': timezone.now().strftime('%d-%m-%Y'),
+    }
+
+    # Call the function to send an email, assuming send_dynamic_email handles the template logic
+    send_dynamic_email('DOCUMENT_DOC_ADMIN_EFFECTIVE_NOTIFICATION', department_user.email, context)
+
+    return {"status": True, "message": "Email sent successfully", "data": []}
+
+def send_document_doc_admin_release_email(department_user, document, status):
+    # Constructing context with relevant document and user details
+    context = {
+        'full_name': f'{department_user.first_name} {department_user.last_name}',
+        'document_title': document.document_title,
+        'status_name': status.status,
+        'current_time': timezone.now().strftime('%d-%m-%Y'),
+    }
+
+    # Call the function to send an email, assuming send_dynamic_email handles the template logic
+    send_dynamic_email('DOCUMENT_DOC_ADMIN_RELEASE_NOTIFICATION', department_user.email, context)
+
+    return {"status": True, "message": "Email sent successfully", "data": []}
+
 
 def send_document_approval_email(user, document_title, recipients):
     for recipient in recipients:
         context = {
-            'full_name': f'{recipient.first_name} {recipient.last_name}',
-            'first_name': recipient.first_name,  
-            'last_name': recipient.last_name,  
+            'full_name': f'{recipient.first_name} {recipient.last_name}',  
             'document_name': document_title,
             'current_time': timezone.now().strftime('%d-%m-%Y'),
+            'user_full_name': f'{user.first_name} {user.last_name}',
         }
 
-        send_dynamic_email('DOCUMENT_APPROVAL_NOTIFICATION', user.email, context)
+        send_dynamic_email('DOCUMENT_APPROVAL_NOTIFICATION', recipient.email, context)
 
 def send_document_revise_email(user, documentdetails_revise, status_revise):
     context = {
@@ -164,19 +210,6 @@ def send_print_request_email(user, no_of_print, reason_for_print, sop_document_i
         # Send the email to each user individually
         send_dynamic_email('PRINT_REQUEST_NOTIFICATION', [qa_user.email], context)  # Pass only the current qa_user here
 
-
-def send_before_revised_reminder_email(recipients, document, reminder):
-    current_time = timezone.now().strftime('%d-%m-%Y')
-    for recipient in recipients:
-        context = {
-            'receiver_first_name': recipient.first_name,
-            'receiver_last_name': recipient.last_name,
-            'document_title': document.document_title,
-            'reminder_minutes': reminder.reminder_minutes,
-            'current_time': current_time,
-        }
-        send_dynamic_email('BEFORE_REVISION_REMINDER_NOTIFICATION', [recipient.email], context)
-
 def send_print_request_reminder_email(qa_users_in_department, sop_document, no_of_print, reason_for_print, issue_type):
     current_time = timezone.now().strftime('%d-%m-%Y')
     # Loop through each user in qa_users_in_department
@@ -193,3 +226,52 @@ def send_print_request_reminder_email(qa_users_in_department, sop_document, no_o
 
         # Send the email to each user individually
         send_dynamic_email('PRINT_REQUEST_REMINDER_NOTIFICATION', [qa_user.email], context)
+
+def send_before_revised_reminder_email(recipients, document, reminder):
+    current_time = timezone.now().strftime('%d-%m-%Y')
+    for recipient in recipients:
+        context = {
+            'receiver_first_name': recipient.first_name,
+            'receiver_last_name': recipient.last_name,
+            'document_title': document.document_title,
+            'reminder_minutes': reminder.reminder_minutes,
+            'current_time': current_time,
+        }
+        send_dynamic_email('BEFORE_REVISION_REMINDER_NOTIFICATION', [recipient.email], context)
+
+
+def send_print_request_approval_email(user, print_request, no_of_request_by_admin, dynamic_status):
+    current_time = timezone.now().strftime('%d-%m-%Y')    
+    context = {
+        'receiver_first_name': user.first_name,
+        'receiver_last_name': user.last_name, 
+        'document_title': print_request.sop_document_id.document_title,
+        'no_of_print': print_request.no_of_print,
+        'no_of_request_by_admin': no_of_request_by_admin,
+        'current_time': current_time,
+    }
+
+    send_dynamic_email('PRINT_REQUEST_APPROVAL_NOTIFICATION', [user.email], context)
+
+
+def send_document_approval_reminder_email(department_users, document_title):
+    current_time = timezone.now().strftime('%d-%m-%Y')
+    for department_user in department_users:
+        context = {
+            'receiver_first_name': department_user.first_name,
+            'receiver_last_name': department_user.last_name,
+            'document_title': document_title,
+            'current_time': current_time,
+        }
+        send_dynamic_email('DOCUMENT_APPROVAL_REMINDER_NOTIFICATION', [department_user.email], context)
+
+def send_document_reviewer_reminder_email(department_users, document_title):
+    current_time = timezone.now().strftime('%d-%m-%Y')
+    for department_user in department_users:
+        context = {
+            'receiver_first_name': department_user.first_name,
+            'receiver_last_name': department_user.last_name,
+            'document_title': document_title,
+            'current_time': current_time,
+        }
+        send_dynamic_email('DOCUMENT_REVIEWER_REMINDER_NOTIFICATION', [department_user.email], context)
