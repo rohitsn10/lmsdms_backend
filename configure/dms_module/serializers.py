@@ -165,14 +165,22 @@ class DocumentviewSerializer(serializers.ModelSerializer):
         ).values_list('number', flat=True)
         return list(approval_numbers) if approval_numbers else None
 
+    # def get_no_of_request_by_admin(self, obj):
+    #     total_requests = (
+    #         PrintRequestApproval.objects
+    #         .filter(print_request__sop_document_id=obj)
+    #         .aggregate(total=models.Sum('no_of_request_by_admin'))
+    #     )
+    #     return total_requests['total'] if total_requests['total'] is not None else None
+
     def get_no_of_request_by_admin(self, obj):
-        # Aggregate the sum of `no_of_request_by_admin` from related approvals
-        total_requests = (
-            PrintRequestApproval.objects
-            .filter(print_request__sop_document_id=obj)
-            .aggregate(total=models.Sum('no_of_request_by_admin'))
-        )
-        return total_requests['total'] if total_requests['total'] is not None else None
+        """
+        Fetch all `no_of_request_by_admin` values related to the given document.
+        """
+        request_approvals = PrintRequestApproval.objects.filter(
+            print_request__sop_document_id=obj
+        ).values_list('no_of_request_by_admin', flat=True)
+        return list(request_approvals) if request_approvals else []
 
 class DocumentCommentSerializer(serializers.ModelSerializer):
     user_first_name = serializers.SerializerMethodField()
