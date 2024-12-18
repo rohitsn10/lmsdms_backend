@@ -332,7 +332,7 @@ class CreateUserViewSet(viewsets.ModelViewSet):
 
 class ListUserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    queryset = CustomUser.objects.all().order_by('-id')
+    queryset = CustomUser.objects.all().exclude(is_superuser = True).exclude(groups__name = "Admin").order_by('-id')
     serializer_class = CustomUserdataSerializer
     search_fields = ['email', 'username', 'first_name', 'last_name', 'phone']
     ordering_fields = ['email', 'username', 'first_name', 'last_name', 'phone']
@@ -341,7 +341,7 @@ class ListUserViewSet(viewsets.ModelViewSet):
         user = self.request.user
 
         # Exclude Superadmin users from the queryset
-        queryset = CustomUser.objects.exclude(groups__name='superadmin')
+        queryset = CustomUser.objects.all().exclude(is_superuser = True).exclude(groups__name = "Admin").order_by('-id')
 
         if user.groups.filter(name='Admin').exists():
             # Admin can see all data, including other Admin users
