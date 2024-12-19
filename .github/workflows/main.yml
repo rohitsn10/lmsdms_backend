@@ -18,10 +18,10 @@ jobs:
         port: ${{ secrets.PORT }}
         script_stop: true
         script: |
-          rm -Rf /var/www/html/lmsdms_backend-Backup
-          mkdir /var/www/html/lmsdms_backend-Backup
+          sudo rm -Rf /var/www/html/lmsdms_backend-Backup
+          sudo mkdir /var/www/html/lmsdms_backend-Backup
           sudo rsync -avh /var/www/html/lmsdms_backend/* /var/www/html/lmsdms_backend-Backup/.
-          cd /var/www/html/lmsdms_backend
+          sudo cd /var/www/html/lmsdms_backend
           git stash
           git pull
           source ./venv/bin/activate
@@ -31,8 +31,8 @@ jobs:
           python manage.py makemigrations lms_module
           python manage.py migrate
           deactivate
-          service gunicorn restart
-          service nginx restart
+          sudo service gunicorn restart
+          sudo service nginx restart
           
           
           
