@@ -14,7 +14,7 @@ jobs:
       with:
         host: ${{ secrets.LMSDMS_HOST }}
         username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.LMMSDMS_KEY }}
+        key: ${{ secrets.LMSDMS_KEY }}
         port: ${{ secrets.PORT }}
         script_stop: true
         script: |
