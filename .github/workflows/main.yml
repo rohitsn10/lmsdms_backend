@@ -21,7 +21,7 @@ jobs:
           sudo rm -Rf /var/www/html/lmsdms_backend-Backup
           sudo mkdir /var/www/html/lmsdms_backend-Backup
           sudo rsync -avh /var/www/html/lmsdms_backend/* /var/www/html/lmsdms_backend-Backup/.
-          sudo cd /var/www/html/lmsdms_backend
+          cd /var/www/html/lmsdms_backend
           git stash
           git pull
           source ./venv/bin/activate
