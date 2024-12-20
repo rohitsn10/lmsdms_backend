@@ -116,14 +116,12 @@ class PlantAddView(viewsets.ModelViewSet):
         try:
             plant_name = request.data.get('plant_name')
             plant_location = request.data.get('plant_location')
-            plant_description = request.data.get('plant_description')
+            plant_description = request.data.get('plant_description',"")
 
             if not plant_name:
                 return Response({'status': False, 'message': 'Plant name is required'})
             if not plant_location:
                 return Response({'status': False, 'message': 'Plant location is required'})
-            if not plant_description:
-                return Response({'status': False, 'message': 'Plant description is required'})
 
             plant_obj = Plant.objects.create(plant_name=plant_name, plant_location=plant_location, plant_description=plant_description)
             plant_obj.save()
@@ -231,8 +229,6 @@ class JobRoleAddView(viewsets.ModelViewSet):
 
             if not job_role_name:
                 return Response({'status': False, 'message': 'Job role name is required'})
-            if not job_role_description:
-                return Response({'status': False, 'message': 'Job role description is required'})
 
             job_role_obj = JobRole.objects.create(
                 job_role_name=job_role_name,

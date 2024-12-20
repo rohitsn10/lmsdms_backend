@@ -36,10 +36,9 @@ def send_dynamic_email(template_name, to_emails, context):
 
     return {"status": True, "message": "Emails sent successfully", "data": []}
 
-def send_email_forgot_password(email, full_name, username, otp):
+def send_email_forgot_password(email, first_name, otp):
     context = {
-        'full_name': full_name,
-        'username': username,
+        'full_name': first_name,
         'otp': otp
     }
     send_dynamic_email('FORGOT_PASSWORD', email, context)

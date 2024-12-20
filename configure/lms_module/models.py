@@ -6,7 +6,7 @@ from dms_module.models import *
 class Plant(models.Model):
     plant_name = models.TextField()
     plant_location = models.TextField()
-    plant_description = models.TextField()
+    plant_description = models.TextField(null=True, blank=True)
     plant_created_at = models.DateTimeField(auto_now_add=True)
 
 # class Department(models.Model):
