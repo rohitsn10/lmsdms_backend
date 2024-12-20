@@ -377,6 +377,7 @@ class UpdateUserViewSet(viewsets.ModelViewSet):
             phone = request.data.get('phone')
             is_active = request.data.get('is_active')
             groups = request.data.get('groups', [])
+            is_dms_user = request.data.get('is_dms_user')
             
             if not user_id:
                 return Response({"status": False, 'message': 'User ID is required', 'data': []})
@@ -396,6 +397,11 @@ class UpdateUserViewSet(viewsets.ModelViewSet):
                 if isinstance(is_active, str):
                     is_active = is_active.lower() in ('true', '1')
                 user.is_active = is_active
+
+            if is_dms_user is not None:
+                if isinstance(is_dms_user, str):
+                    is_dms_user = is_dms_user.lower() in ('true', '1')
+                user.is_dms_user = is_dms_user
 
             # Update groups and permissions only if groups list is not empty
             if groups is not None:

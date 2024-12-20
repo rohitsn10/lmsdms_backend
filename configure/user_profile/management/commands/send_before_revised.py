@@ -5,7 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.management.base import BaseCommand
 from user_profile.models import CustomUser
-from dms_module.models import Document, Reminder
+from dms_module.models import *
 import logging
 from datetime import datetime, date
 import ipdb
