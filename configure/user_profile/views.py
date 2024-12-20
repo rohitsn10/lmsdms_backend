@@ -569,6 +569,8 @@ class RequestOTPViewSet(viewsets.ModelViewSet):
             otp = str(random.randint(100000, 999999))
             user.otp = otp
             user.save()
+            first_name = user.first_name    
+            send_email_forgot_password(email, first_name, otp)
 
             return Response({"status": True, "message": "OTP sent to your email", "data": []})
         except CustomUser.DoesNotExist:
