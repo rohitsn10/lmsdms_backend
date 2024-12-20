@@ -112,7 +112,7 @@ class LoginUserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'email', 'first_name', 'last_name', 'phone', 'department', 'is_active',
             'is_staff', 'is_superuser', 'profile_image', 'user_permissions',
-            'username', 'is_reset_password', 'login_count','is_password_expired'
+            'username', 'is_reset_password', 'login_count','is_password_expired', 'is_lms_user', 'is_dms_user'
         ]
 
     # def get_groups_list(self, obj):

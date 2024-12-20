@@ -56,6 +56,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_reset_password = models.BooleanField(default=False, null=True)
     login_count = models.IntegerField(default=0)
     is_password_expired = models.BooleanField(default=False)
+    is_lms_user = models.BooleanField(default=True, null=True, blank=True)
+    is_dms_user = models.BooleanField(default=False,null=True, blank=True)
 
     
     created_at = models.DateTimeField(auto_now_add=True)
