@@ -549,7 +549,7 @@ class ConfirmOTPAndSetPassword(viewsets.ModelViewSet):
         user.old_password = new_password
         user.password = make_password(new_password)
         user.password_updated_at = now()
-        user.otp = None  
+        user.otp = None
         user.is_reset_password = True
         user.login_count = 0
         user.save()

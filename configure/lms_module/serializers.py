@@ -41,15 +41,19 @@ class AssessmentQuestionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class MethodologySerializer(serializers.ModelSerializer):
+    created_by_first_name = serializers.ReadOnlyField(source='created_by.first_name')
+    created_by_last_name = serializers.ReadOnlyField(source='created_by.last_name') 
+
     class Meta:
         model = Methodology
-        fields = ['id', 'methodology_name', 'methodology_created_at']
+        fields = ['id', 'methodology_name','created_by', 'created_by_first_name','created_by_last_name','methodology_created_at']
 
 class TrainingTypeSerializer(serializers.ModelSerializer):
-    created_by_name = serializers.ReadOnlyField(source='created_by.first_name')
+    created_by_first_name = serializers.ReadOnlyField(source='created_by.first_name')
+    created_by_last_name = serializers.ReadOnlyField(source='created_by.last_name')
     class Meta:
         model = TrainingType
-        fields = ['id', 'training_type_name', 'created_by', 'created_by_name','training_type_created_at']
+        fields = ['id', 'training_type_name', 'created_by', 'created_by_first_name','created_by_last_name','training_type_created_at']
 
 class TrainingCreateSerializer(serializers.ModelSerializer):
     plant_name = serializers.CharField(source='plant.plant_name', read_only=True)
