@@ -104,8 +104,8 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "lmsdms_db",
         "USER": "lmsdms_user",
-        "PASSWORD": "12345678",
-        # "PASSWORD": "qkJE^0MA5KTK9e4",
+        # "PASSWORD": "12345678",
+        "PASSWORD": "qkJE^0MA5KTK9e4",
         "HOST": "localhost",
         "PORT": "5432",
         }
@@ -203,3 +203,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "user_profile.CustomUser"
+
+
+import os
+
+# Path to Google API credentials JSON file
+GOOGLE_API_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'C:\python_project\lmsdms_backend\configure\media\google_credentials\client_secret_731671796598-bpst9i9bkmdnfjcac6jpqa7grcti8qg2.apps.googleusercontent.com.json')

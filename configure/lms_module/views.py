@@ -165,8 +165,8 @@ class PlantUpdatesViewSet(viewsets.ModelViewSet):
     lookup_field = 'plant_id'
 
     def update(self, request, *args, **kwargs):
-        if not request.user.has_perm('dashboard_app.change_plant'):
-            return Response({"status": False, "message": "You are not authorized to update plant!", "data": []})
+        # if not request.user.has_perm('dashboard_app.change_plant'):
+        #     return Response({"status": False, "message": "You are not authorized to update plant!", "data": []})
 
         try:
             plant_id = self.kwargs.get("plant_id")
@@ -276,8 +276,8 @@ class JobRoleUpdatesViewSet(viewsets.ModelViewSet):
     lookup_field = 'job_role_id'
 
     def update(self, request, *args, **kwargs):
-        if not request.user.has_perm('dashboard_app.change_jobrole'):
-            return Response({"status": False, "message": "You are not authorized to update job role!", "data": []})
+        # if not request.user.has_perm('dashboard_app.change_jobrole'):
+        #     return Response({"status": False, "message": "You are not authorized to update job role!", "data": []})
 
         try:
             job_role_id = self.kwargs.get("job_role_id")
@@ -396,8 +396,8 @@ class AreaUpdatesViewSet(viewsets.ModelViewSet):
     lookup_field = 'area_id'
 
     def update(self, request, *args, **kwargs):
-        if not request.user.has_perm('dashboard_app.change_area'):
-            return Response({"status": False, "message": "You are not authorized to update area!", "data": []})
+        # if not request.user.has_perm('dashboard_app.change_area'):
+        #     return Response({"status": False, "message": "You are not authorized to update area!", "data": []})
 
         try:
             area_id = self.kwargs.get("area_id")
