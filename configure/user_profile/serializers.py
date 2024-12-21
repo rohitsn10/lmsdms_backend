@@ -244,7 +244,7 @@ class MinimalUserSerializer(serializers.ModelSerializer):
 
 
 
-class WordDocumentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = WordDocument
-        fields = ['id', 'name', 'file', 'uploaded_at','google_doc_id']
+# class WordDocumentSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = WordDocument
+#         fields = ['id', 'name', 'file', 'uploaded_at','google_doc_id']

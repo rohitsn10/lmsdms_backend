@@ -31,7 +31,7 @@ urlpatterns = [
 
     path('all_reviewer', ReviewerUserViewSet.as_view({'get':'list'}), name='all_reviewer'),
 
-    path('document_create',DocumentUploadView.as_view(), name='document-upload'),
+    # path('document_create',DocumentUploadView.as_view(), name='document-upload'),
 
 
 

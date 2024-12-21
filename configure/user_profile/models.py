@@ -114,19 +114,19 @@ class Reminder(models.Model):
 
 
 
-class WordDocument(models.Model):
-    name = models.CharField(max_length=255,null=True,blank=True)
-    file = models.FileField(upload_to='word_documents/',null=True,blank=True)
-    google_doc_id = models.CharField(max_length=255,null=True,blank=True)
-    uploaded_at = models.DateTimeField(auto_now_add=True,null=True,blank=True)
+# class WordDocument(models.Model):
+#     name = models.CharField(max_length=255,null=True,blank=True)
+#     file = models.FileField(upload_to='word_documents/',null=True,blank=True)
+#     google_doc_id = models.CharField(max_length=255,null=True,blank=True)
+#     uploaded_at = models.DateTimeField(auto_now_add=True,null=True,blank=True)
 
-    def __str__(self):
-        return self.name
+#     def __str__(self):
+#         return self.name
 
-class DocumentKeyValue(models.Model):
-    key_name = models.CharField(max_length=255)  # e.g., "company_name"
-    value = models.TextField()  # The user-entered value for that key
-    document = models.ForeignKey(WordDocument, on_delete=models.CASCADE, related_name='key_values')
+# class DocumentKeyValue(models.Model):
+#     key_name = models.CharField(max_length=255)  # e.g., "company_name"
+#     value = models.TextField()  # The user-entered value for that key
+#     document = models.ForeignKey(WordDocument, on_delete=models.CASCADE, related_name='key_values')
 
-    def __str__(self):
-        return f"{self.key_name}: {self.value}"
+#     def __str__(self):
+#         return f"{self.key_name}: {self.value}"
