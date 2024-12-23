@@ -4,6 +4,7 @@ import os
 from django.utils import timezone
 from django.conf import settings
 import decimal
+import re
 
 def generate_random_password(length=12):
     characters = string.ascii_letters + string.digits + string.punctuation
@@ -24,3 +25,11 @@ def increment_version(version_str):
         minor = 0
         major += 1
     return f"{major}.{minor}"
+
+
+def get_new_version(version_str):
+        major, minor = map(int, version_str.split('.'))
+        major += 1
+        minor = 0
+        
+        return f"{major}.{minor}"

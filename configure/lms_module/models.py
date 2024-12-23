@@ -77,7 +77,7 @@ class TrainingCreate(models.Model):
     training_status = models.CharField(max_length=255,choices=TRAINING_STATUS_CHOICES,default='pending',null=True,blank=True)
     schedule_date = models.DateTimeField(null=True,blank=True)
     number_of_attempts = models.CharField(max_length=255,default='3',null=True,blank=True)
-    refresher_time = models.DateField(null=True,blank=True)
+    refresher_time = models.DateTimeField(null=True,blank=True)
     training_document = models.FileField(upload_to='training_documents/')
     methodology = models.ManyToManyField(Methodology)
     created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,blank=True, null=True)
