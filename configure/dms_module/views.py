@@ -1546,7 +1546,10 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
                 status_revision=status_revision
             )
             revise_action.save()
+            version_number = document.version
+            new_version = get_new_version(version_number)
             document.is_revised = True
+            document.version = new_version
             document.save()
 
                 # return Response({

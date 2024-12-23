@@ -8,7 +8,7 @@ from user_profile.function_call import *
 from django.db import IntegrityError            
 import random
 from django.db.models import Q
-
+import ast
 
 class DepartmentAddView(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -849,7 +849,17 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
             refresher_time = request.data.get('refresher_time')
             training_document = request.data.get('training_document')
             schedule_date = request.data.get('schedule_date')
-            methodology = request.data.get('methodology')
+            methodology_ids_str = request.data.get('methodology_ids',[])
+            if not methodology_ids_str:
+                return Response({'status': False, 'message': 'Methodology is required'})
+            
+            try:
+                methodology_ids = ast.literal_eval(methodology_ids_str)
+                if not isinstance(methodology_ids, list):
+                    return Response({'status': False, 'message': 'Methodology must be a valid list'})
+                methodology_ids = [int(id) for id in methodology_ids]
+            except (ValueError, SyntaxError):
+                return Response({'status': False, 'message': 'Methodology must be a valid list of integers'})
 
             created_by = self.request.user
 
@@ -868,7 +878,7 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
                 return Response({'status': False, 'message': 'Refresher time is required'})
             if not training_document:
                 return Response({'status': False, 'message': 'Training document is required'})
-            if not methodology:
+            if not methodology_ids:
                 return Response({'status': False, 'message': 'Methodology is required'})
 
             try:
@@ -904,8 +914,10 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
                 schedule_date=schedule_date
             )
             
-            if methodology:
-                training.methodology.add(*methodology)
+            if methodology_ids:
+                training.methodology.set(methodology_ids)
+
+            training.save()
 
             # serializer = TrainingCreateSerializer(training, context = {'request': request})
             # data = serializer.data
@@ -943,15 +955,35 @@ class TrainingUpdateViewSet(viewsets.ModelViewSet):
             if not training:
                 return Response({"status": False, "message": "Training ID not found", "data": []})
             
-            plant = request.data.get('plant')
-            training_type = request.data.get('training_type')
-            training_number = request.data.get('training_number')
-            training_name = request.data.get('training_name')
-            training_version = request.data.get('training_version')
-            refresher_time = request.data.get('refresher_time')
-            training_document = request.FILES.get('training_document')  # Use request.FILES for uploaded files
-            methodology = request.data.get('methodology')
-
+            plant = request.data.get('plant', training.plant.id)
+            training_type = request.data.get('training_type', training.training_type.id)
+            training_number = request.data.get('training_number', training.training_number)
+            training_name = request.data.get('training_name', training.training_name)
+            training_version = request.data.get('training_version', training.training_version)
+            refresher_time = request.data.get('refresher_time', training.refresher_time)
+            training_document = request.FILES.get('training_document', training.training_document)  # Use request.FILES for uploaded files
+            methodology_ids_str = request.data.get('methodology_ids', None)
+            training_status = request.data.get('training_status', training.training_status)
+            schedule_date = request.data.get('schedule_date', training.schedule_date)
+            
+            try:
+                plant = Plant.objects.get(id=plant)
+            except Plant.DoesNotExist:
+                return Response({'status': False, 'message': 'Plant not found'})
+            
+            try:
+                training_type = TrainingType.objects.get(id=training_type)
+            except TrainingType.DoesNotExist:
+                return Response({'status': False, 'message': 'Traing type not found'})
+            
+            try:
+                methodology_ids = ast.literal_eval(methodology_ids_str)
+                if not isinstance(methodology_ids, list):
+                    return Response({'status': False, 'message': 'Methodology must be a valid list'})
+                methodology_ids = [int(id) for id in methodology_ids]
+            except (ValueError, SyntaxError):
+                return Response({'status': False, 'message': 'Methodology must be a valid list of integers'})
+            
             if training_name:
                 training.training_name = training_name
             if training_version:
@@ -964,12 +996,17 @@ class TrainingUpdateViewSet(viewsets.ModelViewSet):
                 training.training_type = training_type
             if training_number:
                 training.training_number = training_number
+            if training_status:
+                training.training_status = training_status
+            if schedule_date:
+                training.schedule_date = schedule_date
 
             training.training_updated_at = timezone.now()
 
             if training_document:
                 document_path = get_training_document_upload_path(training_document.name)
                 file_path = os.path.join(settings.MEDIA_ROOT, document_path)
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
                 with open(file_path, 'wb') as destination:
                     for chunk in training_document.chunks():
@@ -977,16 +1014,16 @@ class TrainingUpdateViewSet(viewsets.ModelViewSet):
 
                 training.training_document = document_path
 
-            if methodology:
-                training.methodology.set(methodology)
+            if methodology_ids:
+                training.methodology.set(methodology_ids)
 
             training.save()
-
             serializer = TrainingCreateSerializer(training, context={'request': request})
+            data = serializer.data
             return Response({
                 "status": True,
                 "message": "Training updated successfully",
-                "data": serializer.data
+                "data": data
             })
 
         except TrainingCreate.DoesNotExist:
@@ -994,6 +1031,37 @@ class TrainingUpdateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": f"Something went wrong: {str(e)}", "data": []})
 
+class TrainingStatusUpdateViewset(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingStatusSerializer
+    queryset = TrainingCreate.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    ordering_fields = ['training_name', 'created_at']
+
+    def update(self, request, *args, **kwargs):
+        try:
+            training_id = self.kwargs.get("training_id")
+            training = TrainingCreate.objects.get(id=training_id)
+            if not training:
+                return Response({"status": False, "message": "Training ID not found", "data": []})
+            
+            training_status = request.data.get('training_status')
+            if not training_status:
+                return Response({"status": False, "message": "Training status is required", "data": []})
+            
+            training.training_status = training_status
+            training.save()
+            serializer = TrainingStatusSerializer(training, context={'request': request})
+            data = serializer.data
+            return Response({
+                "status": True,
+                "message": "Training status updated successfully",
+                "data": data
+            })
+
+        except TrainingCreate.DoesNotExist:
+            return Response({"status": False, "message": "Training not found", "data": []})
+        
 class TrainingSectionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TrainingSectionSerializer
@@ -1034,19 +1102,9 @@ class TrainingSectionViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            training_id = self.kwargs.get("training_id")
-            if not training_id:
-                return Response({"status": False, "message": "Training ID is required", "data": []})
-            
-            try:
-                training = TrainingCreate.objects.get(id=training_id)
-            except TrainingCreate.DoesNotExist:
-                return Response({"status": False, "message": "Training ID not found", "data": []})
-            
-            queryset = self.filter_queryset(self.get_queryset().filter(training=training))
-            serializer = TrainingSectionSerializer(queryset, many=True, context = {'request': request})
-            data = serializer.data
-            return Response({"status": True,"message": "Training section list fetched successfully","data": data})
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = TrainingSectionSerializer(queryset, many=True, context={'request': request})
+            return Response({"status": True, "message": "Training section list", "data": serializer.data})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
@@ -1057,16 +1115,16 @@ class TrainingSectionUpdateViewSet(viewsets.ModelViewSet):
     queryset = TrainingSection.objects.all().order_by('-id')
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['training']
-
+    lookup_field = 'training_section_id' 
     def update(self, request, *args, **kwargs):
         try:
             user = self.request.user
-            section_id = self.kwargs.get("section_id")
-            if not section_id:
+            training_section_id = self.kwargs.get("training_section_id")
+            if not training_section_id:
                 return Response({"status": False, "message": "Section ID is required", "data": []})
             
             try:
-                section = TrainingSection.objects.get(id=section_id)
+                section = TrainingSection.objects.get(id=training_section_id)
             except TrainingSection.DoesNotExist:
                 return Response({"status": False, "message": "Section ID not found", "data": []})
             
@@ -1134,10 +1192,22 @@ class TrainingMaterialCreateViewSet(viewsets.ModelViewSet):
         try:
             user = self.request.user
 
-            section_ids = request.data.get('section_ids',[])
-            if not section_ids:
+            section_ids_str = request.data.get('section_ids')
+
+            if not section_ids_str:
                 return Response({"status": False, "message": "Section IDs are required", "data": []})
 
+            # Try to safely parse the string into a list
+            try:
+                # Parse the string to convert it into a list of integers
+                section_ids = ast.literal_eval(section_ids_str)  # Safe evaluation for a list
+                if not isinstance(section_ids, list):
+                    return Response({"status": False, "message": "Section IDs must be a valid list", "data": []})
+                # Convert string elements into integers
+                section_ids = [int(id) for id in section_ids]
+            except (ValueError, SyntaxError):
+                return Response({"status": False, "message": "Section IDs must be a valid list of integers", "data": []})
+            
             sections = TrainingSection.objects.filter(id__in=section_ids)
             if sections.count() != len(section_ids):
                 return Response({"status": False, "message": "Some section IDs are invalid", "data": []})
@@ -1225,36 +1295,64 @@ class TrainingMaterialUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TrainingMaterialSerializer
     queryset = TrainingMaterial.objects.all().order_by('-material_created_at')
-    
+    lookup_field = 'training_material_id'
+
     def update(self, request, *args, **kwargs):
         try:
             user = self.request.user
+            training_material_id = self.kwargs.get('training_material_id')
+            
+            # Check if training material ID is provided
+            if not training_material_id:
+                return Response({"status": False, "message": "Training material ID is required", "data": []})
 
-            section_id = request.data.get('section_id')
-            if not section_id:
-                return Response({"status": False, "message": "Section ID is required", "data": []})
+            # Fetch the training material
+            try:
+                training_material = TrainingMaterial.objects.get(id=training_material_id)
+            except TrainingMaterial.DoesNotExist:
+                return Response({"status": False, "message": "Training material not found", "data": []})
 
-            section = TrainingMaterial.objects.get(id=section_id)
-            if not section:
-                return Response({"status": False, "message": "Section ID not found", "data": []})
+            section_ids_str = request.data.get('section_ids', None)
+            if section_ids_str:
+                try:
+                    section_ids = ast.literal_eval(section_ids_str)
+                    if not isinstance(section_ids, list):
+                        return Response({"status": False, "message": "Section IDs must be a valid list", "data": []})
+                    section_ids = [int(id) for id in section_ids]
+                except (ValueError, SyntaxError):
+                    return Response({"status": False, "message": "Section IDs must be a valid list of integers", "data": []})
 
-            material_title = request.data.get('material_title', section.material_title)
-            material_type = request.data.get('material_type', section.material_type)
-            material_file = request.FILES.get('material_file', section.material_file)
-            minimum_reading_time = request.data.get('minimum_reading_time', section.minimum_reading_time)
+                sections = TrainingSection.objects.filter(id__in=section_ids)
+                if sections.count() != len(section_ids):
+                    return Response({"status": False, "message": "Some section IDs are invalid", "data": []})
 
+                training_material.section.set(sections)
+
+            # Retrieve other fields from request data or keep existing values
+            material_title = request.data.get('material_title', training_material.material_title)
+            material_type = request.data.get('material_type', training_material.material_type)
+            material_file = request.FILES.get('material_file', training_material.material_file)
+            minimum_reading_time = request.data.get('minimum_reading_time', training_material.minimum_reading_time)
+
+            # Update fields if provided
             if material_title:
-                section.material_title = material_title
+                training_material.material_title = material_title
             if material_type:
-                section.material_type = material_type
+                training_material.material_type = material_type
             if material_file:
-                section.material_file = material_file
+                training_material.material_file = material_file
             if minimum_reading_time:
-                section.minimum_reading_time = minimum_reading_time
-            section.updated_by = user
-            section.save()
+                training_material.minimum_reading_time = minimum_reading_time
+            
+            # Set the user who updated the material
+            training_material.updated_by = user
+            training_material.material_updated_at = timezone.now()
 
-            serializer = TrainingMaterialSerializer(section, context={'request': request})
+            # Save the changes to the material
+            training_material.save()
+
+            # Serialize the updated material and return the response
+            serializer = TrainingMaterialSerializer(training_material, context={'request': request})
             data = serializer.data
             return Response({"status": True, "message": "Training material updated successfully", "data": data})
 

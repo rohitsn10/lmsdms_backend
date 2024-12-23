@@ -841,6 +841,250 @@ class ReviewerUserViewSet(viewsets.ModelViewSet):
 
         
 
+
+# import os
+# from google.oauth2 import credentials
+# from google_auth_oauthlib.flow import InstalledAppFlow
+# from googleapiclient.discovery import build
+# from googleapiclient.http import MediaFileUpload
+# from google.auth.transport.requests import Request
+# from rest_framework.views import APIView
+# from rest_framework.response import Response
+# from rest_framework import status
+# from django.conf import settings
+# from .models import WordDocument
+# from .serializers import WordDocumentSerializer
+
+
+# from google_auth_oauthlib.flow import InstalledAppFlow
+# from google.auth.transport.requests import Request
+# from google.oauth2.credentials import Credentials
+# import os
+
+# SCOPES = ['https://www.googleapis.com/auth/drive.file']
+
+# # Helper function to authenticate with Google Drive
+# def authenticate_google_drive():
+#     creds = None
+#     # Check if token.json exists
+#     if os.path.exists('token.json'):
+#         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+
+#     # If credentials are invalid or expired, start the OAuth flow
+#     if not creds or not creds.valid:
+#         if creds and creds.expired and creds.refresh_token:
+#             creds.refresh(Request())  # Refresh the token if expired
+#         else:
+#             try:
+#                 # Create an OAuth flow using the credentials file
+#                 flow = InstalledAppFlow.from_client_secrets_file(
+#                     settings.GOOGLE_API_CREDENTIALS_PATH, SCOPES
+#                 )
+
+#                 # Run the flow and get the credentials
+#                 creds = flow.run_local_server(port=0)  # Starts a local server to handle the auth flow
+#             except Exception as e:
+#                 print(f"OAuth Flow Failed: {e}")
+#                 raise
+
+#         # Save the credentials for the next time
+#         with open('token.json', 'w') as token:
+#             token.write(creds.to_json())
+
+#     return creds
+
+
+# # Helper function to upload the file to Google Drive
+# def upload_to_google_drive(file_path, file_name):
+#     creds = authenticate_google_drive()
+#     service = build('drive', 'v3', credentials=creds)
+
+#     # Upload the document to Google Drive
+#     media = MediaFileUpload(file_path, mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+#     file_metadata = {'name': file_name}
+#     file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+#     google_doc_id = file.get('id')
+
+#     return google_doc_id
+
+
+# # API View for uploading a document
+# class DocumentUploadView(APIView):
+#     def post(self, request, *args, **kwargs):
+#         if 'file' not in request.FILES:
+#             return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+#         word_file = request.FILES['file']
+#         doc_name = word_file.name
+
+#         # Save the file to the server (optional step if you want to store it locally)
+#         file_path = os.path.join(settings.MEDIA_ROOT, 'word_documents', doc_name)
+#         try:
+#             with open(file_path, 'wb') as f:
+#                 for chunk in word_file.chunks():
+#                     f.write(chunk)
+#         except Exception as e:
+#             return Response({"error": f"Failed to save file: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#         # Upload to Google Drive
+#         try:
+#             google_doc_id = upload_to_google_drive(file_path, doc_name)
+#         except Exception as e:
+#             return Response({"error": f"Google Drive upload failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#         # Save document details (including google_doc_id) to the database
+#         try:
+#             doc = WordDocument.objects.create(
+#                 name=doc_name,
+#                 file=word_file,
+#                 google_doc_id=google_doc_id
+#             )
+#         except Exception as e:
+#             return Response({"error": f"Failed to save document: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#         # Serialize and return the response with the document's google_doc_id
+#         serializer = WordDocumentSerializer(doc)
+#         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+#     def get(self, request, *args, **kwargs):
+#         documents = WordDocument.objects.all()
+#         serializer = WordDocumentSerializer(documents, many=True)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+
+
+# class UpdateDocumentView(APIView):
+#     def put(self, request, *args, **kwargs):
+#         doc_id = request.data.get('documentId')
+#         updated_content = request.data.get('updatedContent')  # This could be the raw content or file
+
+#         # Update the document (assuming the document is stored as a file)
+#         try:
+#             doc = WordDocument.objects.get(id=doc_id)
+#             # You may want to convert the content back to a Word file format before saving
+#             doc.file.save(doc.name, updated_content, save=True)
+#             return Response({'message': 'Document updated successfully'}, status=status.HTTP_200_OK)
+#         except WordDocument.DoesNotExist:
+#             return Response({'message': 'Document not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+# from googleapiclient.discovery import build
+# from google.oauth2.credentials import Credentials
+# from google.auth.transport.requests import Request
+# import os
+
+# SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/documents']
+
+# def authenticate_google_docs():
+#     creds = None
+#     if os.path.exists('token.json'):
+#         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    
+#     if not creds or not creds.valid:
+#         if creds and creds.expired and creds.refresh_token:
+#             creds.refresh(Request())
+#         else:
+#             raise Exception("No valid credentials found.")
+    
+#     service = build('docs', 'v1', credentials=creds)
+#     return service
+
+# def update_google_doc_with_values(google_doc_id, key_value_pairs):
+#     service = authenticate_google_docs()
+
+#     requests = []
+
+#     for key_name, value in key_value_pairs.items():
+#         requests.append({
+#             'replaceAllText': {
+#                 'containsText': {
+#                     'text': f"{{{{ {key_name} }}}}",  # Look for placeholders like {{key_name}}
+#                     'matchCase': True,
+#                 },
+#                 'replaceText': value
+#             }
+#         })
+    
+#     try:
+#         service.documents().batchUpdate(
+#             documentId=google_doc_id,
+#             body={'requests': requests}
+#         ).execute()
+#     except Exception as e:
+#         print(f"Error updating document: {e}")
+
+
+
+
+
+# from rest_framework.views import APIView
+# from rest_framework.response import Response
+# from rest_framework import status
+# from .models import WordDocument, DocumentKeyValue
+
+# class SaveUserData(APIView):
+#     def post(self, request, *args, **kwargs):
+#         google_doc_id = request.data.get('google_doc_id')
+#         key_values = request.data.get('key_values', [])
+
+#         if not google_doc_id:
+#             return Response({"error": "Google Doc ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             document = WordDocument.objects.get(google_doc_id=google_doc_id)
+#         except WordDocument.DoesNotExist:
+#             return Response({"error": "Document not found"}, status=status.HTTP_404_NOT_FOUND)
+
+#         # Save the key-value pairs to the database
+#         for kv in key_values:
+#             key_name = kv.get('key_name')
+#             value = kv.get('value')
+
+#             if key_name and value:
+#                 DocumentKeyValue.objects.update_or_create(
+#                     key_name=key_name,
+#                     document=document,
+#                     defaults={'value': value}
+#                 )
         
+#         # Prepare the key-value pairs for updating the Google Doc
+#         key_value_dict = {kv.get('key_name'): kv.get('value') for kv in key_values}
+
+#         # Update the document with the new key-value pairs
+#         update_google_doc_with_values(google_doc_id, key_value_dict)
+
+#         return Response({"message": "Data saved and document updated successfully"}, status=status.HTTP_200_OK)
 
 
+
+
+
+
+# class GetDocument(APIView):
+#     def get(self, request, *args, **kwargs):
+#         google_doc_id = request.query_params.get('google_doc_id')
+
+#         if not google_doc_id:
+#             return Response({"error": "Google Doc ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             document = WordDocument.objects.get(google_doc_id=google_doc_id)
+#         except WordDocument.DoesNotExist:
+#             return Response({"error": "Document not found"}, status=status.HTTP_404_NOT_FOUND)
+
+#         # Fetch the saved key-value pairs for the document
+#         key_values = DocumentKeyValue.objects.filter(document=document)
+
+#         # Prepare key-value pairs as a dictionary
+#         key_value_dict = {kv.key_name: kv.value for kv in key_values}
+
+#         # You can return the document metadata (name, file URL) and key-value pairs
+#         return Response({
+#             "document_name": document.name,
+#             "google_doc_id": document.google_doc_id,
+#             "key_values": key_value_dict
+#         }, status=status.HTTP_200_OK)

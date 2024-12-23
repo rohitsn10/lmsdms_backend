@@ -58,20 +58,21 @@ class TrainingTypeSerializer(serializers.ModelSerializer):
 class TrainingCreateSerializer(serializers.ModelSerializer):
     plant_name = serializers.CharField(source='plant.plant_name', read_only=True)
     training_type_name = serializers.CharField(source='training_type.training_type_name', read_only=True)
-    methodology_name = serializers.SerializerMethodField()  # Fixed this to handle ManyToMany properly
+    methodology = MethodologySerializer(many=True)
     training_document = serializers.SerializerMethodField()
     created_by_name = serializers.ReadOnlyField(source='created_by.first_name')
+    job_roles_name = serializers.SerializerMethodField()
 
     class Meta:
         model = TrainingCreate
         fields = [
             'id', 'plant', 'plant_name', 'training_name', 'training_type', 'training_type_name',
-            'training_number', 'training_title', 'training_version', 'refresher_time',
-            'training_document', 'methodology', 'methodology_name', 'created_by', 'created_by_name',
-            'training_created_at', 'training_updated_at','schedule_date','number_of_attempts','training_status'
+            'training_number', 'training_version', 'refresher_time',
+            'training_document', 'methodology', 'created_by', 'created_by_name','job_roles','job_roles_name',
+            'training_created_at', 'training_updated_at','schedule_date','number_of_attempts','training_status','start_time','end_time'
         ]
 
-    def get_document(self, obj):
+    def get_training_document(self, obj):
 
         if obj.training_document and hasattr(obj.training_document, 'url'):
             request = self.context.get('request')
@@ -84,11 +85,23 @@ class TrainingCreateSerializer(serializers.ModelSerializer):
             return [methodology.methodology_name for methodology in obj.methodology.all()]
         return []
     
+    def get_job_roles_name(self, obj):
+        if obj.job_roles.exists():
+            return [job_role.job_role_name for job_role in obj.job_roles.all()]
+        return []
+    
+class TrainingStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TrainingCreate
+        fields = ['id','training_name','training_status']
 
 class TrainingSectionSerializer(serializers.ModelSerializer):
+    training_name = serializers.ReadOnlyField(source='training.training_name')
     class Meta:
         model = TrainingSection
-        fields = ['id', 'training', 'section_name', 'section_description', 'section_order']
+        fields = ['id', 'training','training_name','section_name', 'section_description', 'section_order']
+
+    
 
 
 class TrainingMaterialSerializer(serializers.ModelSerializer):
