@@ -1397,7 +1397,6 @@ class TrainingQuestionCreateViewSet(viewsets.ModelViewSet):
             options = request.data.get('options', [])
             correct_answer = request.data.get('correct_answer')
             marks = request.data.get('marks')
-            language = request.data.get('language')
 
             if not question_type:
                 return Response({"status": False, "message": "Question type is required", "data": []})
@@ -1418,6 +1417,7 @@ class TrainingQuestionCreateViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Fill-in-the-blank questions must have a correct answer", "data": []})
 
             # File validation for audio and video files (max 25MB)
+            image_file = request.FILES.get('image_file', None)
             audio_file = request.FILES.get('audio_file', None)
             video_file = request.FILES.get('video_file', None)
 
@@ -1437,8 +1437,8 @@ class TrainingQuestionCreateViewSet(viewsets.ModelViewSet):
                 options=options,
                 correct_answer=correct_answer,
                 marks=marks,
-                language=language,
                 created_by=user,
+                image_file=image_file,
                 audio_file=audio_file,
                 video_file=video_file,
                 question_created_at=timezone.now()
@@ -1488,7 +1488,7 @@ class TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
             options = request.data.get('options', section.options)
             correct_answer = request.data.get('correct_answer', section.correct_answer)
             marks = request.data.get('marks', section.marks)
-            language = request.data.get('language', section.language)
+            image_file = request.FILES.get('image_file', section.image_file)
             audio_file = request.FILES.get('audio_file', section.audio_file)
             video_file = request.FILES.get('video_file', section.video_file)
 
@@ -1517,9 +1517,11 @@ class TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
             section.options = options
             section.correct_answer = correct_answer
             section.marks = marks
-            section.language = language
 
             # Only update the audio or video file if they are provided in the request
+            if image_file:
+                section.image_file = image_file
+                
             if audio_file:
                 section.audio_file = audio_file
 
@@ -1881,18 +1883,16 @@ class InductionCreateViewSet(viewsets.ModelViewSet):
         
         try:
             if queryset.exists():
-                serializer = InductionSerializer(queryset, many=True)
+                serializer = InductionSerializer(queryset, many=True,context={'request': request})
                 return Response({
                     "status": True,
                     "message": "Induction fetched successfully",
-                    "total": queryset.count(),
                     "data": serializer.data
                 })
             else:
                 return Response({
                     "status": True,
                     "message": "No induction found",
-                    "total": 0,
                     "data": []
                 })
         except Exception as e:
