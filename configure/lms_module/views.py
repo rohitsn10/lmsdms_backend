@@ -1855,9 +1855,7 @@ class InductionCreateViewSet(viewsets.ModelViewSet):
             induction_name = request.data.get('induction_name')
             trainings = request.data.get('trainings', [])
 
-            # Validation
-            if not plant:
-                return Response({'status': False, 'message': 'Plant is required'})
+           
             if not induction_name:
                 return Response({'status': False, 'message': 'Induction name is required'})
             

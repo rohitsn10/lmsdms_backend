@@ -165,7 +165,7 @@ class InductionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Induction
-        fields = ['id', 'plant', 'induction_name', 'trainings', 'created_at', 'updated_at']
+        fields = ['id', 'induction_name', 'trainings', 'created_at', 'updated_at']
 
 class InductionDesignationSerializer(serializers.ModelSerializer):
     class Meta:

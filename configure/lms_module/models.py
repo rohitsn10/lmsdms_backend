@@ -197,7 +197,7 @@ class QuizQuestion(models.Model):
 
 # Code for induction create
 class Induction(models.Model):
-    plant = models.ForeignKey(Plant, on_delete=models.CASCADE)
+    plant = models.ForeignKey(Plant, on_delete=models.CASCADE,blank=True, null=True)
     induction_name = models.CharField(max_length=255)
     trainings = models.ManyToManyField(TrainingCreate, related_name='inductions')
     created_at = models.DateTimeField(auto_now_add=True)
