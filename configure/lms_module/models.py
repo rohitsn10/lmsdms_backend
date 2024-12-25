@@ -68,7 +68,6 @@ class TrainingCreate(models.Model):
         ('in_progress', 'In Progress'),
         ('Completed', 'Completed'),
     ]
-
     plant = models.ForeignKey(Plant, on_delete=models.CASCADE)
     training_type = models.ForeignKey(TrainingType, on_delete=models.CASCADE)
     training_number = models.CharField(max_length=255,null=True,blank=True)
@@ -144,21 +143,19 @@ class TrainingQuestions(models.Model):
 
     training = models.ForeignKey(TrainingCreate, related_name='questions', on_delete=models.CASCADE)
     question_type = models.CharField(max_length=50, choices=QUESTION_TYPE_CHOICES)
+    image_file = models.FileField(upload_to='image_files/', null=True, blank=True)
     audio_file = models.FileField(upload_to='audio_files/', null=True, blank=True)  # To store audio files
     video_file = models.FileField(upload_to='video_files/', null=True, blank=True)
     question_text = models.TextField()
     options = models.JSONField(null=True, blank=True)  # Store options for MCQ questions (as a list of strings)
     correct_answer = models.TextField()  # Store the correct answer (can be the option value or index)
     marks = models.PositiveIntegerField(default=1)  # Marks for the question
-    language = models.CharField(max_length=50, default='en')  # Language of the question (default to English)
     status = models.BooleanField(default=True)  # Active/Inactive status
     created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='training_questions_created', null=True, blank=True)
     updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='training_questions_updated', null=True, blank=True)
     question_created_at = models.DateTimeField(auto_now_add=True)
     question_updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"{self.question_text} - {self.training.training_name}"
     
 
 class TrainingQuiz(models.Model):

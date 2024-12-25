@@ -121,6 +121,7 @@ class TrainingMaterialSerializer(serializers.ModelSerializer):
 
 class TrainingQuestinSerializer(serializers.ModelSerializer):
     # Create custom fields to return URLs for audio and video files
+    image_file_url = serializers.SerializerMethodField()
     audio_file_url = serializers.SerializerMethodField()
     video_file_url = serializers.SerializerMethodField()
 
@@ -128,11 +129,17 @@ class TrainingQuestinSerializer(serializers.ModelSerializer):
         model = TrainingQuestions
         fields = [
             'id', 'training', 'question_type', 'question_text', 'options', 
-            'correct_answer', 'marks', 'language', 'status', 
+            'correct_answer', 'marks', 'status', 
             'question_created_at', 'question_updated_at', 
-            'created_by', 'updated_by', 'audio_file_url', 'video_file_url'
+            'created_by', 'updated_by','image_file_url','audio_file_url', 'video_file_url'
         ]
 
+    def get_image_file_url(self, obj):
+        request = self.context.get('request')
+        if obj.image_file and hasattr(obj.image_file, 'url'):
+            return request.build_absolute_uri(obj.image_file.url)
+        return None
+    
     def get_audio_file_url(self, obj):
         request = self.context.get('request')
         if obj.audio_file and hasattr(obj.audio_file, 'url'):
@@ -160,8 +167,45 @@ class TrainingQuizSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrainingQuiz
         fields = ['id', 'name', 'pass_criteria', 'quiz_time', 'total_marks', 'total_questions', 'quiz_type', 'questions', 'created_by','updated_by','created_at','updated_at','status']
+
+class TrainingSerializerForInductionNested(serializers.ModelSerializer):
+    plant_name = serializers.CharField(source='plant.plant_name', read_only=True)
+    training_type_name = serializers.CharField(source='training_type.training_type_name', read_only=True)
+    training_document = serializers.SerializerMethodField()
+    created_by_name = serializers.ReadOnlyField(source='created_by.first_name')
+    job_roles_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TrainingCreate
+        fields = [
+            'id', 'plant', 'plant_name', 'training_name', 'training_type', 'training_type_name',
+            'training_number', 'training_version', 'refresher_time',
+            'training_document', 'created_by', 'created_by_name','job_roles','job_roles_name',
+            'training_created_at', 'training_updated_at','schedule_date','number_of_attempts','training_status','start_time','end_time'
+        ]
+
+    def get_training_document(self, obj):
+
+        if obj.training_document and hasattr(obj.training_document, 'url'):
+            request = self.context.get('request')
+            return request.build_absolute_uri(obj.training_document.url)
+        return None
+
+    # def get_methodology_name(self, obj):
+
+    #     if obj.methodology.exists():
+    #         return [methodology.methodology_name for methodology in obj.methodology.all()]
+    #     return []
+    
+    def get_job_roles_name(self, obj):
+        if obj.job_roles.exists():
+            return [job_role.job_role_name for job_role in obj.job_roles.all()]
+        return []
+
+
 class InductionSerializer(serializers.ModelSerializer):
-    trainings = serializers.PrimaryKeyRelatedField(queryset=TrainingCreate.objects.all(), many=True)
+    trainings = TrainingSerializerForInductionNested(many=True)
+    plant_name = serializers.CharField(source='plant.plant_name', read_only=True)
 
     class Meta:
         model = Induction
@@ -175,13 +219,16 @@ class InductionDesignationSerializer(serializers.ModelSerializer):
 
 
 class ClassroomTrainingSerializer(serializers.ModelSerializer):
+    department_of_employee_first_name  = serializers.ReadOnlyField(source='department_or_employee.first_name')
+    department_of_employee_last_name = serializers.ReadOnlyField(source='department_or_employee.last_name')
     class Meta:
         model = ClassroomTraining
         fields = [
-            'id', 'classroom_type', 'title', 'description', 'department', 'employee',
+            'id', 'classroom_training_type', 'title', 'description', 'department_or_employee','department_of_employee_first_name','department_of_employee_last_name',
             'document', 'sop', 'start_date', 'start_time', 'end_time',
-            'created_at', 'created_by', 'status', 'acknowledgement', 'result'
-        ]        
+            'created_at', 'created_by', 'status','acknowledged_by_employee'
+        ]
+
 
 class TrainingListSerializer(serializers.ModelSerializer):
     class Meta:
