@@ -5,3 +5,6 @@ from .models import *
 admin.site.register(DynamicStatus)
 admin.site.register(DocumentSendBackAction)
 admin.site.register(Document)
+admin.site.register(DocumentApproverAction)
+admin.site.register(DocumentType)
+admin.site.register(PrintRequest)

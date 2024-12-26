@@ -216,11 +216,18 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
         
     def list(self, request, *args, **kwargs):
         try:
-            queryset = PrintRequest.objects.all()
+            user = request.user
+
+            # Check if the user is in 'QA' or 'doc_admin' group
+            if user.groups.filter(name='QA').exists() or user.groups.filter(name='Doc Admin').exists():
+                queryset = PrintRequest.objects.filter(print_request_status_id=5).order_by('-id')
+            else:
+                queryset = PrintRequest.objects.filter(user=user).order_by('-id')
             serializer = PrintRequestSerializer(queryset, many=True)
-            return Response({"status": True, "message": "Print request list fetched successfully", "data": serializer.data})
+            data = serializer.data
+            return Response({"status": True,"message": "Print request list fetched successfully","data": data})
         except Exception as e:
-            return Response({"status": False, "message": str(e), "data": []})
+            return Response({"status": False,"message": str(e),"data": []})
         
 
 # class PrintApprovalViewSet(viewsets.ModelViewSet):
@@ -677,7 +684,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
             # Serialize and respond
             if queryset.exists():
-                serializer = self.serializer_class(queryset, many=True)
+                serializer = self.serializer_class(queryset, many=True, context={'request': request})
                 return Response({
                     "status": True,
                     "message": "Documents fetched successfully",
@@ -700,6 +707,25 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 'message': 'Something went wrong',
                 'error': str(e)
             })
+        
+class GetObsoleteStatusDataToDocAdminUserOnly(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+
+            if user.groups.filter(name='Doc Admin').exists():
+                queryset = Document.objects.filter(document_current_status = 12).order_by('-id')
+                serializer = DocumentviewSerializer(queryset, many=True,context={'request': request})
+                data = serializer.data
+                return Response({"status": True, "message": "Documents retrieved successfully", "data": data})
+            else:
+                return Response({"status": False, "message": "You are not authorized to view this data"})
+        except Exception as e:
+            return Response({"status": False, "message": 'Something went wrong', 'error': str(e)})
         
 class DocumentDeleteViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
