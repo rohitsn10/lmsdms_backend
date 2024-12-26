@@ -307,5 +307,11 @@ class RetrivalNumberSerializer(serializers.ModelSerializer):
         fields = ['id', 'retrival_number', 'created_at']
 
 
+class SimpleDocumentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Document
+        fields = ['id', 'document_title']
+
 
 
