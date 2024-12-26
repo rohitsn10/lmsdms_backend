@@ -20,7 +20,7 @@ class PrintRequest(models.Model):
     no_of_print = models.IntegerField()  
     issue_type = models.TextField(blank=True, null=True)  
     reason_for_print = models.TextField(blank=True, null=True) 
-    print_request_status = models.TextField(blank=True, null=True)
+    print_request_status = models.ForeignKey('DynamicStatus', on_delete=models.CASCADE,blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     master_copy_user = models.ManyToManyField(CustomUser, related_name='master_copy_requests', blank=True)
     other_user = models.ManyToManyField(CustomUser, related_name='other_user_requests', blank=True)
