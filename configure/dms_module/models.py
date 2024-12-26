@@ -7,14 +7,12 @@ class WorkFlowModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     
-
 class DocumentType(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     document_name = models.TextField(blank=True,null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 class PrintRequest(models.Model):
-
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='print_requests') 
     sop_document_id = models.ForeignKey("Document", on_delete=models.CASCADE,blank=True, null=True, related_name='print_requests')  # Updated
     no_of_print = models.IntegerField()  
@@ -27,8 +25,6 @@ class PrintRequest(models.Model):
     printer = models.ForeignKey("PrinterMachinesModel", on_delete=models.CASCADE,blank=True, null=True)  # Updated
     reminder_sent = models.BooleanField(default=False)
     reminder_sent_times = models.JSONField(default=list)
-
-
     
 class PrintRequestApproval(models.Model):
 
@@ -49,7 +45,6 @@ class RetrivalNumber(models.Model):
     retrival_number = models.CharField(max_length=255, unique=True)  # Unique approval number
     created_at = models.DateTimeField(auto_now_add=True) 
 
-
 class TemplateModel(models.Model):
     template_name = models.CharField(max_length=255)  
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -57,7 +52,6 @@ class TemplateModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True) 
 
-    
 class Document(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     parent_document = models.ForeignKey('self', on_delete=models.CASCADE,blank=True, null=True)
@@ -84,21 +78,17 @@ class Document(models.Model):
     effective_date = models.DateTimeField(blank=True, null=True)  # New field added
     reminder_sent = models.BooleanField(default=False)
     reminder_sent_times = models.JSONField(default=list)
-
-
     
 class UploadedDocument(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE)  
     word_file = models.FileField(upload_to='uploaded_docs/') 
     uploaded_at = models.DateTimeField(auto_now_add=True) 
-
     
 class DocumentVersion(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name="versions")
     version_number = models.CharField(max_length=10)
     updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     updated_at = models.DateTimeField(auto_now_add=True)
-
     
 class DynamicStatus(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -111,8 +101,6 @@ class DocumentDetails(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     document_data = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-
     
 class DocumentComments(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -196,14 +184,8 @@ class DynamicInventory(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    
 class PrinterMachinesModel(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     printer_name = models.TextField(blank=True, null=True)
     printer_description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    
-    
-
-    

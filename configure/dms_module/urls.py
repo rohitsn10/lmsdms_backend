@@ -93,6 +93,7 @@ urlpatterns = [
 
    path('parent_document/<document_id>', ParentDocumentViewSet.as_view({'get':'list'}),name='parent_document'),
 
+   path('doc_timeline', DocumentTimelineViewSet.as_view({'get':'list'}),name='doc_timeline'),
 
 
 ]
