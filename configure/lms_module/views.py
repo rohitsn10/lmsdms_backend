@@ -2012,7 +2012,7 @@ class InductionDesignationUpdateViewSet(viewsets.ModelViewSet):
 
             induction_designation.save()
             serializer = self.get_serializer(induction_designation)
-            return Response({"status": True, "message": "Induction Designation updated successfully", "data": serializer.data}, status=status.HTTP_200_OK)
+            return Response({"status": True, "message": "Induction Designation updated successfully", "data": serializer.data})
 
         except Exception as e:
             return Response({"status": False, "message": f"Something went wrong: {str(e)}"})
