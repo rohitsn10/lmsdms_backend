@@ -416,17 +416,20 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             user = self.request.user
+            parent_document = request.data.get('parent_document',None)
             document_title = request.data.get('document_title')
             document_number = request.data.get('document_number')
             document_type = request.data.get('document_type')
             document_description = request.data.get('document_description', '')
             revision_date = request.data.get('revision_date', '')
+            revision_month = request.data.get('revision_month', '')
             document_operation = request.data.get('document_operation', '')
             select_template = request.data.get('select_template')
             workflow = request.data.get('workflow')
             document_current_status_id = request.data.get('document_current_status_id')
             training_required = request.data.get('training_required')
             visible_to_users = request.data.get('visible_to_users', [])
+
 
              # Ensure visible_to_users is parsed into a proper list
             if isinstance(visible_to_users, str):
@@ -449,31 +452,42 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Workflow is required", "data": []})
             if not select_template:
                     return Response({"status": False, "message": "Template selection is required", "data": []})
+            if not revision_month:
+                return Response({"status": False, "message": "Revision month is required", "data": []})
 
-            if revision_date:
-                try:
-                    revision_date = datetime.strptime(revision_date, "%Y-%m-%d").date()
-                except ValueError:
-                    return Response({
-                        "status": False,
-                        "message": "Invalid revision_date format. Use 'YYYY-MM-DD'.",
-                        "data": []
-                    })
+            # if revision_date:
+            #     try:
+            #         revision_date = datetime.strptime(revision_date, "%Y-%m-%d")
+            #     except ValueError:
+            #         return Response({
+            #             "status": False,
+            #             "message": "Invalid revision_date format. Use 'YYYY-MM-DD'.",
+            #             "data": []
+            #         })
 
             # Fetch the default status
             try:
                 default_status = DynamicStatus.objects.get(id=document_current_status_id)  # Assuming status with ID 1 is the default
             except DynamicStatus.DoesNotExist:
                 return Response({"status": False, "message": "Default status not found in the system", "data": []})
+            
+            parent_document_instance = None
+            if parent_document:
+                try:
+                    parent_document_instance = Document.objects.get(id=parent_document)  # Assuming status with ID 1 is the default
+                except Document.DoesNotExist:
+                    return Response({"status": False, "message": "Default document not found", "data": []})
 
             # Create a new Document object
             document = Document.objects.create(
                 user=user,
+                parent_document = parent_document_instance,
                 document_title=document_title,
                 document_number=document_number,
                 document_type_id=document_type,
                 document_description=document_description,
-                revision_date=revision_date,
+                # revision_date=revision_date,
+                revision_month = revision_month,
                 document_operation=document_operation,
                 select_template_id=select_template,
                 workflow_id=workflow,
@@ -1430,6 +1444,9 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
             user = self.request.user
             document_id = request.data.get('document_id')
             status_id = request.data.get('status_id')
+            effective_date = request.data.get('effective_date')
+            revision_date = request.data.get('revision_date')
+
 
             if not document_id:
                 return Response({"status": False, "message": "Document details are required"})
@@ -1447,7 +1464,6 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
             except Document.DoesNotExist:
                 return Response({"status": False, "message": "Invalid Document ID"})
             
-            current_date = now().date()
             
             # Determine which model to use based on status_id
             if status_id == 6:
@@ -1468,10 +1484,12 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                 document_effective_action = DocumentEffectiveAction.objects.create(
                     user=user,
                     document_id=document_id,
-                    status_effective=status_release
+                    status_effective=status_release,
+                    effective_date = effective_date
                 )
                 # Update the document's current status
-                document.effective_date = current_date
+                document.effective_date = effective_date
+                document.revision_date = revision_date
                 document.document_current_status = status_release
                 document.save()
                 user_department = document.user.department
@@ -2301,6 +2319,47 @@ class DocumentwiseIdViewSet(viewsets.ModelViewSet):
                 'message': 'Something went wrong',
                 'error': str(e)
             })
+
+class AllDocumentViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Document.objects.all()
+    serializer_class = SimpleDocumentSerializer
+
+    def list(self, request, *args, **kwargs):
+        # Fetch all documents
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            "status": True,
+            "message": "Documents fetched successfully",
+            "total": queryset.count(),
+            "data": serializer.data
+        })
+    
+class ParentDocumentViewSet(viewsets.ModelViewSet):
+
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SimpleDocumentSerializer
+    queryset = Document.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        document_id = self.kwargs.get('document_id')
+        
+        # Filter queryset based on document_id
+        if document_id:
+            queryset = Document.objects.filter(parent_document_id=document_id).order_by('-id')
+        else:
+            queryset = Document.objects.none()  
+
+        # Serialize the filtered queryset
+        serializer = self.get_serializer(queryset, many=True)
+        
+        return Response({
+            "status": True,
+            "message": "Documents fetched successfully" if queryset.exists() else "No documents found",
+            "total": queryset.count(),
+            "data": serializer.data
+        })
 
 
 

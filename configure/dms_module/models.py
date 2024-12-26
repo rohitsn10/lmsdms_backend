@@ -60,6 +60,7 @@ class TemplateModel(models.Model):
     
 class Document(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    parent_document = models.ForeignKey('self', on_delete=models.CASCADE,blank=True, null=True)
     document_title = models.TextField(blank=True, null=True) 
     document_number = models.CharField(max_length=255) 
     document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE) 
@@ -72,6 +73,7 @@ class Document(models.Model):
     assigned_to = models.ForeignKey(CustomUser, related_name="assigned_documents", on_delete=models.SET_NULL, blank=True, null=True)  # To track the user to whom the document is currently assigned 
     assigned_to_group = models.TextField(blank=True, null=True)    
     workflow = models.ForeignKey(WorkFlowModel, on_delete=models.CASCADE)  
+    revision_month = models.CharField(max_length=255,blank=True) 
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)
     version = models.CharField(max_length=10, default="1.0")
@@ -172,6 +174,7 @@ class DocumentEffectiveAction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     status_effective = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    effective_date = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 class DocumentRevisionAction(models.Model):

@@ -90,6 +90,10 @@ urlpatterns = [
    path('print_retrival/<int:print_request_approval_id>',RetrivalNumbersViewSet.as_view({'get': 'list'}),name='print_retrival'),
 
    path('document_wise_id/<int:document_id>',DocumentwiseIdViewSet.as_view({'get': 'list'}),name='document_wise_id'),
+   path('all_document', AllDocumentViewSet.as_view({'get':'list'}),name='all_document'),
+
+   path('parent_document/<document_id>', ParentDocumentViewSet.as_view({'get':'list'}),name='parent_document'),
+
 
 
 ]
