@@ -205,8 +205,7 @@ class TrainingSerializerForInductionNested(serializers.ModelSerializer):
 
 class InductionSerializer(serializers.ModelSerializer):
     trainings = TrainingSerializerForInductionNested(many=True)
-    plant_name = serializers.CharField(source='plant.plant_name', read_only=True)
-
+    
     class Meta:
         model = Induction
         fields = ['id', 'induction_name', 'trainings', 'created_at', 'updated_at']
