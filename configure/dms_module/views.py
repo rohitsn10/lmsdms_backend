@@ -687,6 +687,25 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 'error': str(e)
             })
         
+class GetObsoleteStatusDataToDocAdminUserOnly(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+
+            if user.groups.filter(name='doc_admin').exists():
+                queryset = Document.objects.filter(document_current_status = 12).order_by('-id')
+                serializer = DocumentviewSerializer(queryset, many=True,context={'request': request})
+                data = serializer.data
+                return Response({"status": True, "message": "Documents retrieved successfully", "data": data})
+            else:
+                return Response({"status": False, "message": "You are not authorized to view this data"})
+        except Exception as e:
+            return Response({"status": False, "message": 'Something went wrong', 'error': str(e)})
+        
 class DocumentDeleteViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DocumentSerializer
