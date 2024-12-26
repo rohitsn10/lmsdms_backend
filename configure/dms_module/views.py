@@ -2430,7 +2430,7 @@ class DocumentwiseIdViewSet(viewsets.ModelViewSet):
 class AllDocumentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = Document.objects.all()
-    serializer_class = SimpleDocumentSerializer
+    serializer_class = AllDocumentSerializer
 
     def list(self, request, *args, **kwargs):
         # Fetch all documents
@@ -2446,7 +2446,7 @@ class AllDocumentViewSet(viewsets.ModelViewSet):
 class ParentDocumentViewSet(viewsets.ModelViewSet):
 
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = SimpleDocumentSerializer
+    serializer_class = AllDocumentSerializer
     queryset = Document.objects.all()
 
     def list(self, request, *args, **kwargs):
@@ -2468,7 +2468,55 @@ class ParentDocumentViewSet(viewsets.ModelViewSet):
             "data": serializer.data
         })
 
+class DocumentTimelineViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
 
+    def list(self, request):
+        document_id = request.data.get('document_id')
+
+        if not document_id:
+            return Response(
+                {"error": "document_id is required in query parameters"})
+
+        data = {}
+
+        data['author_approvals'] = DocumentAuthorApproveActionSerializer(
+            DocumentAuthorApproveAction.objects.filter(document_id=document_id), many=True
+        ).data
+
+        data['reviewer_actions'] = DocumentReviewerActionSerializer(
+            DocumentReviewerAction.objects.filter(document_id=document_id), many=True
+        ).data
+
+        data['approver_actions'] = DocumentApproverActionSerializer(
+            DocumentApproverAction.objects.filter(document_id=document_id), many=True
+        ).data
+
+        data['doc_admin_actions'] = DocumentDocAdminActionSerializer(
+            DocumentDocAdminAction.objects.filter(document_id=document_id), many=True
+        ).data
+
+        data['send_back_actions'] = DocumentSendBackActionSerializer(
+            DocumentSendBackAction.objects.filter(document_id=document_id), many=True
+        ).data
+
+        data['release_actions'] = DocumentReleaseActionSerializer(
+            DocumentReleaseAction.objects.filter(document_id=document_id), many=True
+        ).data
+
+        data['effective_actions'] = DocumentEffectivenewActionSerializer(
+            DocumentEffectiveAction.objects.filter(document_id=document_id), many=True
+        ).data
+
+        data['revision_actions'] = DocumentRevisionActionSerializer(
+            DocumentRevisionAction.objects.filter(document_id=document_id), many=True
+        ).data
+
+        data['revision_requests'] = DocumentRevisionRequestActionSerializer(
+            DocumentRevisionRequestAction.objects.filter(document_id=document_id), many=True
+        ).data
+
+        return Response(data)
 
 
 

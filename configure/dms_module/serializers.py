@@ -133,6 +133,14 @@ class DocumentviewSerializer(serializers.ModelSerializer):
     current_status_name = serializers.SerializerMethodField()
     approval_status = serializers.SerializerMethodField()
     approval_numbers = serializers.SerializerMethodField()  # Add this
+<<<<<<< HEAD
+    no_of_request_by_admin = serializers.SerializerMethodField() 
+    selected_template_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Document
+        fields = ['id', 'document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at', 'document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url']
+=======
     no_of_request_by_admin = serializers.SerializerMethodField()
     request_user_groups = serializers.SerializerMethodField()
 
@@ -140,6 +148,7 @@ class DocumentviewSerializer(serializers.ModelSerializer):
         model = Document
         fields = ['id', 'document_title','revision_month','assigned_to', 'document_number', 'created_at', 'document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','request_user_groups']
 
+>>>>>>> d97802e7f353cb953e63312d611497539628c4ea
 
     def get_document_type_name(self, obj):
         return obj.document_type.document_name if obj.document_type else None
@@ -159,6 +168,11 @@ class DocumentviewSerializer(serializers.ModelSerializer):
             .first()
         )
         return latest_approval.status.status if latest_approval and latest_approval.status else None
+    
+    def get_selected_template_url(self, obj):
+        if obj.select_template and obj.select_template.template_doc:
+            return obj.select_template.template_doc.url 
+        return None
     
     def get_approval_numbers(self, obj):
         # Fetch all approval numbers related to this document
@@ -317,11 +331,53 @@ class RetrivalNumberSerializer(serializers.ModelSerializer):
         fields = ['id', 'retrival_number', 'created_at']
 
 
-class SimpleDocumentSerializer(serializers.ModelSerializer):
+class AllDocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Document
         fields = ['id', 'document_title']
 
+class DocumentAuthorApproveActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentAuthorApproveAction
+        fields = ['user','status_approve']
 
+class DocumentReviewerActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentReviewerAction
+        fields = ['user','status_approve']
 
+class DocumentApproverActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentApproverAction
+        fields = ['user','status_approve']
+
+class DocumentDocAdminActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentDocAdminAction
+        fields = ['user','status_approve']
+
+class DocumentSendBackActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentSendBackAction
+        fields = ['user','status_sendback']
+
+class DocumentReleaseActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentReleaseAction
+        fields = ['user','status_release']
+
+class DocumentEffectivenewActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentEffectiveAction
+        fields = ['user','status_effective']
+
+class DocumentRevisionActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentRevisionAction
+        fields = ['user','status_revision']
+
+class DocumentRevisionRequestActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentRevisionRequestAction
+        fields = ['user','status']
