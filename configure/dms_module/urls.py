@@ -19,10 +19,10 @@ urlpatterns = [
 
    path('print_request', PrintRequestViewSet.as_view({'post': 'create'}), name='print_request'),
    path('get_print_request', PrintRequestViewSet.as_view({'get':'list'}), name='get_print_request'),
-
    path('print_approvals', PrintApprovalViewSet.as_view({'post': 'create'}), name='print_approvals'),
    path('update_print_request/<int:print_request_id>', PrintRequestUpdateViewSet.as_view({'put': 'update'}), name='update_print_request'),
-  
+   path('print_request_excel_report', PrintRequestExcelGenerateViewSet.as_view({'get':'list'}), name='print_request_excel_report'),
+   
    path('create_document', DocumentCreateViewSet.as_view({'post': 'create'}),name='create_document'),
    path('update_document/<document_id>', DocumentUpdateViewSet.as_view({'put': 'update'}),name='update_document'),
    path('view_document', DocumentViewSet.as_view({'get':'list'}),name='view_document'),

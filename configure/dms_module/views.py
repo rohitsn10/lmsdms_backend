@@ -216,19 +216,126 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
         
     def list(self, request, *args, **kwargs):
         try:
-            user = request.user
-
-            # Check if the user is in 'QA' or 'doc_admin' group
+            status_id = request.query_params.get('status_id', None)
+            if not status_id:
+                return Response({"status": False, "message": "status_id parameter is required", "data": []})
+            user = self.request.user
+            if not status_id:
+                return Response({"status": False,"message": "Status is required","data": []})
+            
+            try:
+                dynamic_status = DynamicStatus.objects.get(id=status_id)
+            except DynamicStatus.DoesNotExist:
+                return Response({"status": False, "message": "DynamicStatus with the given ID does not exist.","data": []})
+            
             if user.groups.filter(name='QA').exists() or user.groups.filter(name='Doc Admin').exists():
-                queryset = PrintRequest.objects.filter(print_request_status_id=5).order_by('-id')
+                status_id = request.query_params.get('status_id', None)
+                if status_id == '5':
+                    queryset = PrintRequest.objects.filter(print_request_status__id=5).order_by('-created_at')
+                else:
+                    return Response({"status": False, "message": "You can not access this status data", "data": []})
             else:
-                queryset = PrintRequest.objects.filter(user=user).order_by('-id')
-            serializer = PrintRequestSerializer(queryset, many=True)
-            data = serializer.data
-            return Response({"status": True,"message": "Print request list fetched successfully","data": data})
+                queryset = PrintRequest.objects.filter(user = user, print_request_status=dynamic_status).order_by('-created_at')
+            if not queryset:
+                return Response({"status": False, "message": "No data available for the selected status.","data": []})
         except Exception as e:
             return Response({"status": False,"message": str(e),"data": []})
+
+
+import openpyxl
+from openpyxl.utils import get_column_letter
+from io import BytesIO
+
+
+class PrintRequestExcelGenerateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = PrintRequest.objects.all().order_by('-created_at')
+    serializer_class = PrintRequestSerializer
+
+    def list(self, request, *args, **kwargs):
+        status_id = request.query_params.get('status_id', None)
+        if not status_id:
+            return Response({"status": False, "message": "status_id parameter is required", "data": []})
+        user = self.request.user
+
+        try:
+            dynamic_status = DynamicStatus.objects.get(id=status_id)
+        except DynamicStatus.DoesNotExist:
+            return Response({"status": False, "message": "DynamicStatus with the given ID does not exist.","data": []})
         
+        if user.groups.filter(name='QA').exists() or user.groups.filter(name='Doc Admin').exists():
+            status_id = request.query_params.get('status_id', None)
+            if status_id == '5':
+                queryset = PrintRequest.objects.filter(print_request_status__id=5).order_by('-created_at')
+            else:
+                return Response({"status": False, "message": "You can not access this status data", "data": []})
+        else:
+            queryset = PrintRequest.objects.filter(user = user, print_request_status=dynamic_status).order_by('-created_at')
+        if not queryset:
+            return Response({"status": False, "message": "No data available for the selected status.","data": []})
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Print Requests"
+
+        headers = [
+            'Data Number', 'User','SOP Document Number','SOP Document Title', 'No of Prints', 'Issue Type', 'Reason for Print',
+            'Print Request Status', 'Created At', 'Printer', 'Master Copy Users', 'Other Users', 'Reminder Sent'
+        ]
+        
+        for col_num, header in enumerate(headers, 1):
+            col_letter = get_column_letter(col_num)
+            ws[f'{col_letter}1'] = header
+
+        for row_num, (index, print_request) in enumerate(enumerate(queryset, start=1), 2):
+            ws[f'A{row_num}'] = index
+            ws[f'B{row_num}'] = print_request.user.username  # User's username
+            ws[f'C{row_num}'] = print_request.sop_document_id.document_number if print_request.sop_document_id else ""
+            ws[f'D{row_num}'] = print_request.sop_document_id.document_title if print_request.sop_document_id else ""
+            ws[f'E{row_num}'] = print_request.no_of_print
+            ws[f'F{row_num}'] = print_request.issue_type
+            ws[f'G{row_num}'] = print_request.reason_for_print
+            status = print_request.print_request_status.status if print_request.print_request_status else ""
+            ws[f'H{row_num}'] = status.capitalize() if status else ""
+            ws[f'I{row_num}'] = print_request.created_at.strftime('%d-%m-%Y')
+            ws[f'J{row_num}'] = print_request.printer.printer_name if print_request.printer else ""
+            ws[f'K{row_num}'] = ", ".join([user.username for user in print_request.master_copy_user.all()])
+            ws[f'L{row_num}'] = ", ".join([user.username for user in print_request.other_user.all()])
+            ws[f'M{row_num}'] = "Yes" if print_request.reminder_sent else "No"
+
+        for col_num in range(1, len(headers) + 1):
+            col_letter = get_column_letter(col_num)
+            max_length = 0
+            for row in ws.iter_rows(min_col=col_num, max_col=col_num):
+                for cell in row:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(cell.value)
+                    except:
+                        pass
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[col_letter].width = adjusted_width
+        timestamp = time.strftime("%d_%m_%Y_%H_%M_%S")
+        filename = f"print_request_report_{timestamp}.xlsx"
+        
+        file_path = os.path.join(settings.MEDIA_ROOT, 'print_request_excel_sheet', filename)
+
+        folder_path = os.path.dirname(file_path)
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        file_stream = BytesIO()
+        wb.save(file_stream)
+        file_stream.seek(0)
+
+        with open(file_path, 'wb') as f:
+            f.write(file_stream.read())
+        base_url = request.build_absolute_uri('/')
+        file_url = base_url + 'media/print_request_excel_sheet/' + filename
+
+        return Response({"status": True,"message": "Excel report generated successfully.","data": file_url})
+
+
 
 # class PrintApprovalViewSet(viewsets.ModelViewSet):
 #     permission_classes = [permissions.IsAuthenticated]
