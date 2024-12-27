@@ -788,51 +788,40 @@ class DocumentViewSet(viewsets.ModelViewSet):
     def list(self, request):
         try:
             user = self.request.user 
-
-             # Get the user's group IDs
             user_group_ids = user.groups.values_list('id', flat=True)
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            document_current_status = request.query_params.get('document_current_status', None)
 
-            # Initialize the queryset
-            if user.groups.filter(name='Admin').exists():
-                # Admins can see all documents
-                queryset = Document.objects.all().order_by('-id')
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = Document.objects.filter(user__department_id=department_id).order_by('-id')
+                else:
+                    queryset = Document.objects.all().order_by('-id')
+
             elif user.groups.filter(name='Reviewer').exists():
-                # Reviewers can only see documents where they are in visible_to_users
                 queryset = Document.objects.filter(visible_to_users=user).order_by('-id')
-            elif user.department:
-                # Non-reviewer users with a department can see documents created by users in their department
-                queryset = Document.objects.filter(user__department=user.department).order_by('-id')
+            elif user_department:
+                queryset = Document.objects.filter(user__department=user_department).order_by('-id')
             else:
                 queryset = Document.objects.none()
 
-            # Apply search and ordering filters
+            document_current_status = request.query_params.get('document_current_status', None)
+
+            if document_current_status:
+                # Filter by document_current_status if provided
+                queryset = queryset.filter(document_current_status=document_current_status)
+            
             queryset = self.filter_queryset(queryset)
 
-            # Serialize and respond
             if queryset.exists():
-                serializer = self.serializer_class(queryset, many=True, context={'request': request})
-                return Response({
-                    "status": True,
-                    "message": "Documents fetched successfully",
-                    'total': queryset.count(),
-                    'user_group_ids': list(user_group_ids) ,
-                    'data': serializer.data,
-                })
+                serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+                return Response({"status": True,"message": "Documents fetched successfully",'user_group_ids': list(user_group_ids) ,'data': serializer.data,})
             else:
-                return Response({
-                    "status": True,
-                    "message": "No Documents found",
-                    "total": 0,
-                    'user_group_ids': list(user_group_ids),  
-                    "data": [],
-
-                })
+                return Response({"status": True,"message": "No Documents found",'user_group_ids': list(user_group_ids),"data": []})
+        
         except Exception as e:
-            return Response({
-                "status": False,
-                'message': 'Something went wrong',
-                'error': str(e)
-            })
+            return Response({"status": False,'message': 'Something went wrong','error': str(e)})
         
 class GetObsoleteStatusDataToDocAdminUserOnly(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
