@@ -180,7 +180,7 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
             issue_type = request.data.get('issue_type')
             reason_for_print = request.data.get('reason_for_print')
             printer_id = request.data.get('printer_id')
-            dynamic_status = DynamicStatus.objects.get(id=13)
+            dynamic_status = DynamicStatus.objects.get(id=5)
 
             if not no_of_print:
                 return Response({'status': False, 'message': 'NO of print is required'})
@@ -208,7 +208,7 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
                 reason_for_print=reason_for_print,
                 sop_document_id = sop_document,
                 printer = printer,
-                dynamic_status = dynamic_status
+                print_request_status = dynamic_status
             )
             user_department = user.department
             qa_group = Group.objects.get(name='Doc Admin')
