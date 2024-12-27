@@ -475,10 +475,11 @@ class PrintApprovalViewSet(viewsets.ModelViewSet):
                 no_of_request_by_admin=no_of_request_by_admin,
                 status=dynamic_status,
             )
-
             # Add approval numbers to the ManyToManyField
             print_request_approval.approval_numbers.add(*approval_numbers)
-            
+            print_request_approval.save()
+            print_request.print_request_status = dynamic_status
+            print_request.save()
             #send email to the user who requested the print in PrintRequest
             user = print_request.user
             send_print_request_approval_email(user, print_request, no_of_request_by_admin, dynamic_status)
@@ -513,10 +514,10 @@ class PrintRequestUpdateViewSet(viewsets.ModelViewSet):
             except PrintRequestApproval.DoesNotExist:
                 return Response({'status': False, 'message': 'No approved PrintRequestApproval found for this PrintRequest'})
 
-            if print_request.status != 'print_is_pending':
+            if print_request.print_request_status != 'print_is_pending':
                 return Response({'status': False, 'message': 'This PrintRequest is not in a pending state'})
 
-            print_request.status = status
+            print_request.print_request_status = status
             print_request.save()
 
             return Response({'status': True, 'message': 'Data Printing started successfully'})
