@@ -1559,6 +1559,7 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
+from django.utils.timezone import make_aware
 
 class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -1589,6 +1590,19 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
             except Document.DoesNotExist:
                 return Response({"status": False, "message": "Invalid Document ID"})
             
+             # Convert effective_date and revision_date to timezone-aware datetime objects
+            if effective_date:
+                try:
+                    naive_effective_date = datetime.strptime(effective_date, "%d-%m-%Y")
+                    effective_date = make_aware(naive_effective_date)  # Convert to timezone-aware datetime
+                except ValueError:
+                    return Response({"status": False, "message": "Invalid effective date format. Expected format: dd-mm-yyyy"})
+            if revision_date:
+                try:
+                    naive_revision_date = datetime.strptime(revision_date, "%d-%m-%Y")
+                    revision_date = make_aware(naive_revision_date)  # Convert to timezone-aware datetime
+                except ValueError:
+                    return Response({"status": False, "message": "Invalid revision date format. Expected format: dd-mm-yyyy"})
             
             # Determine which model to use based on status_id
             if status_id == 6:
@@ -2451,8 +2465,7 @@ class AllDocumentViewSet(viewsets.ModelViewSet):
     serializer_class = AllDocumentSerializer
 
     def list(self, request, *args, **kwargs):
-        # Fetch all documents
-        queryset = self.get_queryset()
+        queryset = self.queryset.filter(document_type_id=1)
         serializer = self.get_serializer(queryset, many=True)
         return Response({
             "status": True,
@@ -2460,6 +2473,7 @@ class AllDocumentViewSet(viewsets.ModelViewSet):
             "total": queryset.count(),
             "data": serializer.data
         })
+
     
 class ParentDocumentViewSet(viewsets.ModelViewSet):
 
@@ -2535,6 +2549,41 @@ class DocumentTimelineViewSet(viewsets.ModelViewSet):
         ).data
 
         return Response(data)
+
+
+class DocAdminUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Document.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            document = request.data.get('document_id')
+            status_id = request.data.get('status')
+
+            if not document:
+                return Response({"status": False, "message": "Document are required"})
+            if not status_id:
+                return Response({"status": False, "message": "Status is required"})
+            
+            document = Document.objects.get(id=document)
+            status = DynamicStatus.objects.get(id=status_id)
+            
+            document_action = DocumentObsoleteAction.objects.create(
+                user=user,
+                document=document,
+                status=status
+            )
+
+            document.document_current_status = status
+            document.save() 
+            return Response({"status": True, "message": "Status change to Obsolete successfully"})
+
+        except DynamicStatus.DoesNotExist:
+            return Response({"status": False, "message": "Invalid status ID"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
 
 
 
