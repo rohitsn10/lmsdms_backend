@@ -13,10 +13,6 @@ class DocumentType(models.Model):
     document_name = models.TextField(blank=True,null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-import openpyxl
-from openpyxl.utils import get_column_letter
-from io import BytesIO
-from django.http import HttpResponse
 
 class PrintRequest(models.Model):
 

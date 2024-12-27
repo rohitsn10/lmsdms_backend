@@ -13,6 +13,9 @@ from django.db.models import Q
 import ipdb
 import logging
 import time
+import openpyxl
+from openpyxl.utils import get_column_letter
+from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
@@ -242,9 +245,7 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
             return Response({"status": False,"message": str(e),"data": []})
 
 
-import openpyxl
-from openpyxl.utils import get_column_letter
-from io import BytesIO
+
 
 
 class PrintRequestExcelGenerateViewSet(viewsets.ModelViewSet):
@@ -525,8 +526,7 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             user = self.request.user
             parent_document = request.data.get('parent_document',None)
             document_title = request.data.get('document_title')
-            document_number = request.data.get('document_number')
-            document_type = request.data.get('document_type')
+            document_type_id = request.data.get('document_type')
             document_description = request.data.get('document_description', '')
             revision_date = request.data.get('revision_date', '')
             revision_month = request.data.get('revision_month', '')
@@ -553,7 +553,7 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             # Validation for required fields
             if not document_title:
                 return Response({"status": False, "message": "Document title is required", "data": []})
-            if not document_type:
+            if not document_type_id:
                 return Response({"status": False, "message": "Document type is required", "data": []})
             if not workflow:
                 return Response({"status": False, "message": "Workflow is required", "data": []})
@@ -577,21 +577,30 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 default_status = DynamicStatus.objects.get(id=document_current_status_id)  # Assuming status with ID 1 is the default
             except DynamicStatus.DoesNotExist:
                 return Response({"status": False, "message": "Default status not found in the system", "data": []})
-            
+
+            # Fetch DocumentType instance
+            try:
+                document_type = DocumentType.objects.get(id=document_type_id)
+            except DocumentType.DoesNotExist:
+                return Response({"status": False, "message": "Document type not found", "data": []})
+
+            # Handle Parent Document if provided
             parent_document_instance = None
             if parent_document:
                 try:
-                    parent_document_instance = Document.objects.get(id=parent_document)  # Assuming status with ID 1 is the default
+                    parent_document_instance = Document.objects.get(id=parent_document)
                 except Document.DoesNotExist:
-                    return Response({"status": False, "message": "Default document not found", "data": []})
+                    return Response({"status": False, "message": "Parent document not found", "data": []})
+                
+            department_name = user.department.department_name if user.department else 'UnknownDepartment'
+            document_number = generate_document_number(document_title, user, document_type, parent_document_instance)
 
-            # Create a new Document object
             document = Document.objects.create(
                 user=user,
                 parent_document = parent_document_instance,
                 document_title=document_title,
                 document_number=document_number,
-                document_type_id=document_type,
+                document_type_id=document_type.id,
                 document_description=document_description,
                 # revision_date=revision_date,
                 revision_month = revision_month,
@@ -768,7 +777,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
     def list(self, request):
         try:
-            user = request.user 
+            user = self.request.user 
 
              # Get the user's group IDs
             user_group_ids = user.groups.values_list('id', flat=True)
