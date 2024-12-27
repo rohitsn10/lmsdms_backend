@@ -14,6 +14,7 @@ class PrintRequestSerializer(serializers.ModelSerializer):
     approved_date = serializers.SerializerMethodField()  # Rename created_at to approved_date
     printer_name = serializers.SerializerMethodField()
     approval_numbers = serializers.SerializerMethodField()  # Include many-to-many approval numbers
+    request_user_groups = serializers.SerializerMethodField()
 
     class Meta:
         model = PrintRequest
@@ -22,7 +23,8 @@ class PrintRequestSerializer(serializers.ModelSerializer):
             'no_of_print', 'issue_type', 'reason_for_print',
             'print_request_status', 'created_at', 'status',
             'no_of_request_by_admin', 'approved_date', 'printer_name',
-            'approval_numbers'  # Add approval_numbers to the response
+            'approval_numbers',  # Add approval_numbers to the response
+            'request_user_groups',
         ]
 
     def get_first_name(self, obj):
@@ -51,6 +53,13 @@ class PrintRequestSerializer(serializers.ModelSerializer):
             return [approval_number.number for approval_number in approval.approval_numbers.all()]
         return []
 
+    def get_request_user_groups(self, obj):
+        user = self.context.get('request').user
+        if user:
+            # Get the groups of the user making the request
+            groups = user.groups.all().values_list('name', flat=True)
+            return list(groups)
+        return []
 
 
 class DocumentTypeSerializer(serializers.ModelSerializer):
