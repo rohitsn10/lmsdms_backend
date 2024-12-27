@@ -144,10 +144,12 @@ class DocumentviewSerializer(serializers.ModelSerializer):
     no_of_request_by_admin = serializers.SerializerMethodField() 
     selected_template_url = serializers.SerializerMethodField()
     request_user_groups = serializers.SerializerMethodField()
+    user_department_id = serializers.SerializerMethodField()
+    user_department = serializers.SerializerMethodField()
 
     class Meta:
         model = Document
-        fields = ['id', 'document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at', 'document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url','request_user_groups']
+        fields = ['id', 'document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at', 'document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url','request_user_groups','user_department_id','user_department']
 
     def get_document_type_name(self, obj):
         return obj.document_type.document_name if obj.document_type else None
@@ -205,6 +207,18 @@ class DocumentviewSerializer(serializers.ModelSerializer):
             return list(groups)
         return []
 
+    def get_user_department_id(self, obj):
+        # Get the user who created the document and return the ID of their department
+        if obj.user and obj.user.department:
+            return obj.user.department.id
+        return None
+    
+    def get_user_department(self, obj):
+        # Get the user who created the document and return the name of their department
+        if obj.user and obj.user.department:
+            return obj.user.department.department_name  # Return the name of the department
+        return None
+    
 class DocumentCommentSerializer(serializers.ModelSerializer):
     user_first_name = serializers.SerializerMethodField()
     
