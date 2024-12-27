@@ -9,19 +9,18 @@ class WorkFlowSerializer(serializers.ModelSerializer):
 class PrintRequestSerializer(serializers.ModelSerializer):
     first_name = serializers.SerializerMethodField()  # Include user's first name directly
     document_title = serializers.CharField(source='sop_document_id.document_title', read_only=True)
-    status = serializers.SerializerMethodField()
+    status = serializers.CharField(source='print_request_status.status', read_only=True)
     no_of_request_by_admin = serializers.SerializerMethodField()  # Include no_of_request_by_admin
     approved_date = serializers.SerializerMethodField()  # Rename created_at to approved_date
     printer_name = serializers.SerializerMethodField()
     approval_numbers = serializers.SerializerMethodField()  # Include many-to-many approval numbers
     request_user_groups = serializers.SerializerMethodField()
-
     class Meta:
         model = PrintRequest
         fields = [
             'id', 'user', 'first_name', 'sop_document_id', 'document_title',
             'no_of_print', 'issue_type', 'reason_for_print',
-            'print_request_status', 'created_at', 'status',
+            'created_at', 'status',
             'no_of_request_by_admin', 'approved_date', 'printer_name',
             'approval_numbers',  # Add approval_numbers to the response
             'request_user_groups',
@@ -30,9 +29,9 @@ class PrintRequestSerializer(serializers.ModelSerializer):
     def get_first_name(self, obj):
         return obj.user.first_name if obj.user else None
 
-    def get_status(self, obj):
-        approval = obj.approvals.order_by('-created_at').first()
-        return approval.status.status if approval and approval.status else None
+    # def get_status(self, obj):
+    #     approval = obj.approvals.order_by('-created_at').first()
+    #     return approval.status.status if approval and approval.status else None
 
     def get_no_of_request_by_admin(self, obj):
         approval = obj.approvals.order_by('-created_at').first()
