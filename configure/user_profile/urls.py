@@ -32,6 +32,12 @@ urlpatterns = [
     path('all_reviewer', ReviewerUserViewSet.as_view({'get':'list'}), name='all_reviewer'),
 
     # path('document_create',DocumentUploadView.as_view(), name='document-upload'),
+    
+    path('reviewer_users', ReviewerAllUserListViewSet.as_view({'get':'list'}), name='reviewer_users'),
+    path('approver_users', ApproverAllUserListViewSet.as_view({'get':'list'}), name='approver_users'),
+    path('docadmin_users', DocAdminAllUserListViewSet.as_view({'get':'list'}), name='docadmin_users'),
+
+
 
 
 

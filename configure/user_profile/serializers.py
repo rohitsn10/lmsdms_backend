@@ -242,6 +242,16 @@ class MinimalUserSerializer(serializers.ModelSerializer):
         fields = ['id', 'first_name']
 
 
+class UserSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'name']
+
+    def get_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}".strip()
+
 
 
 # class WordDocumentSerializer(serializers.ModelSerializer):

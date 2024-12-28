@@ -839,6 +839,156 @@ class ReviewerUserViewSet(viewsets.ModelViewSet):
             })
         
 
+class ReviewerAllUserListViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            # Fetch the "Reviewer" group
+            reviewer_group = Group.objects.filter(name='Reviewer').first()
+            if reviewer_group:
+                queryset = CustomUser.objects.filter(groups=reviewer_group).exclude(id=request.user.id).order_by('-id')
+                if queryset.exists():
+                    serializer = self.get_serializer(queryset, many=True)
+                    return Response({
+                        "status": True,
+                        "message": "Reviewers fetched successfully",
+                        'total': queryset.count(),
+                        'data': serializer.data
+                    })
+                else:
+                    return Response({
+                        "status": True,
+                        "message": "No reviewers found",
+                        "total": 0,
+                        "data": []
+                    })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "Reviewer group not found",
+                    "total": 0,
+                    "data": []
+                })
+        except Exception as e:
+            return Response({
+                "status": False,
+                'message': 'Something went wrong',
+                'error': str(e)
+            })
+
+
+class ApproverAllUserListViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            # Fetch the "Approver" group
+            approver_group = Group.objects.filter(name='Approver').first()
+            if approver_group:
+                queryset = CustomUser.objects.filter(groups=approver_group).exclude(id=request.user.id).order_by('-id')
+                if queryset.exists():
+                    serializer = self.get_serializer(queryset, many=True)
+                    return Response({
+                        "status": True,
+                        "message": "Approvers fetched successfully",
+                        'total': queryset.count(),
+                        'data': serializer.data
+                    })
+                else:
+                    return Response({
+                        "status": True,
+                        "message": "No approvers found",
+                        "total": 0,
+                        "data": []
+                    })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "Approver group not found",
+                    "total": 0,
+                    "data": []
+                })
+        except Exception as e:
+            return Response({
+                "status": False,
+                'message': 'Something went wrong',
+                'error': str(e)
+            })
+
+        
+class DocAdminAllUserListViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            # Fetch the "Doc Admin" group
+            doc_admin_group = Group.objects.filter(name='Doc Admin').first()
+            if doc_admin_group:
+                queryset = CustomUser.objects.filter(groups=doc_admin_group).exclude(id=request.user.id).order_by('-id')
+                if queryset.exists():
+                    serializer = self.get_serializer(queryset, many=True)
+                    return Response({
+                        "status": True,
+                        "message": "Doc Admins fetched successfully",
+                        'total': queryset.count(),
+                        'data': serializer.data
+                    })
+                else:
+                    return Response({
+                        "status": True,
+                        "message": "No Doc Admins found",
+                        "total": 0,
+                        "data": []
+                    })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "Doc Admin group not found",
+                    "total": 0,
+                    "data": []
+                })
+        except Exception as e:
+            return Response({
+                "status": False,
+                'message': 'Something went wrong',
+                'error': str(e)
+            })
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
         
 
 
