@@ -546,6 +546,8 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             document_current_status_id = request.data.get('document_current_status_id')
             training_required = request.data.get('training_required')
             visible_to_users = request.data.get('visible_to_users', [])
+            approver = request.data.get('approver')
+            doc_admin = request.data.get('doc_admin')
 
 
              # Ensure visible_to_users is parsed into a proper list
@@ -582,6 +584,16 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 document_type = DocumentType.objects.get(id=document_type_id)
             except DocumentType.DoesNotExist:
                 return Response({"status": False, "message": "Document type not found", "data": []})
+            
+            try:
+                approver_user = CustomUser.objects.get(id=approver)
+            except DocumentType.DoesNotExist:
+                return Response({"status": False, "message": "Approver user not found", "data": []})
+            
+            try:
+                docadmin_user = CustomUser.objects.get(id=doc_admin)
+            except DocumentType.DoesNotExist:
+                return Response({"status": False, "message": "Doc Admin user not found", "data": []})
 
             # Handle Parent Document if provided
             parent_document_instance = None
@@ -608,6 +620,8 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 workflow_id=workflow,
                 document_current_status=default_status,
                 version="1.0",
+                approver=approver_user,
+                doc_admin=docadmin_user,
                 training_required=training_required,
 
             )
@@ -1213,7 +1227,7 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            user = request.user
+            user = self.request.user
             document = request.data.get('document_id')
             status_id = request.data.get('status')
             remark = request.data.get('remark')
@@ -1241,6 +1255,7 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
                 document=document,
                 status_approve=status
             )
+            document.author = user
             document.document_current_status = status
             document.form_status = None
             document.assigned_to = None
