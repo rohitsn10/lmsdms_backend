@@ -1224,27 +1224,26 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
         try:
             user = request.user
             document = request.data.get('document_id')
-            # document_id = request.data.get('documentdetails_id')
             status_id = request.data.get('status')
+            remark = request.data.get('remark')
 
             # Ensure required fields are provided
-            # if not document_id:
-            #     return Response({"status": False, "message": "Document details are required"})
             if not document:
                 return Response({"status": False, "message": "Document are required"})
             if not status_id:
                 return Response({"status": False, "message": "Status is required"})
+            if not remark:
+                return Response({"status": False, "message": "remark is required"})
 
             # Fetch related document and status objects
             document = Document.objects.get(id=document)
-            # documentdetails = DocumentDetails.objects.get(id=document_id)
             status = DynamicStatus.objects.get(id=status_id)
 
             document_approve_action = DocumentAuthorApproveAction.objects.create(
                 user=user,
                 document=document,
-                # documentdetails_approve=documentdetails,
-                status_approve=status
+                status_approve=status,
+                remarks_author = remark,
             )
             approve_action = DocApprove.objects.create(
                 user=user,
@@ -1282,12 +1281,17 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
             user = self.request.user
             document_id = request.data.get('document_id')
             status_id = request.data.get('status')
+            remark = request.data.get('remark')
+
 
             # Validate required fields
             if not document_id:
                 return Response({"status": False, "message": "Document is required"})
             if not status_id:
                 return Response({"status": False, "message": "Status is required"})
+            if not remark:
+                return Response({"status": False, "message": "remark is required"})
+
 
             # Fetch the document
             try:
@@ -1316,7 +1320,8 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
             document_reviewer_action = DocumentReviewerAction.objects.create(
                 user=user,
                 document=document,
-                status_approve=status
+                status_approve=status,
+                remarks_reviewer = remark
             )
             approve_action = DocApprove.objects.create(
                 user=user,
@@ -1362,13 +1367,16 @@ class DocumentApproverActionCreateViewSet(viewsets.ModelViewSet):
             user = self.request.user
             document_id = request.data.get('document_id')
             status_id = request.data.get('status')
+            remark = request.data.get('remark')
+
 
             # Validate required fields
             if not document_id:
                 return Response({"status": False, "message": "Document is required"})
             if not status_id:
                 return Response({"status": False, "message": "Status is required"})
-
+            if not remark:
+                return Response({"status": False, "message": "remark is required"})
             # Fetch the document
             try:
                 document = Document.objects.get(id=document_id)
@@ -1386,7 +1394,8 @@ class DocumentApproverActionCreateViewSet(viewsets.ModelViewSet):
             document_approver_action = DocumentApproverAction.objects.create(
                 user=user,
                 document=document,
-                status_approve=status
+                status_approve=status,
+                remarks_approver = remark
             )
             approve_action = DocApprove.objects.create(
                 user=user,
@@ -1424,12 +1433,17 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
             user = self.request.user
             document_id = request.data.get('document_id')
             status_id = request.data.get('status')
+            remark = request.data.get('remark')
+
 
             # Validate required fields
             if not document_id:
                 return Response({"status": False, "message": "Document is required"})
             if not status_id:
                 return Response({"status": False, "message": "Status is required"})
+            if not remark:
+                return Response({"status": False, "message": "remark is required"})
+
 
             # Fetch the document
             try:
@@ -1448,7 +1462,8 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
             document_docAdmin_action = DocumentDocAdminAction.objects.create(
                 user=user,
                 document=document,
-                status_approve=status
+                status_approve=status,
+                remarks_docadmin = remark
             )
 
             approve_action = DocApprove.objects.create(
@@ -1465,7 +1480,9 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
                 DocumentEffectiveAction.objects.create(
                     user=user,
                     documentdetails_effective=document,
-                    status_effective=status
+                    remarks_effective=status,
+                    remarks_docadmin = remark
+
                 )
                 user_department = document.user.department
                 department_users = CustomUser.objects.filter(department=user_department)
@@ -1476,7 +1493,8 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
                 DocumentReleaseAction.objects.create(
                     user=user,
                     documentdetails_release=document,
-                    status_release=status
+                    status_release=status,
+                    remarks_release = remark
                 )
                 user_department = document.user.department
                 department_users = CustomUser.objects.filter(department=user_department)
@@ -1498,6 +1516,7 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
             assigned_to_id = request.data.get('assigned_to')
             status_id = request.data.get('status_sendback')
             group_id = request.data.get('assign_user_group')
+            remark = request.data.get('remark')
 
 
             # Validate required fields
@@ -1506,6 +1525,10 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
                     "status": False,
                     "message": "Document ID, Assigned User ID, and Status ID are required"
                 })
+                
+            if not remark:
+                return Response({"status": False, "message": "remark is required"})
+
 
             # Fetch the document
             try:
@@ -1530,7 +1553,8 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
                 user=user,
                 document=document,
                 status_sendback=status,
-                group = group_id
+                group = group_id,
+                remarks_sendback = remark
             )
 
             # Update the document's assigned user and reason
@@ -1562,12 +1586,18 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
             status_id = request.data.get('status_id')
             effective_date = request.data.get('effective_date')
             revision_date = request.data.get('revision_date')
+            remark = request.data.get('remark')
 
 
             if not document_id:
                 return Response({"status": False, "message": "Document details are required"})
             # if not status_id:
             #     return Response({"status": False, "message": "Status is required"})
+            
+            if not remark:
+                return Response({"status": False, "message": "remark is required"})
+
+            
             try:
                 status_id = int(status_id)
             except (TypeError, ValueError):
@@ -1599,7 +1629,8 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                 document_release_action = DocumentReleaseAction.objects.create(
                     user=user,
                     document_id=document_id,
-                    status_release=status_release
+                    status_release=status_release,
+                    remarks_release = remark
                 )
                 document.document_current_status = status_release
                 document.save()
@@ -1614,7 +1645,8 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                     user=user,
                     document_id=document_id,
                     status_effective=status_release,
-                    effective_date = effective_date
+                    effective_date = effective_date,
+                    remarks_effective = remark
                 )
                 # Update the document's current status
                 document.effective_date = effective_date
@@ -2492,9 +2524,10 @@ class ParentDocumentViewSet(viewsets.ModelViewSet):
 
 class DocumentTimelineViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'document_id'
 
-    def list(self, request):
-        document_id = request.data.get('document_id')
+    def list(self, request, *args, **kwargs):
+        document_id = self.kwargs.get('document_id')
 
         if not document_id:
             return Response(
