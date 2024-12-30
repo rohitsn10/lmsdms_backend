@@ -26,6 +26,10 @@ urlpatterns = [
    path('create_document', DocumentCreateViewSet.as_view({'post': 'create'}),name='create_document'),
    path('update_document/<document_id>', DocumentUpdateViewSet.as_view({'put': 'update'}),name='update_document'),
    path('view_document', DocumentViewSet.as_view({'get':'list'}),name='view_document'),
+   
+   path('document_excel_report', DocumentExcelGenerateViewSet.as_view({'get':'list'}),name='document_excel_report'),
+   path('document_pdf_report', DocumentPDFGenerateViewSet.as_view({'get':'list'}),name='document_pdf_report'),
+   
    path('delete_Document', DocumentDeleteViewSet.as_view({'delete':'destroy'}),name='delete_Document'),
    path('document_details_id/<document_id>', DocumentDetailViewSet.as_view({'get':'list'}),name='document_details_id'),
    path('get_obsolete_satatus_data_to_doc_admin_user_only', GetObsoleteStatusDataToDocAdminUserOnly.as_view({'get':'list'}),name='get_obsolete_satatus_data_to_doc_admin_user_only'),
@@ -96,6 +100,8 @@ urlpatterns = [
 
    path('doc_timeline', DocumentTimelineViewSet.as_view({'get':'list'}),name='doc_timeline'),
    path('docadmin_obsolete_status', DocAdminUpdateViewSet.as_view({'post': 'create'}),name='docadmin_obsolete_status'),
+
+   path('document_certificate_pdf_generate/<int:document_id>', DocumentCertificatePdfExportView.as_view({'get':'list'}),name='get_document_type_for_doc_admin'),
 
 
 ]

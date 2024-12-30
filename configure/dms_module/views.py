@@ -822,7 +822,244 @@ class DocumentViewSet(viewsets.ModelViewSet):
         
         except Exception as e:
             return Response({"status": False,'message': 'Something went wrong','error': str(e)})
+
+
+
+class DocumentExcelGenerateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['document_title', 'document_number', 'document_description', 'document_type__name']
+    ordering_fields = ['document_title', 'created_at'] 
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user 
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            document_current_status = request.query_params.get('document_current_status', None)
+
+            # Admin or Doc Admin: view all or by department
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = Document.objects.filter(user__department_id=department_id).order_by('-id')
+                else:
+                    queryset = Document.objects.all().order_by('-id')
+
+            # Reviewer: can only view documents visible to them
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = Document.objects.filter(visible_to_users=user).order_by('-id')
+
+            # Department-based filtering for other users
+            elif user_department:
+                queryset = Document.objects.filter(user__department=user_department).order_by('-id')
+            else:
+                queryset = Document.objects.none()
+
+            # Further filtering by document_current_status if provided
+            if document_current_status:
+                queryset = queryset.filter(document_current_status=document_current_status)
+
+            # Apply any filters set in the queryset
+            queryset = self.filter_queryset(queryset)
+
+            # Generate the Excel file automatically
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Documents Report Excel Sheet"
+
+            # Define the headers for the Excel file
+            headers = [
+                'Document Title', 'Document Number', 'Document Type', 'Document Description', 
+                'Revision Date', 'Status','Assigned User FirstName','Assign User LastName','Created At', 'Effective Date', 'Version','Request User Groups'
+            ]
+            # Add headers to the Excel sheet
+            for col_num, header in enumerate(headers, 1):
+                col_letter = get_column_letter(col_num)
+                ws[f'{col_letter}1'] = header
+
+            # Add data rows from the queryset
+            for row_num, document in enumerate(queryset, 2):
+                ws[f'A{row_num}'] = document.document_title
+                ws[f'B{row_num}'] = document.document_number
+                ws[f'C{row_num}'] = document.document_type.document_name if document.document_type else "-"
+                ws[f'D{row_num}'] = document.document_description
+                ws[f'E{row_num}'] = document.revision_date.strftime('%d-%m-%Y') if document.revision_date else "-"
+                ws[f'F{row_num}'] = document.document_current_status.status if document.document_current_status else "-"
+                ws[f'G{row_num}'] = document.assigned_to.first_name if document.assigned_to else "-"
+                ws[f'H{row_num}'] = document.assigned_to.last_name if document.assigned_to else "-"
+                ws[f'I{row_num}'] = document.created_at.strftime('%d-%m-%Y')
+                ws[f'J{row_num}'] = document.effective_date.strftime('%d-%m-%Y') if document.effective_date else "-"
+                ws[f'K{row_num}'] = document.version
+
+                user_groups = document.user.groups.all()
+                group_names = ', '.join([group.name for group in user_groups]) if user_groups else '-'
+                ws[f'L{row_num}'] = group_names
+
+            # Adjust column widths
+            for col_num in range(1, len(headers) + 1):
+                col_letter = get_column_letter(col_num)
+                max_length = 0
+                for row in ws.iter_rows(min_col=col_num, max_col=col_num):
+                    for cell in row:
+                        try:
+                            if len(str(cell.value)) > max_length:
+                                max_length = len(cell.value)
+                        except:
+                            pass
+                adjusted_width = (max_length + 2)
+                ws.column_dimensions[col_letter].width = adjusted_width
+
+            # Generate a timestamp for the file name
+            timestamp = time.strftime("%d_%m_%Y_%H_%M_%S")
+            filename = f"document_report_{timestamp}.xlsx"
+
+            # File path and saving the file
+            file_path = os.path.join(settings.MEDIA_ROOT, 'document_excel_sheet', filename)
+
+            # Create the folder if it doesn't exist
+            folder_path = os.path.dirname(file_path)
+            if not os.path.exists(folder_path):
+                os.makedirs(folder_path)
+
+            # Save the Excel file to the path
+            file_stream = BytesIO()
+            wb.save(file_stream)
+            file_stream.seek(0)
+
+            with open(file_path, 'wb') as f:
+                f.write(file_stream.read())
+
+            # Build the base URL and the file URL for downloading
+            base_url = request.build_absolute_uri('/')
+            file_url = base_url + 'media/document_excel_sheet/' + filename
+
+            return Response({"status": True,"message": "Excel report generated successfully.","data": file_url})        
+        except Exception as e:
+            return Response({"status": False,'message': 'Something went wrong','error': str(e)})
         
+
+class DocumentPDFGenerateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['document_title', 'document_number', 'document_description', 'document_type__name']
+    ordering_fields = ['document_title', 'created_at']
+    
+    queryset = Document.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user 
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            document_current_status = request.query_params.get('document_current_status', None)
+
+            # Admin or Doc Admin: view all or by department
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = Document.objects.filter(user__department_id=department_id).order_by('-id')
+                else:
+                    queryset = Document.objects.all().order_by('-id')
+
+            # Reviewer: can only view documents visible to them
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = Document.objects.filter(visible_to_users=user).order_by('-id')
+
+            # Department-based filtering for other users
+            elif user_department:
+                queryset = Document.objects.filter(user__department=user_department).order_by('-id')
+            else:
+                queryset = Document.objects.none()
+
+            # Further filtering by document_current_status if provided
+            if document_current_status:
+                queryset = queryset.filter(document_current_status=document_current_status)
+
+            # Apply any filters set in the queryset
+            queryset = self.filter_queryset(queryset)
+            documents_data = queryset.select_related(
+                'document_type', 
+                'document_current_status', 
+                'select_template', 
+                'assigned_to'
+            ).values(
+                'document_title', 
+                'document_number', 
+                'document_type__document_name',  # Fetching the name of document_type
+                'document_current_status__status',  # Assuming status_name is the field in DynamicStatus model
+                'select_template__template_name',  # Fetching the name of select_template
+                'assigned_to__first_name',  # Fetching first_name of the assigned user
+                'assigned_to__last_name',  # Fetching last_name of the assigned user
+                'version', 
+                'created_at', 
+                'revision_date', 
+                'effective_date'
+            )
+
+            # Context for rendering HTML template
+            context = {
+                'documents': documents_data
+            }
+
+            # Load the HTML template
+            html_template_path = settings.BASE_DIR / 'templates' / 'document_list_pdf_report.html'
+            template = get_template(html_template_path)
+
+            # Render HTML with context data
+            html = template.render(context)
+
+            # Create a BytesIO buffer to hold the PDF data in memory
+            buffer = BytesIO()
+
+            # Use xhtml2pdf to generate the PDF from the HTML
+            pisa_status = pisa.CreatePDF(html, dest=buffer)
+
+            # Check if there were any errors during PDF generation
+            if pisa_status.err:
+                return Response({
+                    'status': False,
+                    'message': 'Error occurred while generating the PDF.',
+                    'data': {}
+                })
+
+            # Get timestamp for PDF file name
+            timestamp = int(time.time())
+            file_name = f"document_list_{timestamp}.pdf"
+
+            # Define the file path to save the PDF in 'document_certificare' folder
+            file_path = os.path.join(settings.MEDIA_ROOT, 'document_certificare', file_name)
+
+            # Create the folder if it doesn't exist
+            folder_path = os.path.dirname(file_path)
+            if not os.path.exists(folder_path):
+                os.makedirs(folder_path)
+
+            # Save the generated PDF to the file system
+            with open(file_path, 'wb') as f:
+                f.write(buffer.getvalue())
+
+            # Build the file URL
+            pdf_file_url = f"{settings.MEDIA_URL}document_certificare/{file_name}"
+            full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+
+            # Return response with the PDF file URL
+            return Response({
+                'status': True,
+                'message': 'PDF file generated and saved successfully.',
+                'data': {'file_url': full_pdf_file_url}
+            })
+
+        except Exception as e:
+            return Response({
+                'status': False,
+                'message': str(e),
+                'data': {}
+            })
+        
+
 class GetObsoleteStatusDataToDocAdminUserOnly(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DocumentviewSerializer
@@ -2576,5 +2813,208 @@ class DocAdminUpdateViewSet(viewsets.ModelViewSet):
 
 
 
+class DocumentCertificatePdfExportView(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'document_id'
+    
+    # Assuming you have a model called 'Document'
+    # You can modify the query to your needs
+    queryset = Document.objects.all()
 
+    def list(self, request, *args, **kwargs):
+        try:
+            # Get the document based on the document_id (passed in URL kwargs)
+            document_id = kwargs.get('document_id')
+            document = self.queryset.get(id=document_id)
+            
+            # Create context dictionary for the template
+            context = {
+                'document_title': document.title,
+                'document_number': document.number,
+                'document_type': document.type,
+                'version': document.version,
+                'created_at': document.created_at,
+                'document_current_status': document.current_status,
+                'revision_date': document.revision_date,
+                'effective_date': document.effective_date,
+                'assigned_to_first_name': document.assigned_to.first_name,
+                'assigned_to_last_name': document.assigned_to.last_name,
+            }
 
+            # Path to the HTML template for document cover page
+            html_template_path = settings.BASE_DIR / 'templates' / 'document_cover_page.html'
+
+            # Load the HTML template
+            template = get_template(html_template_path)
+
+            # Render the HTML with context data
+            html = template.render(context)
+
+            # Create a BytesIO buffer to write the PDF to memory
+            buffer = BytesIO()
+
+            # Use xhtml2pdf to generate the PDF from the HTML
+            pisa_status = pisa.CreatePDF(html, dest=buffer)
+
+            # Check if there were any errors during PDF generation
+            if pisa_status.err:
+                return Response({
+                    'status': False,
+                    'message': 'Error occurred while generating the PDF.',
+                    'data': {}
+                })
+
+            # Get the timestamp for the PDF file name
+            timestamp = int(time.time())
+            file_name = f"document_{document_id}_{timestamp}.pdf"
+
+            # Define the file path to save the PDF in 'document_certificare' folder
+            file_path = os.path.join(settings.MEDIA_ROOT, 'document_certificare', file_name)
+
+            # Create the 'document_certificare' folder if it doesn't exist
+            folder_path = os.path.dirname(file_path)
+            if not os.path.exists(folder_path):
+                os.makedirs(folder_path)
+
+            # Save the generated PDF file
+            with open(file_path, 'wb') as f:
+                f.write(buffer.getvalue())
+
+            # Build the file URL
+            pdf_file_url = f"{settings.MEDIA_URL}document_certificare/{file_name}"
+            full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+
+            # Return the response with the PDF URL
+            return Response({
+                'status': True,
+                'message': 'PDF file generated and saved successfully.',
+                'data': {'file_url': full_pdf_file_url}
+            })
+
+        except Document.DoesNotExist:
+            return Response({
+                'status': False,
+                'message': 'Document not found.',
+                'data': {}
+            })
+        except Exception as e:
+            return Response({
+                'status': False,
+                'message': str(e),
+                'data': {}
+            })
+            
+
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from django.conf import settings
+import time
+
+class DocumentCertificatePdfExportView(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'document_id'
+    
+    def list(self, request, *args, **kwargs):
+        try:
+            # Get the document_id from the URL parameters
+            document_id = kwargs.get('document_id')
+            document = Document.objects.get(id=document_id)
+
+            # Fetch all actions for the document
+            author_actions = DocumentAuthorApproveAction.objects.filter(document=document).order_by('created_at')
+            reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('created_at')
+            approver_actions = DocumentApproverAction.objects.filter(document=document).order_by('created_at')
+            admin_actions = DocumentDocAdminAction.objects.filter(document=document).order_by('created_at')
+            sendback_actions = DocumentSendBackAction.objects.filter(document=document).order_by('created_at')
+            release_actions = DocumentReleaseAction.objects.filter(document=document).order_by('created_at')
+            effective_actions = DocumentEffectiveAction.objects.filter(document=document).order_by('created_at')
+            revision_actions = DocumentRevisionAction.objects.filter(document=document).order_by('created_at')
+
+            # Combine all actions into one list with a "role" attribute based on the user's group
+            all_actions = []
+
+            def get_user_role(user):
+                """Returns the user's role based on their group."""
+                group_names = user.groups.values_list('name', flat=True)
+                if group_names:
+                    return ', '.join(group_names)
+                return "No Role"
+
+            # Add each action to the list with its dynamically assigned role
+            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in author_actions]
+            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in reviewer_actions]
+            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in approver_actions]
+            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in admin_actions]
+            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in sendback_actions]
+            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in release_actions]
+            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in effective_actions]
+            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in revision_actions]
+
+            # Sort all actions by 'created_at' date
+            all_actions.sort(key=lambda x: x['action'].created_at)
+
+            # Chunk actions to fit on pages
+            chunk_size = 10  # Adjust based on how many rows fit comfortably on a page
+            chunked_actions = [all_actions[i:i + chunk_size] for i in range(0, len(all_actions), chunk_size)]
+
+            # Prepare context for the template
+            context = {
+                'document_title': document.document_title,
+                'document_number': document.document_number,
+                'version': document.version,
+                'department': document.user.department.department_name if document.user.department else '',
+                'effective_date': document.effective_date.strftime('%d-%m-%Y') if document.effective_date else '',
+                'next_review_date': document.revision_date.strftime('%d-%m-%Y') if document.revision_date else '',
+                'logo_url': request.build_absolute_uri(settings.MEDIA_URL + 'certificate_logo_image/logo.jpeg'),
+                'chunked_actions': chunked_actions,
+                'page_break_interval': 3,
+            }
+
+            # Render the template
+            html_template_path = settings.BASE_DIR / 'templates' / 'document_cover_page.html'
+            template = get_template(html_template_path)
+            html = template.render(context)
+
+            # Create a BytesIO buffer to write the PDF to memory
+            buffer = BytesIO()
+
+            # Use xhtml2pdf to generate the PDF from the HTML
+            pisa_status = pisa.CreatePDF(html, dest=buffer)
+
+            # Check if there were any errors during PDF generation
+            if pisa_status.err:
+                return Response({
+                    'status': False,
+                    'message': 'Error occurred while generating the PDF.',
+                    'data': {}
+                })
+
+            # Get the timestamp for the PDF file name
+            timestamp = int(time.time())
+            file_name = f"document_{document_id}_{timestamp}.pdf"
+
+            # Define the file path to save the PDF in 'document_certificare' folder
+            file_path = os.path.join(settings.MEDIA_ROOT, 'document_certificare', file_name)
+
+            # Create the 'document_certificare' folder if it doesn't exist
+            folder_path = os.path.dirname(file_path)
+            if not os.path.exists(folder_path):
+                os.makedirs(folder_path)
+
+            # Save the generated PDF file
+            with open(file_path, 'wb') as f:
+                f.write(buffer.getvalue())
+
+            # Build the file URL
+            pdf_file_url = f"{settings.MEDIA_URL}document_certificare/{file_name}"
+            full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+
+            # Return the response with the PDF URL
+            return Response({
+                'status': True,
+                'message': 'PDF file generated and saved successfully.',
+                'data': full_pdf_file_url,
+            })
+
+        except Document.DoesNotExist:
+            return Response({'status': False,'message': 'Document not found.','data': {}})

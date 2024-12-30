@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+
+        .a4-container {
+            width: 794px; 
+            height: 1123px; 
+            background: white;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+            page-break-before: always;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 8px;
+            border: 1px solid black;
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 100px;
+            display: block;
+            margin-bottom: 20px;
+        }
+
+        .spacer {
+            margin: 30px 0;
+        }
+
+        .action-table {
+            page-break-before: always;
+        }
+
+        @media print {
+            table {
+                page-break-before: always;
+            }
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+
+    </style>
+    <title>Document Actions</title>
+</head>
+<body>
+    <div class="a4-container">
+        <!-- Company Logo Section -->
+        <table>
+            <tr>
+                <td colspan="4" style="text-align: center;">
+                <img src="{{ logo_url }}" alt="Company Logo" style="max-width: 100%; max-height: 100px;">
+                </td>
+            </tr>
+            <tr>
+                <td>Title</td>
+                <td colspan="3">{{ document_title }}</td>
+            </tr>
+            <tr>
+                <td>Number</td>
+                <td colspan="3">{{ document_number }}</td>
+            </tr>
+            <tr>
+                <td>Version</td>
+                <td>{{ version }}</td>
+            </tr>
+            <tr>
+                <td>Department</td>
+                <td colspan="3">{{ department }}</td>
+            </tr>
+        </table>
+
+        <div class="spacer"></div>
+
+        <!-- Actions Section -->
+        {% for actions in chunked_actions %}
+            <table class="action-table">
+                <thead>
+                    <tr>
+                        <th>Role</th>
+                        <th>Department</th>
+                        <th>Designation</th>
+                        <th>Name</th>
+                        <th>Time & Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for action_data in actions %}
+                    <tr>
+                        <td>{{ action_data.role }}</td>
+                        <td>{{ action_data.action.user.department.name }}</td>
+                        <td>{{ action_data.action.user.designation }}</td>
+                        <td>{{ action_data.action.user.name }}</td>
+                        <td>{{ action_data.action.created_at }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if forloop.counter|divisibleby:page_break_interval %}
+                <div style="page-break-before: always;"></div>
+            {% endif %}
+        {% endfor %}
+
+    </div>
+</body>
+</html>
