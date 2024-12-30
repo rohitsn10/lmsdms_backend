@@ -572,17 +572,6 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             if not revision_month:
                 return Response({"status": False, "message": "Revision month is required", "data": []})
 
-            # if revision_date:
-            #     try:
-            #         revision_date = datetime.strptime(revision_date, "%Y-%m-%d")
-            #     except ValueError:
-            #         return Response({
-            #             "status": False,
-            #             "message": "Invalid revision_date format. Use 'YYYY-MM-DD'.",
-            #             "data": []
-            #         })
-
-            # Fetch the default status
             try:
                 default_status = DynamicStatus.objects.get(id=document_current_status_id)  # Assuming status with ID 1 is the default
             except DynamicStatus.DoesNotExist:
@@ -653,7 +642,6 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
 
-
 class DocumentUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DocumentSerializer
@@ -671,13 +659,14 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
                 return Response({'status': False, 'message': 'Document not found'})
 
             # Extract fields from the request data
+            parent_document = request.data.get('parent_document',None)
             document_title = request.data.get('document_title')
-            document_number = request.data.get('document_number')
             document_type_id = request.data.get('document_type')
             document_description = request.data.get('document_description')
-            revision_time = request.data.get('revision_time')
+            revision_month = request.data.get('revision_month', '')
             document_operation = request.data.get('document_operation')
             workflow_id = request.data.get('workflow')
+            training_required = request.data.get('training_required')
             visible_to_users = request.data.get('visible_to_users', [])
 
             # Validate and parse visible_to_users
@@ -698,6 +687,8 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Document type is required", "data": []})
             if not workflow_id:
                 return Response({"status": False, "message": "Workflow is required", "data": []})
+            if not revision_month:
+                return Response({"status": False, "message": "Revision month is required", "data": []})
 
             try:
                 document_type = DocumentType.objects.get(id=document_type_id)
@@ -708,32 +699,31 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
                 workflow = WorkFlowModel.objects.get(id=workflow_id)
             except WorkFlowModel.DoesNotExist:
                 return Response({'status': False, 'message': 'Workflow not found'}, status=400)
-
-
       
-            if document_operation == 'upload_file':
-                word_file = request.FILES['word_file']
-                UploadedDocument.objects.create(
-                    document=document,
-                    word_file=word_file
-                )
+            parent_document_instance = None
+            if parent_document:
+                try:
+                    parent_document_instance = Document.objects.get(id=parent_document)
+                except Document.DoesNotExist:
+                    return Response({"status": False, "message": "Parent document not found", "data": []})
 
             # Update the document fields
             if document_title != '':
                 document.document_title = document_title
-            if document_number != '':
-                document.document_number = document_number
+            if parent_document != '':
+                document.parent_document = parent_document_instance
             if document_type != '':
                 document.document_type = document_type
             if document_description != '':
                 document.document_description = document_description
-            if revision_time != '':
-                document.revision_time = revision_time
+            if revision_month != '':
+                document.revision_month = revision_month
             if document_operation != '':
                 document.document_operation = document_operation
             if workflow != '':
                 document.workflow = workflow
-
+            if training_required != '':
+                document.training_required = training_required
 
             # Update visible_to_users if provided
             if visible_to_users:
@@ -741,6 +731,7 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             
             # Save the updated document
             document.save()
+            UpdateDocumentByUser.objects.create(user=user, document=document)
 
             return Response({"status": True, "message": "Document updated successfully"})
         
@@ -1259,7 +1250,12 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
             reviewer_group = Group.objects.get(name='Reviewer')
             reviewers = CustomUser.objects.filter(groups=reviewer_group)
             department_users = CustomUser.objects.filter(department=user.department)
-            users_to_notify = reviewers.union(department_users).distinct()
+            # users_to_notify = reviewers.union(department_users).distinct()
+            # Combine the querysets and eliminate duplicates
+            users_to_notify = CustomUser.objects.filter(
+                id__in=set(reviewers.values_list('id', flat=True)) | 
+                set(department_users.values_list('id', flat=True))
+            )
             send_document_update_email(user, document_title, users_to_notify)
             
             return Response({"status": True, "message": "Document approval action created successfully"})
@@ -1433,7 +1429,6 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
             user = self.request.user
             document_id = request.data.get('document_id')
             status_id = request.data.get('status')
-            remark = request.data.get('remark')
 
 
             # Validate required fields
@@ -1441,8 +1436,6 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Document is required"})
             if not status_id:
                 return Response({"status": False, "message": "Status is required"})
-            if not remark:
-                return Response({"status": False, "message": "remark is required"})
 
 
             # Fetch the document
@@ -1463,7 +1456,6 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
                 user=user,
                 document=document,
                 status_approve=status,
-                remarks_docadmin = remark
             )
 
             approve_action = DocApprove.objects.create(
@@ -1481,7 +1473,6 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
                     user=user,
                     documentdetails_effective=document,
                     remarks_effective=status,
-                    remarks_docadmin = remark
 
                 )
                 user_department = document.user.department
@@ -1494,7 +1485,6 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
                     user=user,
                     documentdetails_release=document,
                     status_release=status,
-                    remarks_release = remark
                 )
                 user_department = document.user.department
                 department_users = CustomUser.objects.filter(department=user_department)
@@ -1586,7 +1576,6 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
             status_id = request.data.get('status_id')
             effective_date = request.data.get('effective_date')
             revision_date = request.data.get('revision_date')
-            remark = request.data.get('remark')
 
 
             if not document_id:
@@ -1594,9 +1583,6 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
             # if not status_id:
             #     return Response({"status": False, "message": "Status is required"})
             
-            if not remark:
-                return Response({"status": False, "message": "remark is required"})
-
             
             try:
                 status_id = int(status_id)
@@ -1630,7 +1616,6 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                     user=user,
                     document_id=document_id,
                     status_release=status_release,
-                    remarks_release = remark
                 )
                 document.document_current_status = status_release
                 document.save()
@@ -1646,7 +1631,6 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                     document_id=document_id,
                     status_effective=status_release,
                     effective_date = effective_date,
-                    remarks_effective = remark
                 )
                 # Update the document's current status
                 document.effective_date = effective_date
