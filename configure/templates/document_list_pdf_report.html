@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document List Report</title>
+
+    <style>
+        /* General page styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 10px;
+            margin-top: 40px;
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #000;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            font-size: 12px;
+        }
+
+        th {
+            background-color: #f5f5f5;
+        }
+
+        /* Make table responsive for smaller screens */
+        @media screen and (max-width: 768px) {
+            table {
+                width: 100%;
+                font-size: 10px;
+            }
+            th, td {
+                padding: 6px;
+            }
+        }
+
+        /* Ensure images fit within the page */
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Optional: Styling for sections in grid */
+        .section-header {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Title Section -->
+        <h1>Document List Report</h1>
+
+        <!-- Documents List Table -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Document Title</th>
+                    <th>Document Number</th>
+                    <th>Document Type</th>
+                    <th>Status</th>
+                    <th>Template</th>
+                    <th>Assigned To</th>
+                    <th>Version</th>
+                    <th>Created At</th>
+                    <th>Revision Date</th>
+                    <th>Effective Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for document in documents %}
+                <tr>
+                    <td>{{ document.document_title }}</td>
+                    <td>{{ document.document_number }}</td>
+                    <td>{{ document.document_type__document_name }}</td>
+                    <td>{{ document.document_current_status__status }}</td>
+                    <td>{{ document.select_template__template_name }}</td>
+                    <td>{{ document.assigned_to__first_name }} {{ document.assigned_to__last_name }}</td>
+                    <td>{{ document.version }}</td>
+                    <td>{{ document.created_at|date:"d-m-Y" }}</td>
+                    <td>{{ document.revision_date|date:"d-m-Y" }}</td>
+                    <td>{{ document.effective_date|date:"d-m-Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Generated on {{ current_date }}</p>
+        </div>
+    </div>
+</body>
+</html>
