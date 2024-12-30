@@ -1516,15 +1516,13 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
             status_id = request.data.get('status')
             remark = request.data.get('remark')
 
-
             # Validate required fields
             if not document_id:
                 return Response({"status": False, "message": "Document is required"})
             if not status_id:
                 return Response({"status": False, "message": "Status is required"})
             if not remark:
-                return Response({"status": False, "message": "remark is required"})
-
+                return Response({"status": False, "message": "Remark is required"})
 
             # Fetch the document
             try:
@@ -1538,23 +1536,12 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
             except DynamicStatus.DoesNotExist:
                 return Response({"status": False, "message": "Invalid Status ID"})
 
-            # Check if the user is a reviewer for the document creator's department
-            # user_department = document.user.department  # Assuming a department field in the user model
-            # reviewers_in_department = CustomUser.objects.filter(
-            #     department=user_department,
-            #     groups__name="Reviewer"
-            # )
-
-            # Ensure the requesting user is among the reviewers
-            # if user not in reviewers_in_department:
-            #     return Response({"status": False, "message": "You are not authorized to review this document"})
-
             # Create the reviewer action
             document_reviewer_action = DocumentReviewerAction.objects.create(
                 user=user,
                 document=document,
                 status_approve=status,
-                remarks_reviewer = remark
+                remarks_reviewer=remark
             )
             approve_action = DocApprove.objects.create(
                 user=user,
@@ -1562,24 +1549,20 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
                 status_approve=status
             )
 
-            # Check if all reviewers in the department have approved the document
-            # approved_reviewers = DocumentReviewerAction.objects.filter(
-            #     document=document,
-            #     status_approve=status
-            # ).values_list('user', flat=True)
-
-            # all_reviewers_approved = all(reviewer.id in approved_reviewers for reviewer in reviewers_in_department)
-
-            # Update document current status only if all reviewers have approved
-            # if all_reviewers_approved:
+            # Update document current status
             document.document_current_status = status
             document.assigned_to = None
             document.save()
-            document_title  = document.document_title
+
+            # Send approval notification to approvers and department users
+            document_title = document.document_title
             approver_user = Group.objects.get(name='Approver')
             approvers = CustomUser.objects.filter(groups=approver_user)
             department_users = CustomUser.objects.filter(department=document.user.department)
-            users_to_notify = approvers.union(department_users).distinct()
+            
+            # Use union without distinct() to avoid the error
+            users_to_notify = approvers.union(department_users)
+
             send_document_approval_email(user, document_title, users_to_notify)
 
             return Response({
@@ -1589,6 +1572,7 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
 
 
 class DocumentApproverActionCreateViewSet(viewsets.ModelViewSet):
@@ -1642,12 +1626,17 @@ class DocumentApproverActionCreateViewSet(viewsets.ModelViewSet):
             document.document_current_status = status
             document.assigned_to = None
             document.save()
-            document_title  = document.document_title
+            # Send approval notification to approvers and department users
+            document_title = document.document_title
             approver_user = Group.objects.get(name='Doc Admin')
             approvers = CustomUser.objects.filter(groups=approver_user)
             department_users = CustomUser.objects.filter(department=document.user.department)
-            users_to_notify = approvers.union(department_users).distinct()
+
+            # Use union without distinct() to avoid the error
+            users_to_notify = approvers.union(department_users)
+
             send_document_approval_email(user, document_title, users_to_notify)
+
             return Response({
                 "status": True,
                 "message": "Document approver action created successfully",
