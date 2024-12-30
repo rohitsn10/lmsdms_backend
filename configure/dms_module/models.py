@@ -79,6 +79,9 @@ class Document(models.Model):
     effective_date = models.DateTimeField(blank=True, null=True)  # New field added
     reminder_sent = models.BooleanField(default=False)
     reminder_sent_times = models.JSONField(default=list)
+    approver = models.ForeignKey(CustomUser,related_name="approver_documents",on_delete=models.SET_NULL,blank=True,null=True)
+    doc_admin = models.ForeignKey(CustomUser,related_name="doc_admin_documents",on_delete=models.SET_NULL,blank=True,null=True)
+    author = models.ForeignKey(CustomUser,related_name="author_documents",on_delete=models.SET_NULL,blank=True,null=True)
     
 class UploadedDocument(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE)  
