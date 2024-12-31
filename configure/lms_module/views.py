@@ -1463,6 +1463,42 @@ class TrainingQuestionCreateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
+class TrainingIdWiseQuestionsViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingQuestinSerializer
+    queryset = TrainingQuestions.objects.all().order_by('-question_created_at')
+    lookup_field = 'training_id'
+
+
+    def list(self, request, *args, **kwargs):
+        try:
+            training_id = self.kwargs.get('training_id')
+            if not training_id:
+                return Response({
+                    "status": False,
+                    "message": "Training ID is required.",
+                    "data": []
+                })
+
+            queryset = self.filter_queryset(self.get_queryset().filter(training_id=training_id))
+            serializer = TrainingQuestinSerializer(queryset, many=True, context={'request': request})
+            data = serializer.data
+
+            return Response({
+                "status": True,
+                "message": "Training question list fetched successfully",
+                "data": data
+            })
+
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": "Something went wrong",
+                "error": str(e)
+            })
+
+
+
 class TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TrainingQuestinSerializer

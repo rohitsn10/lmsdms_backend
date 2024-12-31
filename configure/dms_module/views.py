@@ -829,6 +829,70 @@ class DocumentViewSet(viewsets.ModelViewSet):
             return Response({"status": False,'message': 'Something went wrong','error': str(e)})
 
 
+# class DocumentViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     serializer_class = DocumentviewSerializer
+#     queryset = Document.objects.all().order_by('-id')
+#     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+#     search_fields = ['document_title', 'document_number', 'document_description', 'document_type__name']
+#     ordering_fields = ['document_title', 'created_at']
+
+#     def list(self, request):
+#         try:
+#             user = self.request.user 
+#             user_group_ids = user.groups.values_list('id', flat=True)
+#             department_id = request.query_params.get('department_id', None)
+#             document_current_status = request.query_params.get('document_current_status', None)
+
+#             if user == user.author_documents.first():
+#                 # Author: Can view department-wise documents
+#                 if department_id:
+#                     queryset = Document.objects.filter(user__department_id=department_id).order_by('-id')
+#                 else:
+#                     queryset = Document.objects.filter(user=user).order_by('-id')
+#             else:
+#                 # Other roles: View documents assigned to them
+#                 queryset = Document.objects.filter(
+#                     Q(approver=user) |
+#                     Q(doc_admin=user) |
+#                     Q(visible_to_users=user)
+#                 ).distinct()
+
+#             # Filter by document_current_status if provided
+#             if document_current_status:
+#                 queryset = queryset.filter(document_current_status=document_current_status)
+
+#             # Apply additional filters from the backend
+#             queryset = self.filter_queryset(queryset)
+
+#             if queryset.exists():
+#                 serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+#                 return Response({
+#                     "status": True,
+#                     "message": "Documents fetched successfully",
+#                     'user_group_ids': list(user_group_ids),
+#                     'data': serializer.data,
+#                 })
+#             else:
+#                 return Response({
+#                     "status": True,
+#                     "message": "No Documents found",
+#                     'user_group_ids': list(user_group_ids),
+#                     "data": []
+#                 })
+
+#         except Exception as e:
+#             return Response({
+#                 "status": False,
+#                 'message': 'Something went wrong',
+#                 'error': str(e)
+#             })
+
+
+
+
+
+
 
 class DocumentExcelGenerateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
