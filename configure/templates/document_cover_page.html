@@ -80,7 +80,7 @@
                 <col>
             </colgroup>
             <tr>
-                <td colspan="4" style="text-align: center;">
+                <td colspan="4" style="text-align: left;">
                     <img src={{logo}} alt="Company Logo" class="logo" width="100">
                 </td>
             </tr>
@@ -113,11 +113,11 @@
             </colgroup>
             <tr>
                 <td>Effective Date</td>
-                <td contenteditable="true">{{document.effective_date}}</td>
+                <td contenteditable="true">{{document.effective_date|date:"d-m-Y"}}</td>
             </tr>
             <tr>
                 <td>Revision Date</td>
-                <td contenteditable="true">{{document.revision_date}}</td>
+                <td contenteditable="true">{{document.revision_date|date:"d-m-Y"}}</td>
             </tr>
         </table>
 
@@ -129,7 +129,7 @@
                 <th>Department</th>
                 <th>Designation</th>
                 <th>User Name</th>
-                <th>Time & Date</th>
+                <th>Date</th>
             </tr>
             {% for action in all_actions %}
             <tr>
@@ -145,7 +145,7 @@
                 <td>{{ action.user.department.department_name }}</td>
                 <td>{{ action.user.designation }}</td>
                 <td>{{ action.user.first_name }} {{ action.user.last_name }}</td>
-                <td>{{ action.created_at }}</td>
+                <td>{{ action.created_at|date:"d-m-Y" }}</td>
             </tr>
             {% endfor %}
         </table>

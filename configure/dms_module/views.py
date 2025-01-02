@@ -16,6 +16,9 @@ import time
 import openpyxl
 from openpyxl.utils import get_column_letter
 from io import BytesIO
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -3095,11 +3098,7 @@ class DocumentCertificatePdfExportView(viewsets.ModelViewSet):
             })
             
 
-from django.template.loader import get_template
-from xhtml2pdf import pisa
-from django.conf import settings
-import time
-from django.http import HttpResponse
+
 
 class DocumentCertificatePdfExportView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -3125,23 +3124,24 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             template = get_template('document_cover_page.html')
             html = template.render(context)
 
-            # Convert the HTML to PDF
-            response = HttpResponse(content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename=document_{document_id}_certificate.pdf'
-
-            # Use xhtml2pdf to convert the HTML into a PDF
-            pisa_status = pisa.CreatePDF(html, dest=response)
+            timestamp = int(time.time())  # Timestamp in seconds
+            filename = f"document_certificate_cover{timestamp}.pdf"
+            file_path = os.path.join(settings.MEDIA_ROOT, 'document_cover', filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'wb') as output_file:
+                pisa_status = pisa.CreatePDF(html, dest=output_file)
 
             if pisa_status.err:
-                return HttpResponse("Error generating PDF", status=500)
-
-            return response
+                return Response({"status": False, "message": "Error occurred while generating PDF", "data": ""})
+            
+            pdf_file_url = f"{settings.MEDIA_URL}document_cover/{filename}"
+            full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+            return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
 
         except Document.DoesNotExist:
-            return HttpResponse("Document not found", status=404)
-
+            return Response({"status": False, "message": "Document not found", "data": ""})
         except Exception as e:
-            return HttpResponse(f"An error occurred: {str(e)}", status=500)
+            return Response({"status": False, "message": str(e), "data": ""})
 
     def get_document_actions(self, document):
         actions = []
