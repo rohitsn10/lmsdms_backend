@@ -16,6 +16,9 @@ import time
 import openpyxl
 from openpyxl.utils import get_column_letter
 from io import BytesIO
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -806,6 +809,67 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
 #         except Exception as e:
 #             return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
 
+
+# class DocumentViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     serializer_class = DocumentviewSerializer
+#     queryset = Document.objects.all().order_by('-id')
+#     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+#     search_fields = ['document_title', 'document_number', 'document_description', 'document_type__name']
+#     ordering_fields = ['document_title', 'created_at'] 
+
+#     def list(self, request):
+#         try:
+#             user = self.request.user 
+#             user_group_ids = user.groups.values_list('id', flat=True)
+#             user_department = user.department if user.department else None
+#             department_id = request.query_params.get('department_id', None)
+#             document_current_status = request.query_params.get('document_current_status', None)
+#             start_date = request.query_params.get('start_date', None)
+#             end_date = request.query_params.get('end_date', None)
+
+#             start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+#             if error:
+#                 return Response({"status": False, "message": error, "data": [],"user_group_ids": list(user_group_ids)})
+            
+#             if start_date_obj:
+#                 start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+#             if end_date_obj:
+#                 end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+                
+#             if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+#                 if department_id:
+#                     queryset = Document.objects.filter(user__department_id=department_id).order_by('-id')
+#                 else:
+#                     queryset = Document.objects.all().order_by('-id')
+
+#             elif user.groups.filter(name='Reviewer').exists():
+#                 queryset = Document.objects.filter(visible_to_users=user).order_by('-id')
+#             elif user_department:
+#                 queryset = Document.objects.filter(user__department=user_department).order_by('-id')
+#             else:
+#                 queryset = Document.objects.none()
+
+#             if start_date_obj and end_date_obj:
+#                 queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
+#             if document_current_status:
+#                 # Filter by document_current_status if provided
+#                 queryset = queryset.filter(document_current_status=document_current_status)
+            
+#             queryset = self.filter_queryset(queryset)
+
+#             if queryset.exists():
+#                 serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+#                 return Response({"status": True,"message": "Documents fetched successfully",'user_group_ids': list(user_group_ids) ,'data': serializer.data,})
+#             else:
+#                 return Response({"status": True,"message": "No Documents found",'user_group_ids': list(user_group_ids),"data": []})
+        
+#         except Exception as e:
+#             return Response({"status": False,'message': 'Something went wrong','error': str(e)})
+
+
+
 # class DocumentViewSet(viewsets.ModelViewSet):
 #     permission_classes = [permissions.IsAuthenticated]
 #     serializer_class = DocumentviewSerializer
@@ -866,6 +930,17 @@ class DocumentViewSet(viewsets.ModelViewSet):
             user_group_ids = list(user.groups.values_list('id', flat=True))
             department_id = self.request.query_params.get('department_id', None)
             document_current_status = request.query_params.get('document_current_status', None)
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+            if error:
+                return Response({"status": False, "message": error, "data": [],"user_group_ids": list(user_group_ids)})
+            
+            if start_date_obj:
+                start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+            if end_date_obj:
+                end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
 
             # Check if the user is in the "Author" group
             if user.groups.filter(name="Author").exists():
@@ -892,7 +967,9 @@ class DocumentViewSet(viewsets.ModelViewSet):
             if document_current_status:
                 queryset = queryset.filter(document_current_status=document_current_status)
 
-            # Apply additional filters from the backend
+            if start_date_obj and end_date_obj:
+                queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
             queryset = self.filter_queryset(queryset)
 
             if queryset.exists():
@@ -3056,116 +3133,78 @@ class DocumentCertificatePdfExportView(viewsets.ModelViewSet):
             })
             
 
-from django.template.loader import get_template
-from xhtml2pdf import pisa
-from django.conf import settings
-import time
 
-class DocumentCertificatePdfExportView(viewsets.ModelViewSet):
+
+class DocumentCertificatePdfExportView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'document_id'
     
     def list(self, request, *args, **kwargs):
+        document_id = kwargs.get('document_id')
         try:
-            # Get the document_id from the URL parameters
-            document_id = kwargs.get('document_id')
+            # Fetch the document
             document = Document.objects.get(id=document_id)
-
+            
             # Fetch all actions for the document
-            author_actions = DocumentAuthorApproveAction.objects.filter(document=document).order_by('created_at')
-            reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('created_at')
-            approver_actions = DocumentApproverAction.objects.filter(document=document).order_by('created_at')
-            admin_actions = DocumentDocAdminAction.objects.filter(document=document).order_by('created_at')
-            sendback_actions = DocumentSendBackAction.objects.filter(document=document).order_by('created_at')
-            release_actions = DocumentReleaseAction.objects.filter(document=document).order_by('created_at')
-            effective_actions = DocumentEffectiveAction.objects.filter(document=document).order_by('created_at')
-            revision_actions = DocumentRevisionAction.objects.filter(document=document).order_by('created_at')
-
-            # Combine all actions into one list with a "role" attribute based on the user's group
-            all_actions = []
-
-            def get_user_role(user):
-                """Returns the user's role based on their group."""
-                group_names = user.groups.values_list('name', flat=True)
-                if group_names:
-                    return ', '.join(group_names)
-                return "No Role"
-
-            # Add each action to the list with its dynamically assigned role
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in author_actions]
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in reviewer_actions]
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in approver_actions]
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in admin_actions]
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in sendback_actions]
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in release_actions]
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in effective_actions]
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in revision_actions]
-
-            # Sort all actions by 'created_at' date
-            all_actions.sort(key=lambda x: x['action'].created_at)
-
-            # Chunk actions to fit on pages
-            chunk_size = 10  # Adjust based on how many rows fit comfortably on a page
-            chunked_actions = [all_actions[i:i + chunk_size] for i in range(0, len(all_actions), chunk_size)]
-
-            # Prepare context for the template
+            all_actions = self.get_document_actions(document)
+            
+            # Define the context for the template
             context = {
-                'document_title': document.document_title,
-                'document_number': document.document_number,
-                'version': document.version,
-                'department': document.user.department.department_name if document.user.department else '',
-                'effective_date': document.effective_date.strftime('%d-%m-%Y') if document.effective_date else '',
-                'next_review_date': document.revision_date.strftime('%d-%m-%Y') if document.revision_date else '',
-                'logo_url': request.build_absolute_uri(settings.MEDIA_URL + 'certificate_logo_image/logo.jpeg'),
-                'chunked_actions': chunked_actions,
-                'page_break_interval': 3,
+                'document': document,
+                'all_actions': all_actions,
+                'logo': os.path.join(settings.BASE_DIR, 'static', 'certificate_logo_image', 'logo.jpeg')
             }
-
-            # Render the template
-            html_template_path = settings.BASE_DIR / 'templates' / 'document_cover_page.html'
-            template = get_template(html_template_path)
+            
+            # Render the template with context data
+            template = get_template('document_cover_page.html')
             html = template.render(context)
 
-            # Create a BytesIO buffer to write the PDF to memory
-            buffer = BytesIO()
+            timestamp = int(time.time())  # Timestamp in seconds
+            filename = f"document_certificate_cover{timestamp}.pdf"
+            file_path = os.path.join(settings.MEDIA_ROOT, 'document_cover', filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'wb') as output_file:
+                pisa_status = pisa.CreatePDF(html, dest=output_file)
 
-            # Use xhtml2pdf to generate the PDF from the HTML
-            pisa_status = pisa.CreatePDF(html, dest=buffer)
-
-            # Check if there were any errors during PDF generation
             if pisa_status.err:
-                return Response({
-                    'status': False,
-                    'message': 'Error occurred while generating the PDF.',
-                    'data': {}
-                })
-
-            # Get the timestamp for the PDF file name
-            timestamp = int(time.time())
-            file_name = f"document_{document_id}_{timestamp}.pdf"
-
-            # Define the file path to save the PDF in 'document_certificare' folder
-            file_path = os.path.join(settings.MEDIA_ROOT, 'document_certificare', file_name)
-
-            # Create the 'document_certificare' folder if it doesn't exist
-            folder_path = os.path.dirname(file_path)
-            if not os.path.exists(folder_path):
-                os.makedirs(folder_path)
-
-            # Save the generated PDF file
-            with open(file_path, 'wb') as f:
-                f.write(buffer.getvalue())
-
-            # Build the file URL
-            pdf_file_url = f"{settings.MEDIA_URL}document_certificare/{file_name}"
+                return Response({"status": False, "message": "Error occurred while generating PDF", "data": ""})
+            
+            pdf_file_url = f"{settings.MEDIA_URL}document_cover/{filename}"
             full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+            return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
 
-            # Return the response with the PDF URL
-            return Response({
-                'status': True,
-                'message': 'PDF file generated and saved successfully.',
-                'data': full_pdf_file_url,
-            })
+        except Document.DoesNotExist:
+            return Response({"status": False, "message": "Document not found", "data": ""})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": ""})
+
+    def get_document_actions(self, document):
+        actions = []
+        action_models = [
+            DocumentAuthorApproveAction,
+            DocumentReviewerAction,
+            DocumentApproverAction,
+            DocumentDocAdminAction,
+            DocumentSendBackAction,
+            DocumentReleaseAction,
+            DocumentEffectiveAction,
+            DocumentRevisionAction,
+        ]
+        
+        for model in action_models:
+            actions.extend(model.objects.filter(document=document).order_by('created_at'))
+        
+        return actions
+
+
+
+
+
+class DocumentNintyDaysDataViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
 
         except Document.DoesNotExist:
             return Response({'status': False,'message': 'Document not found.','data': {}})
@@ -3262,3 +3301,776 @@ class UpdateDocumentUserViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            current_time = timezone.localtime(timezone.now())
+            is_doc_admin = user.groups.filter(name="Doc Admin").exists()
+
+            ninety_days_from_now = current_time + timedelta(days=90)
+            documents = Document.objects.filter(revision_date__gte=current_time, revision_date__lte=ninety_days_from_now)
+
+            if is_doc_admin:
+                department = request.query_params.get('department_id', None)
+                if department:
+                    documents = documents.filter(user__department=department)
+            else:
+                user_department = user.department
+                documents = documents.filter(user__department=user_department)
+
+            document_count = documents.count()
+
+            serializer = DocumentviewSerializer(documents, many=True, context={'request': request})
+            data = serializer.data
+
+            return Response({"status": True,"message": "Documents fetched successfully","data_count": document_count,"data": data})
+        except Exception as e:
+            return Response({"status": False,'message': 'Something went wrong','error': str(e)})
+        
+
+class DateWiseDocumentDatacountViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            is_doc_admin = user.groups.filter(name="Doc Admin").exists()
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+
+            if error:
+                return Response({"status": False,"message": error,"data_count": 0,"data": []})
+
+            if not start_date_obj or not end_date_obj:
+                documents = Document.objects.all()
+            else:
+                documents = Document.objects.filter(created_at__gte=start_date_obj, created_at__lte=end_date_obj)
+
+            if is_doc_admin:
+                department = request.query_params.get('department_id', None)
+                if department:
+                    documents = documents.filter(user__department=department)
+            else:
+                user_department = user.department
+                documents = documents.filter(user__department=user_department)
+
+            document_count = documents.count()
+
+            serializer = DocumentviewSerializer(documents, many=True, context={'request': request})
+            data = serializer.data
+            return Response({"status": True,"message": "Documents fetched successfully","data_count": document_count,"data": data})
+
+        except Exception as e:
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+
+
+
+class DocumentDataOfStatusIdOne(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            user_group_ids = user.groups.values_list('id', flat=True)
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            # Fixed status_id = 1 (You can change it to another ID if needed)
+            fixed_status_id = 1
+
+            # Fetch the status object for status_id = 1 (Fixed Status)
+            status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
+            if not status_obj:
+                return Response({"status": False, "message": "Status not found", "data": []})
+
+            # Filter documents based on the fixed status_id
+            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
+
+            # Handle department-specific filtering for non-admin users
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = queryset.filter(user__department_id=department_id)
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = queryset.filter(visible_to_users=user)
+            elif user_department:
+                queryset = queryset.filter(user__department=user_department)
+
+            if start_date and end_date:
+                start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+                if error:
+                    return Response({"status": False, "message": error, "data": []})
+    
+                if start_date_obj:
+                    start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+                if end_date_obj:
+                    end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+    
+                if start_date_obj and end_date_obj:
+                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
+            document_count = queryset.count()
+
+            serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+            if queryset.exists():
+                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
+
+        except Exception as e:
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+
+
+class DocumentDataOfStatusIdTwo(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            user_group_ids = user.groups.values_list('id', flat=True)
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            fixed_status_id = 2
+            status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
+            if not status_obj:
+                return Response({"status": False, "message": "Status not found", "data": []})
+
+            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
+
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = queryset.filter(user__department_id=department_id)
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = queryset.filter(visible_to_users=user)
+            elif user_department:
+                queryset = queryset.filter(user__department=user_department)
+
+            if start_date and end_date:
+                start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+                if error:
+                    return Response({"status": False, "message": error, "data": []})
+    
+                if start_date_obj:
+                    start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+                if end_date_obj:
+                    end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+    
+                if start_date_obj and end_date_obj:
+                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
+            document_count = queryset.count()
+
+            serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+            if queryset.exists():
+                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
+
+        except Exception as e:
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+        
+class DocumentDataOfStatusIdThree(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            user_group_ids = user.groups.values_list('id', flat=True)
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            fixed_status_id = 2
+            status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
+            if not status_obj:
+                return Response({"status": False, "message": "Status not found", "data": []})
+
+            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
+
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = queryset.filter(user__department_id=department_id)
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = queryset.filter(visible_to_users=user)
+            elif user_department:
+                queryset = queryset.filter(user__department=user_department)
+
+            if start_date and end_date:
+                start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+                if error:
+                    return Response({"status": False, "message": error, "data": []})
+    
+                if start_date_obj:
+                    start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+                if end_date_obj:
+                    end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+    
+                if start_date_obj and end_date_obj:
+                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
+            document_count = queryset.count()
+
+            serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+            if queryset.exists():
+                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
+
+        except Exception as e:
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+        
+class DocumentDataOfStatusIdFour(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            user_group_ids = user.groups.values_list('id', flat=True)
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            fixed_status_id = 2
+            status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
+            if not status_obj:
+                return Response({"status": False, "message": "Status not found", "data": []})
+
+            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
+
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = queryset.filter(user__department_id=department_id)
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = queryset.filter(visible_to_users=user)
+            elif user_department:
+                queryset = queryset.filter(user__department=user_department)
+
+            if start_date and end_date:
+                start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+                if error:
+                    return Response({"status": False, "message": error, "data": []})
+    
+                if start_date_obj:
+                    start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+                if end_date_obj:
+                    end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+    
+                if start_date_obj and end_date_obj:
+                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
+            document_count = queryset.count()
+
+            serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+            if queryset.exists():
+                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
+
+        except Exception as e:
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+        
+
+class DocumentDataOfStatusIdFive(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            user_group_ids = user.groups.values_list('id', flat=True)
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            fixed_status_id = 2
+            status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
+            if not status_obj:
+                return Response({"status": False, "message": "Status not found", "data": []})
+
+            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
+
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = queryset.filter(user__department_id=department_id)
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = queryset.filter(visible_to_users=user)
+            elif user_department:
+                queryset = queryset.filter(user__department=user_department)
+
+            if start_date and end_date:
+                start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+                if error:
+                    return Response({"status": False, "message": error, "data": []})
+    
+                if start_date_obj:
+                    start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+                if end_date_obj:
+                    end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+    
+                if start_date_obj and end_date_obj:
+                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
+            document_count = queryset.count()
+
+            serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+            if queryset.exists():
+                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
+
+        except Exception as e:
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+        
+
+class DocumentDataOfStatusIdSix(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            user_group_ids = user.groups.values_list('id', flat=True)
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            fixed_status_id = 2
+            status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
+            if not status_obj:
+                return Response({"status": False, "message": "Status not found", "data": []})
+
+            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
+
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = queryset.filter(user__department_id=department_id)
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = queryset.filter(visible_to_users=user)
+            elif user_department:
+                queryset = queryset.filter(user__department=user_department)
+
+            if start_date and end_date:
+                start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+                if error:
+                    return Response({"status": False, "message": error, "data": []})
+    
+                if start_date_obj:
+                    start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+                if end_date_obj:
+                    end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+    
+                if start_date_obj and end_date_obj:
+                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
+            document_count = queryset.count()
+
+            serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+            if queryset.exists():
+                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
+
+        except Exception as e:
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+        
+
+class DocumentDataOfStatusIdSeven(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            user_group_ids = user.groups.values_list('id', flat=True)
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            fixed_status_id = 2
+            status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
+            if not status_obj:
+                return Response({"status": False, "message": "Status not found", "data": []})
+
+            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
+
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = queryset.filter(user__department_id=department_id)
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = queryset.filter(visible_to_users=user)
+            elif user_department:
+                queryset = queryset.filter(user__department=user_department)
+
+            if start_date and end_date:
+                start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+                if error:
+                    return Response({"status": False, "message": error, "data": []})
+    
+                if start_date_obj:
+                    start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+                if end_date_obj:
+                    end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+    
+                if start_date_obj and end_date_obj:
+                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
+            document_count = queryset.count()
+
+            serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+            if queryset.exists():
+                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
+
+        except Exception as e:
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+
+
+class DocumentDataOfStatusIdEight(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            user_group_ids = user.groups.values_list('id', flat=True)
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            fixed_status_id = 2
+            status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
+            if not status_obj:
+                return Response({"status": False, "message": "Status not found", "data": []})
+
+            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
+
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = queryset.filter(user__department_id=department_id)
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = queryset.filter(visible_to_users=user)
+            elif user_department:
+                queryset = queryset.filter(user__department=user_department)
+
+            if start_date and end_date:
+                start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+                if error:
+                    return Response({"status": False, "message": error, "data": []})
+    
+                if start_date_obj:
+                    start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+                if end_date_obj:
+                    end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+    
+                if start_date_obj and end_date_obj:
+                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
+            document_count = queryset.count()
+
+            serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+            if queryset.exists():
+                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
+
+        except Exception as e:
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+        
+class DocumentDataOfStatusIdNine(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            user_group_ids = user.groups.values_list('id', flat=True)
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            fixed_status_id = 2
+            status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
+            if not status_obj:
+                return Response({"status": False, "message": "Status not found", "data": []})
+
+            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
+
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = queryset.filter(user__department_id=department_id)
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = queryset.filter(visible_to_users=user)
+            elif user_department:
+                queryset = queryset.filter(user__department=user_department)
+
+            if start_date and end_date:
+                start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+                if error:
+                    return Response({"status": False, "message": error, "data": []})
+    
+                if start_date_obj:
+                    start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+                if end_date_obj:
+                    end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+    
+                if start_date_obj and end_date_obj:
+                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
+            document_count = queryset.count()
+
+            serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+            if queryset.exists():
+                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
+
+        except Exception as e:
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+        
+
+class DocumentDataOfStatusIdTen(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            user_group_ids = user.groups.values_list('id', flat=True)
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            fixed_status_id = 2
+            status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
+            if not status_obj:
+                return Response({"status": False, "message": "Status not found", "data": []})
+
+            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
+
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = queryset.filter(user__department_id=department_id)
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = queryset.filter(visible_to_users=user)
+            elif user_department:
+                queryset = queryset.filter(user__department=user_department)
+
+            if start_date and end_date:
+                start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+                if error:
+                    return Response({"status": False, "message": error, "data": []})
+    
+                if start_date_obj:
+                    start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+                if end_date_obj:
+                    end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+    
+                if start_date_obj and end_date_obj:
+                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
+            document_count = queryset.count()
+
+            serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+            if queryset.exists():
+                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
+
+        except Exception as e:
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+        
+
+
+class DocumentDataOfStatusIdEleven(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            user_group_ids = user.groups.values_list('id', flat=True)
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            fixed_status_id = 2
+            status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
+            if not status_obj:
+                return Response({"status": False, "message": "Status not found", "data": []})
+
+            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
+
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = queryset.filter(user__department_id=department_id)
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = queryset.filter(visible_to_users=user)
+            elif user_department:
+                queryset = queryset.filter(user__department=user_department)
+
+            if start_date and end_date:
+                start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+                if error:
+                    return Response({"status": False, "message": error, "data": []})
+    
+                if start_date_obj:
+                    start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+                if end_date_obj:
+                    end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+    
+                if start_date_obj and end_date_obj:
+                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
+            document_count = queryset.count()
+
+            serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+            if queryset.exists():
+                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
+
+        except Exception as e:
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+        
+
+class DocumentDataOfStatusIdTwelve(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            user_group_ids = user.groups.values_list('id', flat=True)
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            fixed_status_id = 2
+            status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
+            if not status_obj:
+                return Response({"status": False, "message": "Status not found", "data": []})
+
+            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
+
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = queryset.filter(user__department_id=department_id)
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = queryset.filter(visible_to_users=user)
+            elif user_department:
+                queryset = queryset.filter(user__department=user_department)
+
+            if start_date and end_date:
+                start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+                if error:
+                    return Response({"status": False, "message": error, "data": []})
+    
+                if start_date_obj:
+                    start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+                if end_date_obj:
+                    end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+    
+                if start_date_obj and end_date_obj:
+                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
+            document_count = queryset.count()
+
+            serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+            if queryset.exists():
+                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
+
+        except Exception as e:
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+        
+
+class DocumentDataOfStatusIdThirteen(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            user_group_ids = user.groups.values_list('id', flat=True)
+            user_department = user.department if user.department else None
+            department_id = request.query_params.get('department_id', None)
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+
+            fixed_status_id = 2
+            status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
+            if not status_obj:
+                return Response({"status": False, "message": "Status not found", "data": []})
+
+            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
+
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                if department_id:
+                    queryset = queryset.filter(user__department_id=department_id)
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset = queryset.filter(visible_to_users=user)
+            elif user_department:
+                queryset = queryset.filter(user__department=user_department)
+
+            if start_date and end_date:
+                start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+                if error:
+                    return Response({"status": False, "message": error, "data": []})
+    
+                if start_date_obj:
+                    start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+                if end_date_obj:
+                    end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+    
+                if start_date_obj and end_date_obj:
+                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
+
+            document_count = queryset.count()
+
+            serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+            if queryset.exists():
+                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
+
+        except Exception as e:
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+

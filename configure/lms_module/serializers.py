@@ -240,15 +240,16 @@ class TrainingMatrixAssignUserSerializer(serializers.ModelSerializer):
     assigned_user_details = serializers.SerializerMethodField()
     assigned_by_details = serializers.SerializerMethodField()
     assigned_role_name = serializers.SerializerMethodField()
+
     class Meta:
         model = TrainingMatrix
         fields = [
-            'id', 'training', 'training_duration', 'evaluation_status','assigned_user',
+            'id', 'training', 'training_duration', 'evaluation_status', 'assigned_user',
             'assigned_user_details', 'assigned_by', 'assigned_by_details', 'assigned_role', 'assigned_role_name', 'due_reason'
         ]
     
     def get_assigned_user_details(self, obj):
-
+        # Get details of all users in assigned_user (ManyToManyField)
         users = obj.assigned_user.all()
         return [
             {
@@ -258,19 +259,20 @@ class TrainingMatrixAssignUserSerializer(serializers.ModelSerializer):
             }
             for user in users
         ]
-    
+
     def get_assigned_by_details(self, obj):
-        users = obj.assigned_by.all()
-        return [
-            {
+        # Check if assigned_by exists (ForeignKey to a single CustomUser)
+        if obj.assigned_by:
+            user = obj.assigned_by
+            return {
                 'id': user.id,
                 'first_name': user.first_name,
                 'last_name': user.last_name
             }
-            for user in users
-        ]
-    
+        return None
+
     def get_assigned_role_name(self, obj):
+        # Return the role name if assigned_role exists
         if obj.assigned_role:
             return obj.assigned_role.job_role_name
         return None
