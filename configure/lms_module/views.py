@@ -1498,8 +1498,8 @@ class TrainingIdWiseQuestionsViewSet(viewsets.ModelViewSet):
             })
 
 
-
-class TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
+import ipdb
+class   TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TrainingQuestinSerializer
     queryset = TrainingQuestions.objects.all().order_by('-question_created_at')
@@ -1579,12 +1579,11 @@ class TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         try:
-            section_id = self.kwargs.get('section_id')
-            
+            training_question_id = self.kwargs.get('training_question_id')
             try:
-                section = TrainingQuestions.objects.get(id=section_id)
+                section = TrainingQuestions.objects.get(id=training_question_id)
             except TrainingQuestions.DoesNotExist:
-                return Response({"status": False, "message": "Section ID not found", "data": []})
+                return Response({"status": False, "message": "Question ID not found", "data": []})
             
             section.delete()
             return Response({"status": True, "message": "Training question deleted successfully", "data": []})
