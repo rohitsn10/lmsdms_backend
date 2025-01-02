@@ -1498,8 +1498,7 @@ class TrainingIdWiseQuestionsViewSet(viewsets.ModelViewSet):
             })
 
 
-import ipdb
-class   TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
+class TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TrainingQuestinSerializer
     queryset = TrainingQuestions.objects.all().order_by('-question_created_at')
