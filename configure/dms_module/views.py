@@ -548,22 +548,22 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             workflow = request.data.get('workflow')
             document_current_status_id = request.data.get('document_current_status_id')
             training_required = request.data.get('training_required')
-            visible_to_users = request.data.get('visible_to_users', [])
-            approver = request.data.get('approver')
-            doc_admin = request.data.get('doc_admin')
+            # visible_to_users = request.data.get('visible_to_users', [])
+            # approver = request.data.get('approver')
+            # doc_admin = request.data.get('doc_admin')
 
 
              # Ensure visible_to_users is parsed into a proper list
-            if isinstance(visible_to_users, str):
-                import json
-                try:
-                    visible_to_users = json.loads(visible_to_users)
-                except json.JSONDecodeError:
-                    return Response({
-                        "status": False,
-                        "message": "Invalid format for visible_to_users. Provide a valid list of IDs.",
-                        "data": []
-                    })
+            # if isinstance(visible_to_users, str):
+            #     import json
+            #     try:
+            #         visible_to_users = json.loads(visible_to_users)
+            #     except json.JSONDecodeError:
+            #         return Response({
+            #             "status": False,
+            #             "message": "Invalid format for visible_to_users. Provide a valid list of IDs.",
+            #             "data": []
+            #         })
 
             # Validation for required fields
             if not document_title:
@@ -576,10 +576,10 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                     return Response({"status": False, "message": "Template selection is required", "data": []})
             if not revision_month:
                 return Response({"status": False, "message": "Revision month is required", "data": []})
-            if not approver:
-                return Response({"status": False, "message": "Please select Approver", "data": []})
-            if not doc_admin:
-                return Response({"status": False, "message": "Please select Doc Admin", "data": []})
+            # if not approver:
+            #     return Response({"status": False, "message": "Please select Approver", "data": []})
+            # if not doc_admin:
+            #     return Response({"status": False, "message": "Please select Doc Admin", "data": []})
 
             try:
                 default_status = DynamicStatus.objects.get(id=document_current_status_id)  # Assuming status with ID 1 is the default
@@ -592,15 +592,15 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             except DocumentType.DoesNotExist:
                 return Response({"status": False, "message": "Document type not found", "data": []})
             
-            try:
-                approver_user = CustomUser.objects.get(id=approver)
-            except DocumentType.DoesNotExist:
-                return Response({"status": False, "message": "Approver user not found", "data": []})
+            # try:
+            #     approver_user = CustomUser.objects.get(id=approver)
+            # except DocumentType.DoesNotExist:
+            #     return Response({"status": False, "message": "Approver user not found", "data": []})
             
-            try:
-                docadmin_user = CustomUser.objects.get(id=doc_admin)
-            except DocumentType.DoesNotExist:
-                return Response({"status": False, "message": "Doc Admin user not found", "data": []})
+            # try:
+            #     docadmin_user = CustomUser.objects.get(id=doc_admin)
+            # except DocumentType.DoesNotExist:
+            #     return Response({"status": False, "message": "Doc Admin user not found", "data": []})
 
             # Handle Parent Document if provided
             parent_document_instance = None
@@ -627,13 +627,13 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 workflow_id=workflow,
                 document_current_status=default_status,
                 version="1.0",
-                approver=approver_user,
-                doc_admin=docadmin_user,
+                # approver=approver_user,
+                # doc_admin=docadmin_user,
                 training_required=training_required,
 
             )
-            if visible_to_users:
-                document.visible_to_users.set(visible_to_users)
+            # if visible_to_users:
+            #     document.visible_to_users.set(visible_to_users)
 
             document.save()
             DocumentVersion.objects.create(
@@ -688,21 +688,21 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             document_operation = request.data.get('document_operation')
             workflow_id = request.data.get('workflow')
             training_required = request.data.get('training_required')
-            visible_to_users = request.data.get('visible_to_users', [])
-            approver = request.data.get('approver')
-            doc_admin = request.data.get('doc_admin')
+            # visible_to_users = request.data.get('visible_to_users', [])
+            # approver = request.data.get('approver')
+            # doc_admin = request.data.get('doc_admin')
             
             # Validate and parse visible_to_users
-            if isinstance(visible_to_users, str):
-                import json
-                try:
-                    visible_to_users = json.loads(visible_to_users)
-                except json.JSONDecodeError:
-                    return Response({
-                        "status": False,
-                        "message": "Invalid format for visible_to_users. Provide a valid list of user IDs.",
-                        "data": []
-                    })
+            # if isinstance(visible_to_users, str):
+            #     import json
+            #     try:
+            #         visible_to_users = json.loads(visible_to_users)
+            #     except json.JSONDecodeError:
+            #         return Response({
+            #             "status": False,
+            #             "message": "Invalid format for visible_to_users. Provide a valid list of user IDs.",
+            #             "data": []
+            #         })
 
             if not document_title:
                 return Response({"status": False, "message": "Document title is required", "data": []})
@@ -712,10 +712,10 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Workflow is required", "data": []})
             if not revision_month:
                 return Response({"status": False, "message": "Revision month is required", "data": []})
-            if not approver:
-                return Response({"status": False, "message": "Please select Approver", "data": []})
-            if not doc_admin:
-                return Response({"status": False, "message": "Please select Doc Admin", "data": []})
+            # if not approver:
+            #     return Response({"status": False, "message": "Please select Approver", "data": []})
+            # if not doc_admin:
+            #     return Response({"status": False, "message": "Please select Doc Admin", "data": []})
 
             try:
                 document_type = DocumentType.objects.get(id=document_type_id)
@@ -727,15 +727,15 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             except WorkFlowModel.DoesNotExist:
                 return Response({'status': False, 'message': 'Workflow not found'}, status=400)
 
-            try:
-                approver_user = CustomUser.objects.get(id=approver)
-            except DocumentType.DoesNotExist:
-                return Response({"status": False, "message": "Approver user not found", "data": []})
+            # try:
+            #     approver_user = CustomUser.objects.get(id=approver)
+            # except DocumentType.DoesNotExist:
+            #     return Response({"status": False, "message": "Approver user not found", "data": []})
             
-            try:
-                docadmin_user = CustomUser.objects.get(id=doc_admin)
-            except DocumentType.DoesNotExist:
-                return Response({"status": False, "message": "Doc Admin user not found", "data": []})
+            # try:
+            #     docadmin_user = CustomUser.objects.get(id=doc_admin)
+            # except DocumentType.DoesNotExist:
+            #     return Response({"status": False, "message": "Doc Admin user not found", "data": []})
       
             parent_document_instance = None
             if parent_document:
@@ -761,14 +761,14 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
                 document.workflow = workflow
             if training_required != '':
                 document.training_required = training_required
-            if approver_user != '':
-                document.approver = approver_user
-            if docadmin_user != '':
-                document.doc_admin = docadmin_user 
+            # if approver_user != '':
+            #     document.approver = approver_user
+            # if docadmin_user != '':
+            #     document.doc_admin = docadmin_user 
 
-            # Update visible_to_users if provided
-            if visible_to_users:
-                document.visible_to_users.set(visible_to_users)    
+            # # Update visible_to_users if provided
+            # if visible_to_users:
+            #     document.visible_to_users.set(visible_to_users)    
             
             # Save the updated document
             document.save()
@@ -1668,7 +1668,16 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
             document.document_current_status = status
             document.form_status = None
             document.assigned_to = None
+            version_number = document.version
+            new_version = increment_version(version_number)
+            document.version = new_version
             document.save()
+            
+            Archived.objects.create(
+                document=document,
+                version=version_number
+            )
+
             
             document_title = document.document_title
             reviewer_group = Group.objects.get(name='Reviewer')
@@ -1739,7 +1748,15 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
             # Update document current status
             document.document_current_status = status
             document.assigned_to = None
+            version_number = document.version  # Get the current version
+            new_version = increment_version(version_number)
+            document.version = new_version
             document.save()
+            
+            Archived.objects.create(
+                document=document,
+                version=version_number
+            )
 
             # Send approval notification to approvers and department users
             document_title = document.document_title
@@ -1812,7 +1829,16 @@ class DocumentApproverActionCreateViewSet(viewsets.ModelViewSet):
             # if all_reviewers_approved:
             document.document_current_status = status
             document.assigned_to = None
+            version_number = document.version  # Get the current version
+            new_version = increment_version(version_number)
+            document.version = new_version
             document.save()
+            
+            Archived.objects.create(
+                document=document,
+                version=version_number
+            )
+            
             # Send approval notification to approvers and department users
             document_title = document.document_title
             approver_user = Group.objects.get(name='Doc Admin')
@@ -2049,7 +2075,16 @@ class DocumentStatusHandleViewSet(viewsets.ModelViewSet):
                 document.effective_date = effective_date
                 document.revision_date = revision_date
                 document.document_current_status = status_release
+                version_number = document.version  # Get the current version
+                new_version = increment_version(version_number)
+                document.version = new_version 
                 document.save()
+                
+                Archived.objects.create(
+                document=document,
+                version=version_number
+                )
+                
                 user_department = document.user.department
                 department_users = CustomUser.objects.filter(department=user_department)
                 for department_user in department_users:
@@ -3170,6 +3205,103 @@ class DocumentNintyDaysDataViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentviewSerializer
     queryset = Document.objects.all().order_by('-id')
 
+
+        except Document.DoesNotExist:
+            return Response({'status': False,'message': 'Document not found.','data': {}})
+        
+        
+class ArchivedDocumentViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Archived.objects.all()
+    serializer_class = ArchivedSerializer
+
+    def list(self, request, *args, **kwargs):
+        document_id = self.kwargs.get('document_id')
+        
+        if not document_id:
+            return Response({"error": "document_id is required"})
+            
+        try:
+            document = Document.objects.get(id=document_id)
+        except Document.DoesNotExist:
+            return Response({'status': False, 'message': 'Document not found'})
+
+        # Fetch the latest Archived entry for the given document
+        archived_entry = Archived.objects.filter(document=document).latest('created_at')
+
+        # Prepare the response data using the Archived serializer
+        archived_data = ArchivedSerializer(archived_entry).data
+
+        # Add additional fields from the Document model
+        response_data = {
+            "title": document.document_title,
+            "type": document.document_type.document_name,  # Assuming document_type has a `name` field
+            "document_number": document.document_number,
+            "created_date": document.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            "status": document.document_current_status.status,  # Assuming status has `status_name` field
+            "version": archived_data['version'],
+        }
+
+        return Response({'status': False,'message': 'Document not found.','data': {}})
+
+class UpdateDocumentUserViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Archived.objects.all()
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            document_id = self.kwargs.get('document_id')
+            visible_to_users = request.data.get('visible_to_users', [])
+            approver = request.data.get('approver')
+            doc_admin = request.data.get('doc_admin')
+
+            # Ensure document_id is provided
+            if not document_id:
+                return Response({"status": False, "message": "Document ID is required"})
+
+            # Fetch the document
+            try:
+                document = Document.objects.get(id=document_id)
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Document not found"})
+
+            # Update visible_to_users
+            if isinstance(visible_to_users, str):
+                import json
+                try:
+                    visible_to_users = json.loads(visible_to_users)
+                except json.JSONDecodeError:
+                    return Response({
+                        "status": False,
+                        "message": "Invalid format for visible_to_users. Provide a valid list of IDs.",
+                    })
+            if visible_to_users:
+                document.visible_to_users.set(visible_to_users)
+
+            # Update approver
+            if approver:
+                try:
+                    approver_user = CustomUser.objects.get(id=approver)
+                    document.approver = approver_user
+                except CustomUser.DoesNotExist:
+                    return Response({"status": False, "message": "Approver user not found"})
+
+            # Update doc_admin
+            if doc_admin:
+                try:
+                    doc_admin_user = CustomUser.objects.get(id=doc_admin)
+                    document.doc_admin = doc_admin_user
+                except CustomUser.DoesNotExist:
+                    return Response({"status": False, "message": "Doc Admin user not found"})
+
+            # Save updated document
+            document.save()
+
+            return Response({"status": True, "message": "Document updated successfully"})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
     def list(self, request, *args, **kwargs):
         try:
             user = self.request.user
@@ -3941,3 +4073,4 @@ class DocumentDataOfStatusIdThirteen(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False,"message": "Something went wrong","error": str(e)})
+

@@ -394,3 +394,8 @@ class DocumentRevisionRequestActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentRevisionRequestAction
         fields = ['user','status']
+        
+class ArchivedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Archived
+        fields = ['document', 'version', 'created_at']
