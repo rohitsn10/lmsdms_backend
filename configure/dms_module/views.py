@@ -573,6 +573,10 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                     return Response({"status": False, "message": "Template selection is required", "data": []})
             if not revision_month:
                 return Response({"status": False, "message": "Revision month is required", "data": []})
+            if not approver:
+                return Response({"status": False, "message": "Please select Approver", "data": []})
+            if not doc_admin:
+                return Response({"status": False, "message": "Please select Doc Admin", "data": []})
 
             try:
                 default_status = DynamicStatus.objects.get(id=document_current_status_id)  # Assuming status with ID 1 is the default
@@ -682,7 +686,9 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             workflow_id = request.data.get('workflow')
             training_required = request.data.get('training_required')
             visible_to_users = request.data.get('visible_to_users', [])
-
+            approver = request.data.get('approver')
+            doc_admin = request.data.get('doc_admin')
+            
             # Validate and parse visible_to_users
             if isinstance(visible_to_users, str):
                 import json
@@ -703,6 +709,10 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Workflow is required", "data": []})
             if not revision_month:
                 return Response({"status": False, "message": "Revision month is required", "data": []})
+            if not approver:
+                return Response({"status": False, "message": "Please select Approver", "data": []})
+            if not doc_admin:
+                return Response({"status": False, "message": "Please select Doc Admin", "data": []})
 
             try:
                 document_type = DocumentType.objects.get(id=document_type_id)
@@ -713,6 +723,16 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
                 workflow = WorkFlowModel.objects.get(id=workflow_id)
             except WorkFlowModel.DoesNotExist:
                 return Response({'status': False, 'message': 'Workflow not found'}, status=400)
+
+            try:
+                approver_user = CustomUser.objects.get(id=approver)
+            except DocumentType.DoesNotExist:
+                return Response({"status": False, "message": "Approver user not found", "data": []})
+            
+            try:
+                docadmin_user = CustomUser.objects.get(id=doc_admin)
+            except DocumentType.DoesNotExist:
+                return Response({"status": False, "message": "Doc Admin user not found", "data": []})
       
             parent_document_instance = None
             if parent_document:
@@ -738,6 +758,10 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
                 document.workflow = workflow
             if training_required != '':
                 document.training_required = training_required
+            if approver_user != '':
+                document.approver = approver_user
+            if docadmin_user != '':
+                document.doc_admin = docadmin_user 
 
             # Update visible_to_users if provided
             if visible_to_users:
@@ -781,6 +805,7 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
 #                 })
 #         except Exception as e:
 #             return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+
 
 class DocumentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -841,64 +866,119 @@ class DocumentViewSet(viewsets.ModelViewSet):
             return Response({"status": False,'message': 'Something went wrong','error': str(e)})
 
 
+
 # class DocumentViewSet(viewsets.ModelViewSet):
 #     permission_classes = [permissions.IsAuthenticated]
 #     serializer_class = DocumentviewSerializer
 #     queryset = Document.objects.all().order_by('-id')
 #     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
 #     search_fields = ['document_title', 'document_number', 'document_description', 'document_type__name']
-#     ordering_fields = ['document_title', 'created_at']
+#     ordering_fields = ['document_title', 'created_at'] 
 
 #     def list(self, request):
 #         try:
 #             user = self.request.user 
 #             user_group_ids = user.groups.values_list('id', flat=True)
+#             user_department = user.department if user.department else None
 #             department_id = request.query_params.get('department_id', None)
 #             document_current_status = request.query_params.get('document_current_status', None)
 
-#             if user == user.author_documents.first():
-#                 # Author: Can view department-wise documents
+#             if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
 #                 if department_id:
 #                     queryset = Document.objects.filter(user__department_id=department_id).order_by('-id')
 #                 else:
-#                     queryset = Document.objects.filter(user=user).order_by('-id')
+#                     queryset = Document.objects.all().order_by('-id')
+
+#             elif user.groups.filter(name='Reviewer').exists():
+#                 queryset = Document.objects.filter(visible_to_users=user).order_by('-id')
+#             elif user_department:
+#                 queryset = Document.objects.filter(user__department=user_department).order_by('-id')
 #             else:
-#                 # Other roles: View documents assigned to them
-#                 queryset = Document.objects.filter(
-#                     Q(approver=user) |
-#                     Q(doc_admin=user) |
-#                     Q(visible_to_users=user)
-#                 ).distinct()
+#                 queryset = Document.objects.none()
 
-#             # Filter by document_current_status if provided
+#             document_current_status = request.query_params.get('document_current_status', None)
+
 #             if document_current_status:
+#                 # Filter by document_current_status if provided
 #                 queryset = queryset.filter(document_current_status=document_current_status)
-
-#             # Apply additional filters from the backend
+            
 #             queryset = self.filter_queryset(queryset)
 
 #             if queryset.exists():
 #                 serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
-#                 return Response({
-#                     "status": True,
-#                     "message": "Documents fetched successfully",
-#                     'user_group_ids': list(user_group_ids),
-#                     'data': serializer.data,
-#                 })
+#                 return Response({"status": True,"message": "Documents fetched successfully",'user_group_ids': list(user_group_ids) ,'data': serializer.data,})
 #             else:
-#                 return Response({
-#                     "status": True,
-#                     "message": "No Documents found",
-#                     'user_group_ids': list(user_group_ids),
-#                     "data": []
-#                 })
-
+#                 return Response({"status": True,"message": "No Documents found",'user_group_ids': list(user_group_ids),"data": []})
+        
 #         except Exception as e:
-#             return Response({
-#                 "status": False,
-#                 'message': 'Something went wrong',
-#                 'error': str(e)
-#             })
+#             return Response({"status": False,'message': 'Something went wrong','error': str(e)})
+
+class DocumentViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all().order_by('-id')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['document_title', 'document_number', 'document_description', 'document_type__name']
+    ordering_fields = ['document_title', 'created_at']
+
+    def list(self, request):
+        try:
+            user = self.request.user
+            user_group_ids = list(user.groups.values_list('id', flat=True))
+            department_id = self.request.query_params.get('department_id', None)
+            document_current_status = request.query_params.get('document_current_status', None)
+
+            # Check if the user is in the "Author" group
+            if user.groups.filter(name="Author").exists():
+                # Authors can only see documents created by users in the same department
+                if department_id:
+                    queryset = Document.objects.filter(
+                        user__department_id=department_id,
+                        user__groups__name="Author"
+                    ).order_by('-id')
+                else:
+                    queryset = Document.objects.filter(
+                        user__department_id=user.department_id,
+                        user__groups__name="Author"
+                    ).order_by('-id')
+            else:
+                # Other roles: View documents assigned to them
+                queryset = Document.objects.filter(
+                    Q(approver=user) |
+                    Q(doc_admin=user) |
+                    Q(visible_to_users=user)
+                ).distinct()
+
+            # Filter by document_current_status if provided
+            if document_current_status:
+                queryset = queryset.filter(document_current_status=document_current_status)
+
+            # Apply additional filters from the backend
+            queryset = self.filter_queryset(queryset)
+
+            if queryset.exists():
+                serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+                return Response({
+                    "status": True,
+                    "message": "Documents fetched successfully",
+                    'user_group_ids': user_group_ids,
+                    'data': serializer.data,
+                })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "No Documents found",
+                    'user_group_ids': user_group_ids,
+                    "data": []
+                })
+
+        except Exception as e:
+            return Response({
+                "status": False,
+                'message': 'Something went wrong',
+                'error': str(e)
+            })
+
 
 
 
