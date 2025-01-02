@@ -7,6 +7,30 @@ import decimal
 import re
 from django.db.models import Max
 from dms_module.models import *
+from datetime import datetime, timedelta
+
+
+def validate_dates(start_date, end_date):
+    date_format = '%d-%m-%Y'
+
+    if not start_date or not end_date:
+        return None, None, "Both Start Date and End Date are required."
+
+    try:
+        if start_date == end_date:
+            start_date_obj = datetime.strptime(start_date, date_format).date()
+            end_date_obj = start_date_obj + timedelta(days=1)
+        else:
+            start_date_obj = datetime.strptime(start_date, date_format).date()
+            end_date_obj = datetime.strptime(end_date, date_format).date()
+    except ValueError as e:
+        return None, None, str(e)
+
+    if start_date_obj > end_date_obj:
+        return None, None, "start_date cannot be greater than end_date."
+
+    return start_date_obj, end_date_obj, None
+
 
 def generate_random_password(length=12):
     characters = string.ascii_letters + string.digits + string.punctuation
