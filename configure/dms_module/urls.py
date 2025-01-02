@@ -101,7 +101,8 @@ urlpatterns = [
    path('docadmin_obsolete_status', DocAdminUpdateViewSet.as_view({'post': 'create'}),name='docadmin_obsolete_status'),
 
    path('document_certificate_pdf_generate/<int:document_id>', DocumentCertificatePdfExportView.as_view({'get':'list'}),name='get_document_type_for_doc_admin'),
-
+   
+   # DASHBOARD APIS 
    path('document_ninty_days_data', DocumentNintyDaysDataViewSet.as_view({'get':'list'}),name='document_ninty_days_data'),
    path('date_wise_document_data', DateWiseDocumentDatacountViewSet.as_view({'get':'list'}),name='date_wise_document_data'),
 

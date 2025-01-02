@@ -58,7 +58,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_password_expired = models.BooleanField(default=False)
     is_lms_user = models.BooleanField(default=True, null=True, blank=True)
     is_dms_user = models.BooleanField(default=False,null=True, blank=True)
-
+    designation = models.CharField(max_length=255, null=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -3099,115 +3099,69 @@ from django.template.loader import get_template
 from xhtml2pdf import pisa
 from django.conf import settings
 import time
+from django.http import HttpResponse
 
-class DocumentCertificatePdfExportView(viewsets.ModelViewSet):
+class DocumentCertificatePdfExportView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'document_id'
     
     def list(self, request, *args, **kwargs):
+        document_id = kwargs.get('document_id')
         try:
-            # Get the document_id from the URL parameters
-            document_id = kwargs.get('document_id')
+            # Fetch the document
             document = Document.objects.get(id=document_id)
-
+            
             # Fetch all actions for the document
-            author_actions = DocumentAuthorApproveAction.objects.filter(document=document).order_by('created_at')
-            reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('created_at')
-            approver_actions = DocumentApproverAction.objects.filter(document=document).order_by('created_at')
-            admin_actions = DocumentDocAdminAction.objects.filter(document=document).order_by('created_at')
-            sendback_actions = DocumentSendBackAction.objects.filter(document=document).order_by('created_at')
-            release_actions = DocumentReleaseAction.objects.filter(document=document).order_by('created_at')
-            effective_actions = DocumentEffectiveAction.objects.filter(document=document).order_by('created_at')
-            revision_actions = DocumentRevisionAction.objects.filter(document=document).order_by('created_at')
-
-            # Combine all actions into one list with a "role" attribute based on the user's group
-            all_actions = []
-
-            def get_user_role(user):
-                """Returns the user's role based on their group."""
-                group_names = user.groups.values_list('name', flat=True)
-                if group_names:
-                    return ', '.join(group_names)
-                return "No Role"
-
-            # Add each action to the list with its dynamically assigned role
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in author_actions]
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in reviewer_actions]
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in approver_actions]
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in admin_actions]
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in sendback_actions]
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in release_actions]
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in effective_actions]
-            all_actions += [{'action': action, 'role': get_user_role(action.user)} for action in revision_actions]
-
-            # Sort all actions by 'created_at' date
-            all_actions.sort(key=lambda x: x['action'].created_at)
-
-            # Chunk actions to fit on pages
-            chunk_size = 10  # Adjust based on how many rows fit comfortably on a page
-            chunked_actions = [all_actions[i:i + chunk_size] for i in range(0, len(all_actions), chunk_size)]
-
-            # Prepare context for the template
+            all_actions = self.get_document_actions(document)
+            
+            # Define the context for the template
             context = {
-                'document_title': document.document_title,
-                'document_number': document.document_number,
-                'version': document.version,
-                'department': document.user.department.department_name if document.user.department else '',
-                'effective_date': document.effective_date.strftime('%d-%m-%Y') if document.effective_date else '',
-                'next_review_date': document.revision_date.strftime('%d-%m-%Y') if document.revision_date else '',
-                'logo_url': request.build_absolute_uri(settings.MEDIA_URL + 'certificate_logo_image/logo.jpeg'),
-                'chunked_actions': chunked_actions,
-                'page_break_interval': 3,
+                'document': document,
+                'all_actions': all_actions,
+                'logo': os.path.join(settings.BASE_DIR, 'static', 'certificate_logo_image', 'logo.jpeg')
             }
-
-            # Render the template
-            html_template_path = settings.BASE_DIR / 'templates' / 'document_cover_page.html'
-            template = get_template(html_template_path)
+            
+            # Render the template with context data
+            template = get_template('document_cover_page.html')
             html = template.render(context)
 
-            # Create a BytesIO buffer to write the PDF to memory
-            buffer = BytesIO()
+            # Convert the HTML to PDF
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename=document_{document_id}_certificate.pdf'
 
-            # Use xhtml2pdf to generate the PDF from the HTML
-            pisa_status = pisa.CreatePDF(html, dest=buffer)
+            # Use xhtml2pdf to convert the HTML into a PDF
+            pisa_status = pisa.CreatePDF(html, dest=response)
 
-            # Check if there were any errors during PDF generation
             if pisa_status.err:
-                return Response({
-                    'status': False,
-                    'message': 'Error occurred while generating the PDF.',
-                    'data': {}
-                })
+                return HttpResponse("Error generating PDF", status=500)
 
-            # Get the timestamp for the PDF file name
-            timestamp = int(time.time())
-            file_name = f"document_{document_id}_{timestamp}.pdf"
-
-            # Define the file path to save the PDF in 'document_certificare' folder
-            file_path = os.path.join(settings.MEDIA_ROOT, 'document_certificare', file_name)
-
-            # Create the 'document_certificare' folder if it doesn't exist
-            folder_path = os.path.dirname(file_path)
-            if not os.path.exists(folder_path):
-                os.makedirs(folder_path)
-
-            # Save the generated PDF file
-            with open(file_path, 'wb') as f:
-                f.write(buffer.getvalue())
-
-            # Build the file URL
-            pdf_file_url = f"{settings.MEDIA_URL}document_certificare/{file_name}"
-            full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
-
-            # Return the response with the PDF URL
-            return Response({
-                'status': True,
-                'message': 'PDF file generated and saved successfully.',
-                'data': full_pdf_file_url,
-            })
+            return response
 
         except Document.DoesNotExist:
-            return Response({'status': False,'message': 'Document not found.','data': {}})
+            return HttpResponse("Document not found", status=404)
+
+        except Exception as e:
+            return HttpResponse(f"An error occurred: {str(e)}", status=500)
+
+    def get_document_actions(self, document):
+        actions = []
+        action_models = [
+            DocumentAuthorApproveAction,
+            DocumentReviewerAction,
+            DocumentApproverAction,
+            DocumentDocAdminAction,
+            DocumentSendBackAction,
+            DocumentReleaseAction,
+            DocumentEffectiveAction,
+            DocumentRevisionAction,
+        ]
+        
+        for model in action_models:
+            actions.extend(model.objects.filter(document=document).order_by('created_at'))
+        
+        return actions
+
+
 
 
 
