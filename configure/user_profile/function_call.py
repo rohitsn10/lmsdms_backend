@@ -14,6 +14,9 @@ def validate_dates(start_date, end_date):
     date_format = '%d-%m-%Y'
 
     if not start_date or not end_date:
+       if not start_date and not end_date:
+        return None, None, None  # No error, return None for dates
+       if not start_date or not end_date:
         return None, None, "Both Start Date and End Date are required."
 
     try:
