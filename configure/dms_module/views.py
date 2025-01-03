@@ -3227,7 +3227,7 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             context = {
                 'document': document,
                 'all_actions': all_actions,
-                'logo': os.path.join(settings.BASE_DIR, 'static', 'certificate_logo_image', 'logo.jpeg')
+                'logo': os.path.join(settings.BASE_DIR, 'static', 'certificate_logo_image', 'logo.png')
             }
             
             # Render the template with context data
