@@ -1643,6 +1643,9 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
             document = request.data.get('document_id')
             status_id = request.data.get('status')
             remark = request.data.get('remark')
+            visible_to_users = request.data.get('visible_to_users', [])
+            approver = request.data.get('approver')
+            doc_admin = request.data.get('doc_admin')
 
             # Ensure required fields are provided
             if not document:
@@ -1652,10 +1655,49 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
             if not remark:
                 return Response({"status": False, "message": "remark is required"})
 
-            # Fetch related document and status objects
-            document = Document.objects.get(id=document)
-            status = DynamicStatus.objects.get(id=status_id)
+             # Fetch related document and status objects
+            try:
+                document = Document.objects.get(id=document)
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Document not found"})
 
+            try:
+                status = DynamicStatus.objects.get(id=status_id)
+            except DynamicStatus.DoesNotExist:
+                return Response({"status": False, "message": "Invalid status ID"})
+            
+            # Update visible_to_users
+            if isinstance(visible_to_users, str):
+                import json
+                try:
+                    visible_to_users = json.loads(visible_to_users)
+                except json.JSONDecodeError:
+                    return Response({
+                        "status": False,
+                        "message": "Invalid format for visible_to_users. Provide a valid list of IDs.",
+                    })
+            if visible_to_users:
+                document.visible_to_users.set(visible_to_users)
+                
+             # Update approver
+            if approver:
+                try:
+                    approver_user = CustomUser.objects.get(id=approver)
+                    document.approver = approver_user
+                except CustomUser.DoesNotExist:
+                    return Response({"status": False, "message": "Approver user not found"})
+
+            # Update doc_admin
+            if doc_admin:
+                try:
+                    doc_admin_user = CustomUser.objects.get(id=doc_admin)
+                    document.doc_admin = doc_admin_user
+                except CustomUser.DoesNotExist:
+                    return Response({"status": False, "message": "Doc Admin user not found"})
+
+            # Save updated document
+            document.save()
+           
             document_approve_action = DocumentAuthorApproveAction.objects.create(
                 user=user,
                 document=document,
