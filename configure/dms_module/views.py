@@ -942,8 +942,11 @@ class DocumentViewSet(viewsets.ModelViewSet):
             if end_date_obj:
                 end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
 
-            # Check if the user is in the "Author" group
-            if user.groups.filter(name="Author").exists():
+             # Check if the user is in the "Admin" group
+            if user.groups.filter(name="Admin").exists():
+                # Admins can view all documents
+                queryset = Document.objects.all().order_by('-id')
+            elif user.groups.filter(name="Author").exists():
                 # Authors can only see documents created by users in the same department
                 if department_id:
                     queryset = Document.objects.filter(
