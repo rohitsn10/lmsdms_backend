@@ -139,11 +139,11 @@
                             {{ group.name }}{% if not forloop.last %}, {% endif %}
                         {% endfor %}
                     {% else %}
-                        No Role
+                        No Role Assigned
                     {% endif %}
                 </td>
-                <td>{{ action.user.department.department_name }}</td>
-                <td>{{ action.user.designation }}</td>
+                <td>{{ action.user.department.department_name|default:"-" }}</td>
+                <td>{{ action.user.designation|default:"-" }}</td>
                 <td>{{ action.user.first_name }} {{ action.user.last_name }}</td>
                 <td>{{ action.created_at|date:"d-m-Y" }}</td>
             </tr>
