@@ -3134,6 +3134,81 @@ class DocumentCertificatePdfExportView(viewsets.ModelViewSet):
             
 
 
+class GetDocumentCertificateDataListViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'document_id'
+    
+    def list(self, request, *args, **kwargs):
+        document_id = kwargs.get('document_id')
+        try:
+            # Fetch the document
+            document = Document.objects.get(id=document_id)
+            
+            # Fetch all actions for the document
+            all_actions = self.get_document_actions(document)
+            
+            # Prepare data to return in the response
+            document_data = {
+                'document_title': document.document_title,
+                'document_number': document.document_number,
+                'version': document.version,
+                'department': document.user.department.department_name,
+                'effective_date': document.effective_date.strftime('%d-%m-%Y') if document.effective_date else None,
+                'revision_date': document.revision_date.strftime('%d-%m-%Y') if document.revision_date else None,
+            }
+            
+            # Collect actions data
+            actions_data = []
+            for action in all_actions:
+                action_data = {
+                    'role': action.user.groups.first().name if action.user.groups.exists() else "No Role",
+                    'department': action.user.department.department_name if action.user.department else "No Department",
+                    'designation': action.user.designation if action.user.designation else "No Designation",
+                    'user_name': f"{action.user.first_name} {action.user.last_name}",
+                    'created_at': action.created_at.strftime('%d-%m-%Y')
+                }
+                actions_data.append(action_data)
+
+            # Combine document data and actions
+            response_data = {
+                'document': document_data,
+                'actions': actions_data
+            }
+            return Response({"status": True,"message": "Data fetched successfully","data": response_data})
+
+        except Document.DoesNotExist:
+            return Response({"status": False,"message": "Document not found","data": ""})
+        except Exception as e:
+            return Response({"status": False,"message": str(e),"data": ""})
+
+    def get_document_actions(self, document):
+        actions = []
+        action_models = [
+            DocumentAuthorApproveAction,
+            DocumentReviewerAction,
+            DocumentApproverAction,
+            DocumentDocAdminAction,
+            DocumentSendBackAction,
+            DocumentReleaseAction,
+            DocumentEffectiveAction,
+            DocumentRevisionAction,
+        ]
+        
+        for model in action_models:
+            actions.extend(model.objects.filter(document=document).order_by('created_at'))
+        
+        return actions
+
+    def get_roles(self, user):
+        roles = []
+        if user.groups.exists():
+            for group in user.groups.all():
+                roles.append(group.name)
+        else:
+            roles.append("No Role")
+        return roles
+
+
 
 class DocumentCertificatePdfExportView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]

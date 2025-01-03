@@ -100,6 +100,7 @@ urlpatterns = [
    path('doc_timeline/<document_id>', DocumentTimelineViewSet.as_view({'get':'list'}),name='doc_timeline'),
    path('docadmin_obsolete_status', DocAdminUpdateViewSet.as_view({'post': 'create'}),name='docadmin_obsolete_status'),
 
+   path('get_document_certificate_data_list/<int:document_id>', GetDocumentCertificateDataListViewSet.as_view({'get':'list'}),name='get_document_certificate_data_list'),
    path('document_certificate_pdf_generate/<int:document_id>', DocumentCertificatePdfExportView.as_view({'get':'list'}),name='get_document_type_for_doc_admin'),
    
    # DASHBOARD APIS 
