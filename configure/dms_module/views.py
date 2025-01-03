@@ -3273,16 +3273,36 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
 
 
 
-
-
 class DocumentNintyDaysDataViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DocumentviewSerializer
     queryset = Document.objects.all().order_by('-id')
 
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            current_time = timezone.localtime(timezone.now())
+            is_doc_admin = user.groups.filter(name="Doc Admin").exists()
 
-        except Document.DoesNotExist:
-            return Response({'status': False,'message': 'Document not found.','data': {}})
+            ninety_days_from_now = current_time + timedelta(days=90)
+            documents = Document.objects.filter(revision_date__gte=current_time, revision_date__lte=ninety_days_from_now)
+
+            if is_doc_admin:
+                department = request.query_params.get('department_id', None)
+                if department:
+                    documents = documents.filter(user__department=department)
+            else:
+                user_department = user.department
+                documents = documents.filter(user__department=user_department)
+
+            document_count = documents.count()
+
+            serializer = DocumentviewSerializer(documents, many=True, context={'request': request})
+            data = serializer.data
+
+            return Response({"status": True,"message": "Documents fetched successfully","data_count": document_count,"data": data})
+        except Exception as e:
+            return Response({"status": False,'message': 'Something went wrong','error': str(e)})
         
         
 class ArchivedDocumentViewSet(viewsets.ModelViewSet):
