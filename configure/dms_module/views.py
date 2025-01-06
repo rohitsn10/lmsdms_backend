@@ -1168,11 +1168,11 @@ class DocumentPDFGenerateViewSet(viewsets.ModelViewSet):
             ).values(
                 'document_title', 
                 'document_number', 
-                'document_type__document_name',  # Fetching the name of document_type
-                'document_current_status__status',  # Assuming status_name is the field in DynamicStatus model
-                'select_template__template_name',  # Fetching the name of select_template
-                'assigned_to__first_name',  # Fetching first_name of the assigned user
-                'assigned_to__last_name',  # Fetching last_name of the assigned user
+                'document_type__document_name',  
+                'document_current_status__status',
+                'select_template__template_name',
+                'assigned_to__first_name',
+                'assigned_to__last_name',
                 'version', 
                 'created_at', 
                 'revision_date', 
