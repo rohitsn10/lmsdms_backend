@@ -3637,7 +3637,7 @@ class DocumentDataOfStatusIdThree(viewsets.ModelViewSet):
             start_date = request.query_params.get('start_date', None)
             end_date = request.query_params.get('end_date', None)
 
-            fixed_status_id = 2
+            fixed_status_id = 3
             status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
             if not status_obj:
                 return Response({"status": False, "message": "Status not found", "data": []})
@@ -3690,7 +3690,7 @@ class DocumentDataOfStatusIdFour(viewsets.ModelViewSet):
             start_date = request.query_params.get('start_date', None)
             end_date = request.query_params.get('end_date', None)
 
-            fixed_status_id = 2
+            fixed_status_id = 4
             status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
             if not status_obj:
                 return Response({"status": False, "message": "Status not found", "data": []})
@@ -3744,7 +3744,7 @@ class DocumentDataOfStatusIdFive(viewsets.ModelViewSet):
             start_date = request.query_params.get('start_date', None)
             end_date = request.query_params.get('end_date', None)
 
-            fixed_status_id = 2
+            fixed_status_id = 5
             status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
             if not status_obj:
                 return Response({"status": False, "message": "Status not found", "data": []})
@@ -3798,7 +3798,7 @@ class DocumentDataOfStatusIdSix(viewsets.ModelViewSet):
             start_date = request.query_params.get('start_date', None)
             end_date = request.query_params.get('end_date', None)
 
-            fixed_status_id = 2
+            fixed_status_id = 6
             status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
             if not status_obj:
                 return Response({"status": False, "message": "Status not found", "data": []})
@@ -3852,7 +3852,7 @@ class DocumentDataOfStatusIdSeven(viewsets.ModelViewSet):
             start_date = request.query_params.get('start_date', None)
             end_date = request.query_params.get('end_date', None)
 
-            fixed_status_id = 2
+            fixed_status_id = 7
             status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
             if not status_obj:
                 return Response({"status": False, "message": "Status not found", "data": []})
@@ -3906,7 +3906,7 @@ class DocumentDataOfStatusIdEight(viewsets.ModelViewSet):
             start_date = request.query_params.get('start_date', None)
             end_date = request.query_params.get('end_date', None)
 
-            fixed_status_id = 2
+            fixed_status_id = 8
             status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
             if not status_obj:
                 return Response({"status": False, "message": "Status not found", "data": []})
@@ -3959,7 +3959,7 @@ class DocumentDataOfStatusIdNine(viewsets.ModelViewSet):
             start_date = request.query_params.get('start_date', None)
             end_date = request.query_params.get('end_date', None)
 
-            fixed_status_id = 2
+            fixed_status_id = 9
             status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
             if not status_obj:
                 return Response({"status": False, "message": "Status not found", "data": []})
@@ -4013,7 +4013,7 @@ class DocumentDataOfStatusIdTen(viewsets.ModelViewSet):
             start_date = request.query_params.get('start_date', None)
             end_date = request.query_params.get('end_date', None)
 
-            fixed_status_id = 2
+            fixed_status_id = 10
             status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
             if not status_obj:
                 return Response({"status": False, "message": "Status not found", "data": []})
@@ -4068,7 +4068,7 @@ class DocumentDataOfStatusIdEleven(viewsets.ModelViewSet):
             start_date = request.query_params.get('start_date', None)
             end_date = request.query_params.get('end_date', None)
 
-            fixed_status_id = 2
+            fixed_status_id = 11
             status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
             if not status_obj:
                 return Response({"status": False, "message": "Status not found", "data": []})
@@ -4122,7 +4122,7 @@ class DocumentDataOfStatusIdTwelve(viewsets.ModelViewSet):
             start_date = request.query_params.get('start_date', None)
             end_date = request.query_params.get('end_date', None)
 
-            fixed_status_id = 2
+            fixed_status_id = 12
             status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
             if not status_obj:
                 return Response({"status": False, "message": "Status not found", "data": []})
@@ -4176,7 +4176,7 @@ class DocumentDataOfStatusIdThirteen(viewsets.ModelViewSet):
             start_date = request.query_params.get('start_date', None)
             end_date = request.query_params.get('end_date', None)
 
-            fixed_status_id = 2
+            fixed_status_id = 13
             status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
             if not status_obj:
                 return Response({"status": False, "message": "Status not found", "data": []})
