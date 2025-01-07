@@ -1119,7 +1119,8 @@ class DocumentExcelGenerateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False,'message': 'Something went wrong','error': str(e)})
         
-
+from django.utils.text import Truncator
+from django.utils.timezone import localtime
 class DocumentPDFGenerateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DocumentviewSerializer
@@ -1178,10 +1179,21 @@ class DocumentPDFGenerateViewSet(viewsets.ModelViewSet):
                 'revision_date', 
                 'effective_date'
             )
+            max_lengths = {
+            'document_title': max(len(doc['document_title'] or "") for doc in documents_data),
+            'document_number': max(len(doc['document_number'] or "") for doc in documents_data),
+            'document_type': max(len(doc['document_type__document_name'] or "") for doc in documents_data),
+            'assigned_to': max(len(f"{doc['assigned_to__first_name']} {doc['assigned_to__last_name']}" or "") for doc in documents_data),
+            'version': max(len(doc['version'] or "") for doc in documents_data),
+            'created_at': max(len(str(localtime(doc['created_at']))) for doc in documents_data),
+            
+            }
 
             # Context for rendering HTML template
             context = {
-                'documents': documents_data
+                'documents': documents_data,
+                'max_lengths': max_lengths,
+                'current_date': timezone.now().strftime('%d-%m-%Y')
             }
 
             # Load the HTML template
