@@ -5,6 +5,7 @@ from .models import *
 from .serializers import *
 from rest_framework import permissions
 from user_profile.function_call import *
+from user_profile.models import Department
 from django.db import IntegrityError            
 import random
 from django.db.models import Q
@@ -226,14 +227,44 @@ class JobRoleAddView(viewsets.ModelViewSet):
         try:
             job_role_name = request.data.get('job_role_name')
             job_role_description = request.data.get('job_role_description')
+            plant = request.data.get('plant')
+            area = request.data.get('area')
+            department = request.data.get('department')
 
+            
             if not job_role_name:
                 return Response({'status': False, 'message': 'Job role name is required'})
+            if not plant:
+                return Response({'status': False, 'message': 'plant is required'})
+            if not area:
+                return Response({'status': False, 'message': 'area is required'})
+            if not department:
+                return Response({'status': False, 'message': 'department is required'})
+            
+            try:
+                plant = Plant.objects.get(id=plant)
+            except Plant.DoesNotExist:
+                return Response({"status": False, "message": "plant not found", "data": []})
+ 
+            try:
+                area = Area.objects.get(id=area)
+            except Area.DoesNotExist:
+                return Response({"status": False, "message": "Area not found", "data": []})
+ 
+            try:
+                department = Department.objects.get(id=department)
+            except Department.DoesNotExist:
+                return Response({"status": False, "message": "Document type not found", "data": []})
+ 
 
             job_role_obj = JobRole.objects.create(
                 job_role_name=job_role_name,
-                job_role_description=job_role_description
+                job_role_description=job_role_description,
+                plant=plant,
+                department=department,
+                area=area,
             )
+            
             job_role_obj.save()
 
             return Response({'status': True, 'message': "Job role created successfully"})
