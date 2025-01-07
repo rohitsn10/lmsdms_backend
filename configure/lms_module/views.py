@@ -2206,26 +2206,40 @@ class ClassroomTrainingUpdateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": f"Something went wrong: {str(e)}"})
         
+# class TrainingListViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     serializer_class = TrainingListSerializer
+#     queryset = TrainingCreate.objects.all()
+
+#     def list(self, request, *args, **kwargs):
+#         plant_id = request.data.get('plant')
+#         training_type_id = request.data.get('type')
+#         training_number = request.data.get('training_number')
+
+#         filters = Q()
+#         if plant_id:
+#             filters &= Q(plant_id=plant_id)
+#         if training_type_id:
+#             filters &= Q(training_type_id=training_type_id)
+#         if training_number:
+#             filters &= Q(training_number=training_number)
+
+#         trainings = self.queryset.filter(filters)
+
+#         serializer = self.get_serializer(trainings, many=True)
+#         return Response({
+#             "status": True,
+#             "message": "Training data fetched successfully",
+#             "data": serializer.data
+#         })
+        
 class TrainingListViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TrainingListSerializer
     queryset = TrainingCreate.objects.all()
 
     def list(self, request, *args, **kwargs):
-        plant_id = request.data.get('plant')
-        training_type_id = request.data.get('type')
-        training_number = request.data.get('training_number')
-
-        filters = Q()
-        if plant_id:
-            filters &= Q(plant_id=plant_id)
-        if training_type_id:
-            filters &= Q(training_type_id=training_type_id)
-        if training_number:
-            filters &= Q(training_number=training_number)
-
-        trainings = self.queryset.filter(filters)
-
+        trainings = self.queryset  # No filtering logic
         serializer = self.get_serializer(trainings, many=True)
         return Response({
             "status": True,

@@ -229,12 +229,20 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
         ]
 
 
+# class TrainingListSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = TrainingCreate
+#         fields = ['id','plant', 'training_type', 'training_version', 'training_number', 'refresher_time']
+
 class TrainingListSerializer(serializers.ModelSerializer):
+    training_name_with_number = serializers.SerializerMethodField()
+
     class Meta:
         model = TrainingCreate
-        fields = ['id','plant', 'training_type', 'training_version', 'training_number', 'refresher_time']
+        fields = ['id', 'training_name_with_number']
 
-
+    def get_training_name_with_number(self, obj):
+        return f"{obj.training_name} ({obj.training_number})"
 
 class TrainingMatrixAssignUserSerializer(serializers.ModelSerializer):
     assigned_user_details = serializers.SerializerMethodField()
