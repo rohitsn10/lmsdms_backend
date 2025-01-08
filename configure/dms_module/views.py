@@ -611,7 +611,7 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                     return Response({"status": False, "message": "Parent document not found", "data": []})
                 
             department_name = user.department.department_name if user.department else 'UnknownDepartment'
-            document_number = generate_document_number(document_title, user, document_type, parent_document_instance)
+            document_number = generate_document_number(user, document_type, parent_document_instance)
 
             document = Document.objects.create(
                 user=user,

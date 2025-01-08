@@ -66,13 +66,13 @@ def get_new_version(version_str):
 
 
 
-def generate_document_number(document_title, user, document_type, parent_document_instance=None):
+def generate_document_number(user, document_type, parent_document_instance=None):
 
     if user.department:
         department_name = user.department.department_name  # Access department_name correctly
     else:
-        department_name = 'UnknownDepartment'  # Fallback if no department is assigned
-    
+        department_name = 'UnknownDepartment'
+    document_title = "BPL"
     base_number = f"{document_title}/{department_name}/"
     
     if parent_document_instance is None:
