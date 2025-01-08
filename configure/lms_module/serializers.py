@@ -309,3 +309,8 @@ class TrainingQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrainingQuestions
         fields = ['id', 'question_text', 'options', 'marks', 'question_type', 'correct_answer']
+        
+class TrainingdataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TrainingCreate
+        fields = ['id', 'training_name','training_number']
