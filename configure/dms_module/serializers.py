@@ -353,32 +353,32 @@ class AllDocumentSerializer(serializers.ModelSerializer):
 class DocumentAuthorApproveActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentAuthorApproveAction
-        fields = ['user','status_approve']
+        fields = ['user','status_approve','remarks_author','created_at']
 
 class DocumentReviewerActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentReviewerAction
-        fields = ['user','status_approve']
+        fields = ['user','status_approve','remarks_reviewer','created_at']
 
 class DocumentApproverActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentApproverAction
-        fields = ['user','status_approve']
+        fields = ['user','status_approve','remarks_approver','created_at']
 
 class DocumentDocAdminActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentDocAdminAction
-        fields = ['user','status_approve']
+        fields = ['user','status_approve','created_at']
 
 class DocumentSendBackActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentSendBackAction
-        fields = ['user','status_sendback']
+        fields = ['user','status_sendback','remarks_sendback','created_at']
 
 class DocumentReleaseActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentReleaseAction
-        fields = ['user','status_release']
+        fields = ['user','status_release','created_at']
 
 class DocumentEffectivenewActionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -388,12 +388,12 @@ class DocumentEffectivenewActionSerializer(serializers.ModelSerializer):
 class DocumentRevisionActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentRevisionAction
-        fields = ['user','status_revision']
+        fields = ['user','status_revision','remarks_revision','created_at']
 
 class DocumentRevisionRequestActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentRevisionRequestAction
-        fields = ['user','status']
+        fields = ['user','status','created_at']
         
 class ArchivedSerializer(serializers.ModelSerializer):
     class Meta:
