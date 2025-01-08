@@ -2408,6 +2408,7 @@ class JobroleListingViewSet(viewsets.ModelViewSet):
         })
 
 
+
 class TrainingAssignViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = TrainingCreate.objects.all()
@@ -2496,6 +2497,45 @@ class TrainingListingViewSet(viewsets.ModelViewSet):
             "message": "Training data fetched successfully",
             "data": training_serializer.data
         })
+
+class TrainingAssigntoJobroleViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = TrainingCreate.objects.all()
+    serializer_class = TrainingCreateSerializer
+
+    def create(self, request, *args, **kwargs):
+
+        try:
+            # Get job_role_id from the request data
+            job_role_id = request.data.get('job_role_id')
+            if not job_role_id:
+                return Response({"status": False, "message": "Job role ID is required"})
+
+            # Validate JobRole existence
+            job_role_instance = JobRole.objects.filter(id=job_role_id).first()
+            if not job_role_instance:
+                return Response({"status": False, "message": "Invalid Job role ID"})
+
+            # Get training_ids from the request data
+            training_ids = request.data.get('training_ids', [])
+            if not isinstance(training_ids, list) or not training_ids:
+                return Response({"status": False, "message": "Training IDs should be a non-empty list"})
+
+            # Validate TrainingCreate existence
+            valid_trainings = TrainingCreate.objects.filter(id__in=training_ids)
+            if len(valid_trainings) != len(training_ids):
+                return Response({"status": False, "message": "Some Training IDs are invalid"})
+
+            # Add the new job role to each training without removing existing ones
+            for training in valid_trainings:
+                training.job_roles.add(job_role_instance)
+
+            return Response({
+                "status": True,
+                "message": "Trainings successfully assigned to the job role",
+            })
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
 class MaterialStartStopReadingView(viewsets.ModelViewSet):
