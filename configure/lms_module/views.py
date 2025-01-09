@@ -2444,35 +2444,61 @@ class TrainingAssignViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
+# class JobroleListingapiViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     serializer_class = GetJobRoleSerializer
+
+#     def list(self, request, *args, **kwargs):
+#         plant_id = request.data.get('plant')
+#         department_id = request.data.get('department')
+#         area_id = request.data.get('area')
+#         job_role_name = request.data.get('job_role_name')
+
+#         job_roles = JobRole.objects.all()
+
+#         if plant_id:
+#             job_roles = job_roles.filter(plant_id=plant_id)
+#         if department_id:
+#             job_roles = job_roles.filter(department_id=department_id)
+#         if area_id:
+#             job_roles = job_roles.filter(area_id=area_id)
+#         if job_role_name:
+#             job_roles = job_roles.filter(job_role_name__icontains=job_role_name)
+
+#         job_role_serializer = self.serializer_class(job_roles, many=True)
+
+#         return Response({
+#             "status": True,
+#             "message": "Training and job role data fetched successfully",
+#             "data": {
+#                 "job_roles": job_role_serializer.data
+#             }
+#         })
+
 class JobroleListingapiViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = GetJobRoleSerializer
+    serializer_class = TrainingdataSerializer
 
     def list(self, request, *args, **kwargs):
-        plant_id = request.data.get('plant')
-        department_id = request.data.get('department')
-        area_id = request.data.get('area')
-        job_role_name = request.data.get('job_role_name')
+        job_role_id = request.data.get('job_role_id')
+        
+        if not job_role_id:
+            return Response({
+                "status": False,
+                "message": "Job role ID is required",
+                "data": []
+            })
 
-        job_roles = JobRole.objects.all()
+        # Filter TrainingCreate objects by job_role_id
+        trainings = TrainingCreate.objects.filter(job_roles__id=job_role_id).distinct()
 
-        if plant_id:
-            job_roles = job_roles.filter(plant_id=plant_id)
-        if department_id:
-            job_roles = job_roles.filter(department_id=department_id)
-        if area_id:
-            job_roles = job_roles.filter(area_id=area_id)
-        if job_role_name:
-            job_roles = job_roles.filter(job_role_name__icontains=job_role_name)
-
-        job_role_serializer = self.serializer_class(job_roles, many=True)
+        # Serialize the data
+        serializer = self.serializer_class(trainings, many=True)
 
         return Response({
             "status": True,
-            "message": "Training and job role data fetched successfully",
-            "data": {
-                "job_roles": job_role_serializer.data
-            }
+            "message": "Trainings fetched successfully",
+            "data": serializer.data
         })
 
 
