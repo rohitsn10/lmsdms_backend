@@ -78,10 +78,17 @@ class DocumentdataSerializer(serializers.ModelSerializer):
         model = Document
         fields = ['id', 'select_template', 'template_url']
 
+    # def get_template_url(self, obj):
+    #     request = self.context.get('request')
+    #     if obj.select_template and obj.select_template.template_doc:
+    #         return request.build_absolute_uri(obj.select_template.template_doc.url)
+    #     return None
     def get_template_url(self, obj):
-        request = self.context.get('request')
         if obj.select_template and obj.select_template.template_doc:
-            return request.build_absolute_uri(obj.select_template.template_doc.url)
+            # Build the full template URL
+            original_url = obj.select_template.template_doc.url
+            base_url = "http://host.docker.internal:8000"
+            return f"{base_url}{original_url}"
         return None
     
 
@@ -170,11 +177,15 @@ class DocumentviewSerializer(serializers.ModelSerializer):
         )
         return latest_approval.status.status if latest_approval and latest_approval.status else None
     
+    # def get_selected_template_url(self, obj):
+    #     if obj.select_template and obj.select_template.template_doc:
+    #         return obj.select_template.template_doc.url 
+    #     return None
     def get_selected_template_url(self, obj):
         if obj.select_template and obj.select_template.template_doc:
-            return obj.select_template.template_doc.url 
+            return f"http://host.docker.internal:8000{obj.select_template.template_doc.url}"
         return None
-    
+
     def get_approval_numbers(self, obj):
         # Fetch all approval numbers related to this document
         approval_numbers = ApprovalNumber.objects.filter(

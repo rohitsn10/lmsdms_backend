@@ -33,6 +33,12 @@ ALLOWED_HOSTS = ['*']
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 
+CORS_ALLOWED_ORIGINS = [
+    'http://127.0.0.1:8000',
+    'http://localhost:8000'
+]
+CORS_ALLOW_ALL_ORIGINS = True 
+
 
 
 # Application definition
@@ -148,6 +154,14 @@ EMAIL_USE_TLS = True
 # EMAIL_HOST_PASSWORD = 'lbfiuicmvmutfosn'
 EMAIL_HOST_USER = 'kalpesh.g@n10tech.com'
 EMAIL_HOST_PASSWORD = 'tpahwwdnkbacwxqw'
+
+
+ONLYOFFICE_SECRET = "45540a6bfecc97ab6d06c436a74c333b1b54447c4de5fd41b8ad0b8361a395c6"
+ONLYOFFICE_SERVER_URL = "http://localhost"
+
+ALLOWED_HOSTS = [
+    '*'
+]
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60*24),

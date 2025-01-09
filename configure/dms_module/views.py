@@ -4236,4 +4236,54 @@ class DocumentDataOfStatusIdThirteen(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False,"message": "Something went wrong","error": str(e)})
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import jwt
+import os
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import hashlib
+from django.http import FileResponse
+from django.shortcuts import redirect
 
+@csrf_exempt
+def get_editor_config(request):
+    document_url = "http://host.docker.internal:8000/media/templates/SOP_template.docx"  # Ensure this URL is valid and accessible 
+    unique_key = hashlib.sha256(document_url.encode()).hexdigest()
+
+    document_data = {
+        "fileType": "docx",
+        "key": unique_key,
+        "title": "Sample Document",
+        "url": document_url,  # Direct link to the document
+    }
+
+    editor_config = {
+        
+        "document": document_data,
+        "editorConfig": {
+            # "callbackUrl": "http://127.0.0.1:8000/dms_module/onlyoffice_callback",
+            "callbackUrl": "http://host.docker.internal:8000/dms_module/onlyoffice_callback",
+            "mode": "edit",
+            "user": {"id": "1", "name": "Rohit Sharma"},
+        },
+    }
+
+    # Secret must match ONLYOFFICE configuration
+    secret = "45540a6bfecc97ab6d06c436a74c333b1b54447c4de5fd41b8ad0b8361a395c6"
+    token = jwt.encode(editor_config, secret, algorithm="HS256")
+
+    return JsonResponse({"token": token, **editor_config})
+@csrf_exempt
+def onlyoffice_callback(request):
+    print(f"Received request: {request.method} {request.body}")
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            print("Parsed data:", data)
+            return JsonResponse({"error": 0})
+        except Exception as e:
+            print("Error:", e)
+            return JsonResponse({"error": 1}, status=500)
+    return JsonResponse({"error": 1}, status=400)
