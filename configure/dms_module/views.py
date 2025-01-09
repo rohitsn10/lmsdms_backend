@@ -688,6 +688,7 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             document_operation = request.data.get('document_operation')
             workflow_id = request.data.get('workflow')
             training_required = request.data.get('training_required')
+            select_template = request.FILES.get('select_template')
             # visible_to_users = request.data.get('visible_to_users', [])
             # approver = request.data.get('approver')
             # doc_admin = request.data.get('doc_admin')
@@ -744,6 +745,13 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
                 except Document.DoesNotExist:
                     return Response({"status": False, "message": "Parent document not found", "data": []})
 
+            if select_template:
+                try:
+                    # get_select_template = document.select_template.template_doc
+                    document.select_template.template_doc = select_template
+                    document.select_template.save()
+                except Exception as e:
+                    return Response({"status": False, "message": str(e), "data": []})
             # Update the document fields
             if document_title != '':
                 document.document_title = document_title
@@ -760,6 +768,8 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             if workflow != '':
                 document.workflow = workflow
             if training_required != '':
+                if isinstance(training_required, str):
+                    training_required = training_required.lower() in ['true',1]
                 document.training_required = training_required
             # if approver_user != '':
             #     document.approver = approver_user
