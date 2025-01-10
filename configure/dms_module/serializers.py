@@ -306,6 +306,8 @@ class DocumentSerializer(serializers.ModelSerializer):
             'document_current_status_name',  # Added field for the status name
             'user',
             'revise_description',
+            'revision_date',
+            'effective_date',
             'status',
             'document_type', 
             'revise_request_id',
