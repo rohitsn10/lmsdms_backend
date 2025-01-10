@@ -541,13 +541,17 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             document_title = request.data.get('document_title')
             document_type_id = request.data.get('document_type')
             document_description = request.data.get('document_description', '')
-            revision_date = request.data.get('revision_date', '')
             revision_month = request.data.get('revision_month', '')
             document_operation = request.data.get('document_operation', '')
             select_template = request.data.get('select_template')
             workflow = request.data.get('workflow')
             document_current_status_id = request.data.get('document_current_status_id')
             training_required = request.data.get('training_required')
+            if training_required != '':
+                if isinstance(training_required, str):
+                    training_required = training_required.lower() in ['true',1]
+            else:
+                training_required = False
             # visible_to_users = request.data.get('visible_to_users', [])
             # approver = request.data.get('approver')
             # doc_admin = request.data.get('doc_admin')
