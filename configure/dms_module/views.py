@@ -4248,33 +4248,81 @@ from django.http import FileResponse
 from django.shortcuts import redirect
 
 @csrf_exempt
-def get_editor_config(request):
-    document_url = "http://host.docker.internal:8000/media/templates/SOP_template.docx"  # Ensure this URL is valid and accessible 
-    unique_key = hashlib.sha256(document_url.encode()).hexdigest()
+# def get_editor_config(request):
+#     document_url = "http://host.docker.internal:8000/media/templates/SOP_template.docx"  # Ensure this URL is valid and accessible 
+#     unique_key = hashlib.sha256(document_url.encode()).hexdigest()
 
-    document_data = {
-        "fileType": "docx",
-        "key": unique_key,
-        "title": "Sample Document",
-        "url": document_url,  # Direct link to the document
-    }
+#     document_data = {
+#         "fileType": "docx",
+#         "key": unique_key,
+#         "title": "Sample Document",
+#         "url": document_url,  # Direct link to the document
+#     }
 
-    editor_config = {
+#     editor_config = {
         
-        "document": document_data,
-        "editorConfig": {
-            # "callbackUrl": "http://127.0.0.1:8000/dms_module/onlyoffice_callback",
-            "callbackUrl": "http://host.docker.internal:8000/dms_module/onlyoffice_callback",
-            "mode": "edit",
-            "user": {"id": "1", "name": "Rohit Sharma"},
-        },
-    }
+#         "document": document_data,
+#         "editorConfig": {
+#             # "callbackUrl": "http://127.0.0.1:8000/dms_module/onlyoffice_callback",
+#             "callbackUrl": "http://host.docker.internal:8000/dms_module/onlyoffice_callback",
+#             "mode": "edit",
+#             "user": {"id": "1", "name": "Rohit Sharma"},
+#         },
+#     }
 
-    # Secret must match ONLYOFFICE configuration
-    secret = "45540a6bfecc97ab6d06c436a74c333b1b54447c4de5fd41b8ad0b8361a395c6"
-    token = jwt.encode(editor_config, secret, algorithm="HS256")
+#     # Secret must match ONLYOFFICE configuration
+#     secret = "45540a6bfecc97ab6d06c436a74c333b1b54447c4de5fd41b8ad0b8361a395c6"
+#     token = jwt.encode(editor_config, secret, algorithm="HS256")
 
-    return JsonResponse({"token": token, **editor_config})
+#     return JsonResponse({"token": token, **editor_config})
+
+def get_editor_config(request):
+    # Get template_id from the request parameters
+    template_id = request.GET.get('template_id')  # You can also use request.POST or other ways to get the parameter
+
+    if not template_id:
+        return JsonResponse({"status": False, "message": "template_id parameter is required"})
+
+    try:
+        # Fetch the template object by its ID
+        template = TemplateModel.objects.get(id=template_id)
+
+        # Serialize the template object to get the document URL
+        serializer = TemplateDocumentSerializer(template, context={'request': request})
+        document_url = serializer.data.get('document_url')
+
+        if not document_url:
+            return JsonResponse({"status": False, "message": "Document URL not available for the selected template"})
+
+        # Generate the unique key for the document URL
+        unique_key = hashlib.sha256(document_url.encode()).hexdigest()
+
+        # Document data
+        document_data = {
+            "fileType": "docx",  # Assuming the document is of type 'docx'
+            "key": unique_key,
+            "title": template.template_name,  # Use the template name as the title
+            "url": document_url,  # Direct link to the document
+        }
+
+        # Editor configuration data
+        editor_config = {
+            "document": document_data,
+            "editorConfig": {
+                # Replace with your actual callback URL for the editor
+                "callbackUrl": "http://host.docker.internal:8000/dms_module/onlyoffice_callback",
+                "mode": "edit",
+                "user": {"id": "1", "name": "Rohit Sharma"},
+            },
+        }
+
+        # Secret for encoding the JWT token
+        secret = "45540a6bfecc97ab6d06c436a74c333b1b54447c4de5fd41b8ad0b8361a395c6"
+        token = jwt.encode(editor_config, secret, algorithm="HS256")
+        return JsonResponse({"token": token, **editor_config})
+
+    except TemplateModel.DoesNotExist:
+        return JsonResponse({"status": False, "message": "Template not found"})
 @csrf_exempt
 def onlyoffice_callback(request):
     print(f"Received request: {request.method} {request.body}")

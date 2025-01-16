@@ -99,11 +99,23 @@ class TemplateDocumentSerializer(serializers.ModelSerializer):
         model = TemplateModel
         fields = ['template_name', 'document_url']
 
+    # def get_document_url(self, obj):
+    #     request = self.context.get('request')
+    #     if obj.template_doc:
+    #         return request.build_absolute_uri(obj.template_doc.url)
+    #         # return f"http://host.docker.internal:8000{obj.select_template.template_doc.url}"
+    #     return None
+    
     def get_document_url(self, obj):
         request = self.context.get('request')
         if obj.template_doc:
-            return request.build_absolute_uri(obj.template_doc.url)
+            # Replace the host part with 'host.docker.internal'
+            document_url = request.build_absolute_uri(obj.template_doc.url)
+            document_url = document_url.replace("127.0.0.1", "host.docker.internal")
+            return document_url
         return None
+    
+
 
 class TemplateSerializer(serializers.ModelSerializer):
     class Meta:
