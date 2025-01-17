@@ -157,7 +157,7 @@ EMAIL_HOST_PASSWORD = 'tpahwwdnkbacwxqw'
 
 
 ONLYOFFICE_SECRET = "45540a6bfecc97ab6d06c436a74c333b1b54447c4de5fd41b8ad0b8361a395c6"
-ONLYOFFICE_SERVER_URL = "http://localhost"
+ONLYOFFICE_SERVER_URL = "http://locar8lhost"
 
 ALLOWED_HOSTS = [
     '*'
