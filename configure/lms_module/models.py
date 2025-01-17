@@ -166,19 +166,15 @@ class TrainingQuiz(models.Model):
     training = models.ForeignKey(TrainingCreate, related_name='quizzes', on_delete=models.CASCADE)
     quiz_name = models.CharField(max_length=255)
     pass_criteria = models.DecimalField(max_digits=5, decimal_places=2)  # For example, pass if >= 50%
-    quiz_time = models.PositiveIntegerField()  # Time in minutes
-    total_marks = models.PositiveIntegerField()
-    total_questions = models.PositiveIntegerField()
-    quiz_type = models.CharField(max_length=10, choices=QUIZ_TYPE_CHOICES)
+    quiz_time = models.PositiveIntegerField(null=True, blank=True)  # Time in minutes
+    total_marks = models.PositiveIntegerField(null=True, blank=True)
+    total_questions = models.PositiveIntegerField(null=True, blank=True)
+    quiz_type = models.CharField(max_length=10, choices=QUIZ_TYPE_CHOICES,null=True, blank=True)
     created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='training_quizzes_created', null=True, blank=True)
     updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='training_quizzes_updated', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     status = models.BooleanField(default=True,null=True,blank=True)
-
-
-    def __str__(self):
-        return self.name
 
     def get_total_marks(self):
         return sum([q.marks for q in self.questions.all()])

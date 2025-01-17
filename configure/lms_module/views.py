@@ -1623,6 +1623,8 @@ class TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
 
 
 
+import json
+import ipdb
 class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TrainingQuizSerializer
@@ -1630,6 +1632,7 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
+            # Extracting data from the request
             user = self.request.user
             training_id = request.data.get('training_id')
             quiz_name = request.data.get('name')
@@ -1638,8 +1641,9 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
             quiz_type = request.data.get('quiz_type')
             total_marks = int(request.data.get('total_marks', 0)) 
             marks_breakdown = request.data.get('marks_breakdown')  # e.g., {'1': 5, '2': 3, '3': 2}
-            selected_questions = request.data.get('selected_questions', [])  
+            selected_questions = request.data.get('selected_questions', [])  # Only relevant for manual quizzes
 
+            # Validate required fields
             if not all([training_id, quiz_name, pass_criteria, quiz_time, quiz_type, total_marks]):
                 return Response({"status": False, "message": "Missing required fields", "data": []})
 
@@ -1648,8 +1652,16 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
             except TrainingCreate.DoesNotExist:
                 return Response({"status": False, "message": "Training not found", "data": []})
 
+            # Parse marks_breakdown if it's a string (in case it's sent as a string representation)
+            if isinstance(marks_breakdown, str):
+                try:
+                    marks_breakdown = json.loads(marks_breakdown)  # Convert string to dictionary
+                except json.JSONDecodeError:
+                    return Response({"status": False, "message": "Invalid marks_breakdown format", "data": []})
+
+            # Create the new quiz
             quiz = TrainingQuiz.objects.create(
-                name=quiz_name,
+                quiz_name=quiz_name,
                 pass_criteria=pass_criteria,
                 quiz_time=quiz_time,
                 quiz_type=quiz_type,
@@ -1660,37 +1672,62 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
             total_marks_accumulated = 0  
             total_questions = 0  
 
+            # Handle auto-type quizzes
             if quiz_type == 'auto':
-                
+                # Marks breakdown is a dictionary, iterate through it
                 for marks, count in marks_breakdown.items():
-                    marks = int(marks)  
-                    count = int(count)  
-        
-                    questions = TrainingQuestions.objects.filter(
-                        training=training,  
-                        marks=marks,       
-                        status=True         
-                    )
+                    marks = int(marks)  # Ensure marks is an integer
+                    count = int(count)  # Ensure count is an integer
+
+                    questions = list(TrainingQuestions.objects.filter(
+                        training=training,  # The training filter
+                        marks=marks,        # Marks filter
+                        status=True          # Only active questions
+                    ))
 
                     if len(questions) < count:
                         return Response({"status": False,"message": f"Not enough questions with {marks} marks. Found {len(questions)} questions.","data": []})
+
+                    # Select the required number of questions
                     selected_questions = random.sample(questions, count)
 
                     potential_marks = total_marks_accumulated + (marks * count)
                     if potential_marks > total_marks:
                         return Response({"status": False,"message": f"Total marks exceeded. The selected questions' marks total {potential_marks}, which exceeds the input total_marks of {total_marks}.","data": []})
 
+                    # Create QuizQuestion for each selected question
                     for question in selected_questions:
                         QuizQuestion.objects.create(quiz=quiz, question=question, marks=marks)
 
                     total_marks_accumulated += marks * count
                     total_questions += count
 
+            # Handle manual-type quizzes
             elif quiz_type == 'manual':
+                # Validate selected_questions for manual quiz creation
                 if not selected_questions or not isinstance(selected_questions, list):
                     return Response({
                         "status": False,
                         "message": "You must provide a list of selected questions for manual quiz creation.",
+                        "data": []
+                    })
+
+                # Ensure selected_questions is always a list of integers (question IDs)
+                if isinstance(selected_questions, str) and selected_questions.strip() == "":
+                    selected_questions = []  # Handle the case where it's an empty string
+
+                if not isinstance(selected_questions, list):
+                    return Response({
+                        "status": False,
+                        "message": "selected_questions must be a list.",
+                        "data": []
+                    })
+
+                # Validate that each item in selected_questions is an integer (question ID)
+                if any(not isinstance(q, int) for q in selected_questions):
+                    return Response({
+                        "status": False,
+                        "message": "Each element in selected_questions must be an integer (question ID).",
                         "data": []
                     })
 
@@ -1707,6 +1744,7 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
                         "data": []
                     })
 
+                # Create QuizQuestion for each selected question
                 for question in questions:
                     if total_marks_accumulated + question.marks > total_marks:
                         return Response({
@@ -1718,6 +1756,7 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
                     total_marks_accumulated += question.marks
                     total_questions += 1
 
+            # Check for total marks mismatch
             if total_marks_accumulated != total_marks:
                 return Response({
                     "status": False,
@@ -1725,10 +1764,12 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
                     "data": []
                 })
 
+            # Save the quiz with final total marks and total questions
             quiz.total_marks = total_marks_accumulated
             quiz.total_questions = total_questions
             quiz.save()
 
+            # Return the quiz data
             serializer = TrainingQuizSerializer(quiz, context={'request': request})
             return Response({"status": True, "message": "Quiz created successfully", "data": serializer.data})
 
@@ -1736,6 +1777,10 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Database Integrity Error", "error": str(e), "data": []})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+
+
+
+
 
 
 

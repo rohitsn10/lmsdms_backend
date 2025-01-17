@@ -159,14 +159,14 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QuizQuestion
-        fields = ['question', 'marks']
+        fields = ['question', 'marks','question_text']
 
 class TrainingQuizSerializer(serializers.ModelSerializer):
     questions = QuizQuestionSerializer(many=True)
 
     class Meta:
         model = TrainingQuiz
-        fields = ['id', 'name', 'pass_criteria', 'quiz_time', 'total_marks', 'total_questions', 'quiz_type', 'questions', 'created_by','updated_by','created_at','updated_at','status']
+        fields = ['id', 'quiz_name', 'pass_criteria', 'quiz_time', 'total_marks', 'total_questions', 'quiz_type', 'questions', 'created_by','updated_by','created_at','updated_at','status']
 
 class TrainingSerializerForInductionNested(serializers.ModelSerializer):
     plant_name = serializers.CharField(source='plant.plant_name', read_only=True)
