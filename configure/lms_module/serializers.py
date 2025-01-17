@@ -156,10 +156,12 @@ class TrainingQuestinSerializer(serializers.ModelSerializer):
 class QuizQuestionSerializer(serializers.ModelSerializer):
     question_text = serializers.CharField(source='question.question_text')
     marks = serializers.IntegerField()
-
+    options = serializers.SerializerMethodField()
     class Meta:
         model = QuizQuestion
-        fields = ['question', 'marks','question_text']
+        fields = ['question', 'marks','question_text','options']
+    def get_options(self, obj):
+        return obj.question.options
 
 class TrainingQuizSerializer(serializers.ModelSerializer):
     questions = QuizQuestionSerializer(many=True)
