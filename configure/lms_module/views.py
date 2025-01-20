@@ -1642,7 +1642,9 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
             total_marks = int(request.data.get('total_marks', 0)) 
             marks_breakdown = request.data.get('marks_breakdown')  # e.g., {'1': 5, '2': 3, '3': 2}
             selected_questions = request.data.get('selected_questions', [])  # Only relevant for manual quizzes
-
+            pass_criteria = int(pass_criteria) if pass_criteria else 0
+            if pass_criteria > total_marks:
+                return Response({"status": False, "message": "Pass criteria cannot be greater than total marks", "data": []})
             # Validate required fields
             if not all([training_id, quiz_name, pass_criteria, quiz_time, quiz_type, total_marks]):
                 return Response({"status": False, "message": "Missing required fields", "data": []})

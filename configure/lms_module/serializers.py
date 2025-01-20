@@ -157,11 +157,32 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
     question_text = serializers.CharField(source='question.question_text')
     marks = serializers.IntegerField()
     options = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+    video_url = serializers.SerializerMethodField()
+    audio_url = serializers.SerializerMethodField()
     class Meta:
         model = QuizQuestion
-        fields = ['question', 'marks','question_text','options']
+        fields = ['id','question', 'marks','question_text','options','image_url','video_url','audio_url']
     def get_options(self, obj):
         return obj.question.options
+    
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.question.image_file and hasattr(obj.question.image_file, 'url'):
+            return request.build_absolute_uri(obj.question.image_file.url)
+        return None
+    
+    def get_video_url(self, obj):
+        request = self.context.get('request')
+        if obj.question.video_file and hasattr(obj.question.video_file, 'url'):
+            return request.build_absolute_uri(obj.question.video_file.url)
+        return None
+
+    def get_audio_url(self, obj):
+        request = self.context.get('request')
+        if obj.question.audio_file and hasattr(obj.question.audio_file, 'url'):
+            return request.build_absolute_uri(obj.question.audio_file.url)
+        return None
 
 class TrainingQuizSerializer(serializers.ModelSerializer):
     questions = QuizQuestionSerializer(many=True)
