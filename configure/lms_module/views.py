@@ -1218,34 +1218,22 @@ class TrainingMaterialCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TrainingMaterialSerializer
     queryset = TrainingMaterial.objects.all().order_by('-material_created_at')
-    
+
     def create(self, request, *args, **kwargs):
         try:
             user = self.request.user
+            section_id = request.data.get('section_ids')
 
-            section_ids_str = request.data.get('section_ids')
-
-            if not section_ids_str:
+            if not section_id:
                 return Response({"status": False, "message": "Section IDs are required", "data": []})
 
-            # Try to safely parse the string into a list
-            try:
-                # Parse the string to convert it into a list of integers
-                section_ids = ast.literal_eval(section_ids_str)  # Safe evaluation for a list
-                if not isinstance(section_ids, list):
-                    return Response({"status": False, "message": "Section IDs must be a valid list", "data": []})
-                # Convert string elements into integers
-                section_ids = [int(id) for id in section_ids]
-            except (ValueError, SyntaxError):
-                return Response({"status": False, "message": "Section IDs must be a valid list of integers", "data": []})
-            
-            sections = TrainingSection.objects.filter(id__in=section_ids)
-            if sections.count() != len(section_ids):
-                return Response({"status": False, "message": "Some section IDs are invalid", "data": []})
+            sections = TrainingSection.objects.get(id=section_id)
+            if not sections:
+                return Response({"status": False, "message": "Section IDs not found", "data": []})
 
             material_title = request.data.get('material_title')
             material_type = request.data.get('material_type')
-            material_file = request.FILES.get('material_file')
+            material_files = request.FILES.getlist('material_file')  # Get the list of files
             minimum_reading_time = request.data.get('minimum_reading_time')
 
             if not material_title:
@@ -1254,18 +1242,29 @@ class TrainingMaterialCreateViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Material type is required", "data": []})
             if material_type not in dict(TrainingMaterial.MATERIAL_CHOICES).keys():
                 return Response({"status": False, "message": "Invalid material type", "data": []})
-            if not material_file:
+            if not material_files:
                 return Response({"status": False, "message": "Material file is required", "data": []})
 
+            # Create the TrainingMaterial object
             training_material = TrainingMaterial.objects.create(
                 material_title=material_title,
+                section=sections,
                 material_type=material_type,
-                material_file=material_file,
                 minimum_reading_time=minimum_reading_time,
                 created_by=user,
-                material_created_at = timezone.now()
+                material_created_at=timezone.now()
             )
-            training_material.section.set(sections)
+
+            # Process each file and add it to the material_file relationship
+            for material_file in material_files:
+                attachment = TrainingMaterialAttachments.objects.create(
+                    user=user,
+                    material_file=material_file
+                )
+                # Add the attachment to the material_file many-to-many field
+                training_material.material_file.add(attachment)
+
+            # Save the training material object to commit changes
             training_material.save()
 
             # Serialize and return the response

@@ -2,6 +2,8 @@
 from .models import *
 from rest_framework import serializers
 from django.contrib.auth.models import Group, Permission
+from user_profile.function_call import *
+
 
 class GetDepartmentSerializer(serializers.ModelSerializer):
     # department_created_at = serializers.SerializerMethodField()
@@ -105,18 +107,17 @@ class TrainingSectionSerializer(serializers.ModelSerializer):
 
 
 class TrainingMaterialSerializer(serializers.ModelSerializer):
-    material_file_url = serializers.SerializerMethodField()
-    section = TrainingSectionSerializer(many=True)
+    material_file_urls = serializers.SerializerMethodField()
+    section_name = serializers.CharField(source='section.section_name', read_only=True)
 
     class Meta:
         model = TrainingMaterial
-        fields = ['id', 'section', 'material_title', 'material_type', 'material_file_url', 'minimum_reading_time', 'material_created_at']
+        fields = ['id', 'section', 'section_name', 'material_title', 'material_type', 'material_file_urls', 'minimum_reading_time', 'material_created_at']
 
-    def get_material_file_url(self, obj):
-        request = self.context.get('request')
-        if obj.material_file and hasattr(obj.material_file, 'url'):
-            return request.build_absolute_uri(obj.material_file.url)
-        return None
+    def get_material_file_urls(self, obj):
+        return get_file_data(self.context.get('request'), obj, 'material_file')
+
+
     
 
 class TrainingQuestinSerializer(serializers.ModelSerializer):
