@@ -107,15 +107,25 @@ class TrainingSectionSerializer(serializers.ModelSerializer):
 
 
 class TrainingMaterialSerializer(serializers.ModelSerializer):
-    material_file_urls = serializers.SerializerMethodField()
-    section_name = serializers.CharField(source='section.section_name', read_only=True)
+    material_file_url = serializers.SerializerMethodField()
 
     class Meta:
         model = TrainingMaterial
-        fields = ['id', 'section', 'section_name', 'material_title', 'material_type', 'material_file_urls', 'minimum_reading_time', 'material_created_at']
+        fields = ['material_title', 'material_type', 'material_file_url', 'minimum_reading_time', 'material_created_at']
 
-    def get_material_file_urls(self, obj):
-        return get_file_data(self.context.get('request'), obj, 'material_file')
+    def get_material_file_url(self, obj):
+        if obj.material_file.exists():
+            return obj.material_file.first().material_file.url
+        return None
+
+
+
+class TrainingNestedSectionSerializer(serializers.ModelSerializer):
+    material = TrainingMaterialSerializer(many=True, source='materials')  # Use 'materials' to reference related materials
+
+    class Meta:
+        model = TrainingSection
+        fields = ['id', 'training', 'section_name', 'section_description', 'section_order', 'material']
 
 
     

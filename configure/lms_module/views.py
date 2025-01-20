@@ -1212,11 +1212,11 @@ class TrainingSectionUpdateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "data": []})
                 
-
+from django.db.models import Prefetch
 
 class TrainingMaterialCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = TrainingMaterialSerializer
+    serializer_class = TrainingNestedSectionSerializer
     queryset = TrainingMaterial.objects.all().order_by('-material_created_at')
 
     def create(self, request, *args, **kwargs):
@@ -1268,7 +1268,7 @@ class TrainingMaterialCreateViewSet(viewsets.ModelViewSet):
             training_material.save()
 
             # Serialize and return the response
-            serializer = TrainingMaterialSerializer(training_material, context={'request': request})
+            serializer = self.serializer_class(training_material, context={'request': request})
             data = serializer.data
             return Response({"status": True, "message": "Training material created successfully", "data": data})
 
@@ -1278,12 +1278,13 @@ class TrainingMaterialCreateViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            queryset = self.filter_queryset(self.get_queryset())
-            serializer = TrainingMaterialSerializer(queryset, many=True, context = {'request': request})
+            training_materials = Prefetch('materials', queryset=TrainingMaterial.objects.all().order_by('-id'))
+            sections = TrainingSection.objects.prefetch_related(training_materials).all().order_by('-id')
+            serializer = TrainingNestedSectionSerializer(sections, many=True, context={'request': request})
             data = serializer.data
-            return Response({"status": True,"message": "Training material list fetched successfully","data": data})
+            return Response({"status": True,"message": "Training section list fetched successfully","data": data})
         except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+            return Response({"status": False,"message": "Something went wrong","error": str(e)})
         
 class TrainingIdWiseTrainingSectionViewset(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
