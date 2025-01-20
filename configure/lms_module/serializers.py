@@ -114,21 +114,16 @@ class TrainingMaterialSerializer(serializers.ModelSerializer):
         fields = ['material_title', 'material_type', 'material_file_url', 'minimum_reading_time', 'material_created_at']
 
     def get_material_file_url(self, obj):
+        request = self.context.get('request')
         if obj.material_file.exists():
-            return obj.material_file.first().material_file.url
+            return request.build_absolute_uri(obj.material_file.first().material_file.url)
         return None
-
-
 
 class TrainingNestedSectionSerializer(serializers.ModelSerializer):
     material = TrainingMaterialSerializer(many=True, source='materials')  # Use 'materials' to reference related materials
-
     class Meta:
         model = TrainingSection
         fields = ['id', 'training', 'section_name', 'section_description', 'section_order', 'material']
-
-
-    
 
 class TrainingQuestinSerializer(serializers.ModelSerializer):
     # Create custom fields to return URLs for audio and video files

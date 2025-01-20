@@ -1254,23 +1254,15 @@ class TrainingMaterialCreateViewSet(viewsets.ModelViewSet):
                 created_by=user,
                 material_created_at=timezone.now()
             )
-
-            # Process each file and add it to the material_file relationship
             for material_file in material_files:
                 attachment = TrainingMaterialAttachments.objects.create(
                     user=user,
                     material_file=material_file
                 )
-                # Add the attachment to the material_file many-to-many field
                 training_material.material_file.add(attachment)
-
-            # Save the training material object to commit changes
             training_material.save()
 
-            # Serialize and return the response
-            serializer = self.serializer_class(training_material, context={'request': request})
-            data = serializer.data
-            return Response({"status": True, "message": "Training material created successfully", "data": data})
+            return Response({"status": True, "message": "Training material created successfully", "data": []})
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
