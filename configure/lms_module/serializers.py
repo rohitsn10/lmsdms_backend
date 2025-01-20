@@ -155,14 +155,14 @@ class TrainingQuestinSerializer(serializers.ModelSerializer):
 
 class QuizQuestionSerializer(serializers.ModelSerializer):
     question_text = serializers.CharField(source='question.question_text')
-    marks = serializers.IntegerField()
     options = serializers.SerializerMethodField()
+    correct_answer = serializers.CharField(source='question.correct_answer')
     image_url = serializers.SerializerMethodField()
     video_url = serializers.SerializerMethodField()
     audio_url = serializers.SerializerMethodField()
     class Meta:
         model = QuizQuestion
-        fields = ['id','question', 'marks','question_text','options','image_url','video_url','audio_url']
+        fields = ['id','question', 'marks','question_text','options','correct_answer','image_url','video_url','audio_url']
     def get_options(self, obj):
         return obj.question.options
     
