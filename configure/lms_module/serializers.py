@@ -2,6 +2,8 @@
 from .models import *
 from rest_framework import serializers
 from django.contrib.auth.models import Group, Permission
+from user_profile.function_call import *
+
 
 class GetDepartmentSerializer(serializers.ModelSerializer):
     # department_created_at = serializers.SerializerMethodField()
@@ -106,18 +108,22 @@ class TrainingSectionSerializer(serializers.ModelSerializer):
 
 class TrainingMaterialSerializer(serializers.ModelSerializer):
     material_file_url = serializers.SerializerMethodField()
-    section = TrainingSectionSerializer(many=True)
 
     class Meta:
         model = TrainingMaterial
-        fields = ['id', 'section', 'material_title', 'material_type', 'material_file_url', 'minimum_reading_time', 'material_created_at']
+        fields = ['material_title', 'material_type', 'material_file_url', 'minimum_reading_time', 'material_created_at']
 
     def get_material_file_url(self, obj):
         request = self.context.get('request')
-        if obj.material_file and hasattr(obj.material_file, 'url'):
-            return request.build_absolute_uri(obj.material_file.url)
+        if obj.material_file.exists():
+            return request.build_absolute_uri(obj.material_file.first().material_file.url)
         return None
-    
+
+class TrainingNestedSectionSerializer(serializers.ModelSerializer):
+    material = TrainingMaterialSerializer(many=True, source='materials')  # Use 'materials' to reference related materials
+    class Meta:
+        model = TrainingSection
+        fields = ['id', 'training', 'section_name', 'section_description', 'section_order', 'material']
 
 class TrainingQuestinSerializer(serializers.ModelSerializer):
     # Create custom fields to return URLs for audio and video files
@@ -155,18 +161,41 @@ class TrainingQuestinSerializer(serializers.ModelSerializer):
 
 class QuizQuestionSerializer(serializers.ModelSerializer):
     question_text = serializers.CharField(source='question.question_text')
-    marks = serializers.IntegerField()
-
+    options = serializers.SerializerMethodField()
+    correct_answer = serializers.CharField(source='question.correct_answer')
+    image_url = serializers.SerializerMethodField()
+    video_url = serializers.SerializerMethodField()
+    audio_url = serializers.SerializerMethodField()
     class Meta:
         model = QuizQuestion
-        fields = ['question', 'marks']
+        fields = ['id','question', 'marks','question_text','options','correct_answer','image_url','video_url','audio_url']
+    def get_options(self, obj):
+        return obj.question.options
+    
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.question.image_file and hasattr(obj.question.image_file, 'url'):
+            return request.build_absolute_uri(obj.question.image_file.url)
+        return None
+    
+    def get_video_url(self, obj):
+        request = self.context.get('request')
+        if obj.question.video_file and hasattr(obj.question.video_file, 'url'):
+            return request.build_absolute_uri(obj.question.video_file.url)
+        return None
+
+    def get_audio_url(self, obj):
+        request = self.context.get('request')
+        if obj.question.audio_file and hasattr(obj.question.audio_file, 'url'):
+            return request.build_absolute_uri(obj.question.audio_file.url)
+        return None
 
 class TrainingQuizSerializer(serializers.ModelSerializer):
     questions = QuizQuestionSerializer(many=True)
 
     class Meta:
         model = TrainingQuiz
-        fields = ['id', 'name', 'pass_criteria', 'quiz_time', 'total_marks', 'total_questions', 'quiz_type', 'questions', 'created_by','updated_by','created_at','updated_at','status']
+        fields = ['id', 'quiz_name', 'pass_criteria', 'quiz_time', 'total_marks', 'total_questions', 'quiz_type', 'questions', 'created_by','updated_by','created_at','updated_at','status']
 
 class TrainingSerializerForInductionNested(serializers.ModelSerializer):
     plant_name = serializers.CharField(source='plant.plant_name', read_only=True)

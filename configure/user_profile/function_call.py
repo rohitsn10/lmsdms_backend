@@ -8,6 +8,7 @@ import re
 from django.db.models import Max
 from dms_module.models import *
 from datetime import datetime, timedelta
+from rest_framework.request import Request
 
 
 def validate_dates(start_date, end_date):
@@ -189,6 +190,25 @@ def generate_document_number(user, document_type, parent_document_instance=None)
 
     return document_number
 
+
+
+def get_file_data(request: Request, obj, field_name: str):
+    # Get the field (ManyToManyField in this case) from the model instance
+    field = getattr(obj, field_name, None)
+
+    if field:
+        # If it's a ManyToMany field (i.e., the field is a Manager), iterate over all related objects
+        if isinstance(field, models.Manager):
+            return [
+                {
+                    "id": str(item.id),
+                    "url": request.build_absolute_uri(item.material_file.url),  # Assuming 'material_file' is the field in TrainingMaterialAttachments
+                    "created_at": item.created_at.isoformat(),
+                    "updated_at": item.updated_at.isoformat(),
+                }
+                for item in field.all()
+            ]
+    return None
 
 
 

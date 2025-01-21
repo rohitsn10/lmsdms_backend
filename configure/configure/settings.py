@@ -33,10 +33,10 @@ ALLOWED_HOSTS = ['*']
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOWED_ORIGINS = [
-    'http://127.0.0.1:8000',
-    'http://localhost:8000'
-]
+# CORS_ALLOWED_ORIGINS = [
+#     'http://127.0.0.1:8000',
+#     'http://localhost:8000'
+# ]
 CORS_ALLOW_ALL_ORIGINS = True 
 
 
@@ -110,8 +110,8 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "lmsdms_db",
         "USER": "lmsdms_user",
-        # "PASSWORD": "12345678",
-        "PASSWORD": "qkJE^0MA5KTK9e4",
+        "PASSWORD": "12345678",
+        # "PASSWORD": "qkJE^0MA5KTK9e4",
         "HOST": "localhost",
         "PORT": "5432",
         }

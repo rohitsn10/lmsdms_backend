@@ -98,9 +98,12 @@ class TrainingSection(models.Model):
     section_created_at = models.DateTimeField(auto_now_add=True, null=True,blank=True)
     section_updated_at = models.DateTimeField(auto_now=True,null=True,blank=True)
 
-    def __str__(self):
-        return f"{self.section_name} - {self.training.training_name}"
     
+class TrainingMaterialAttachments(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,null=True,blank=True)
+    material_file = models.FileField(upload_to='training_material_attachments',null=True,blank=True)
+    created_at = models.DateTimeField(auto_now_add=True,null=True,blank=True)
+    updated_at = models.DateTimeField(auto_now=True,null=True,blank=True)
 
 class TrainingMaterial(models.Model):
     MATERIAL_CHOICES = (
@@ -112,10 +115,10 @@ class TrainingMaterial(models.Model):
         ('scorm', 'SCORM'),
         ('import', 'Import'),
     )
-    section = models.ManyToManyField(TrainingSection)
-    material_title = models.CharField(max_length=255)
-    material_type = models.CharField(max_length=50, choices=MATERIAL_CHOICES)
-    material_file = models.FileField(upload_to='training_materials/', null=True, blank=True)
+    section = models.ForeignKey(TrainingSection, related_name='materials', on_delete=models.CASCADE,null=True,blank=True)
+    material_title = models.CharField(max_length=255,null=True,blank=True)
+    material_type = models.CharField(max_length=50, choices=MATERIAL_CHOICES,null=True,blank=True)
+    material_file = models.ManyToManyField(TrainingMaterialAttachments)
     minimum_reading_time = models.CharField(max_length=500, null=True, blank=True)
     created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='training_materials_created', null=True, blank=True)
     updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='training_materials_updated', null=True, blank=True)
@@ -124,8 +127,7 @@ class TrainingMaterial(models.Model):
     reading_start_time = models.DateTimeField(null=True, blank=True)
     reading_end_time = models.DateTimeField(null=True, blank=True)
 
-    def __str__(self):
-        return self.material_title
+
 
 class MaterialReadingTime(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -166,19 +168,15 @@ class TrainingQuiz(models.Model):
     training = models.ForeignKey(TrainingCreate, related_name='quizzes', on_delete=models.CASCADE)
     quiz_name = models.CharField(max_length=255)
     pass_criteria = models.DecimalField(max_digits=5, decimal_places=2)  # For example, pass if >= 50%
-    quiz_time = models.PositiveIntegerField()  # Time in minutes
-    total_marks = models.PositiveIntegerField()
-    total_questions = models.PositiveIntegerField()
-    quiz_type = models.CharField(max_length=10, choices=QUIZ_TYPE_CHOICES)
+    quiz_time = models.PositiveIntegerField(null=True, blank=True)  # Time in minutes
+    total_marks = models.PositiveIntegerField(null=True, blank=True)
+    total_questions = models.PositiveIntegerField(null=True, blank=True)
+    quiz_type = models.CharField(max_length=10, choices=QUIZ_TYPE_CHOICES,null=True, blank=True)
     created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='training_quizzes_created', null=True, blank=True)
     updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='training_quizzes_updated', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     status = models.BooleanField(default=True,null=True,blank=True)
-
-
-    def __str__(self):
-        return self.name
 
     def get_total_marks(self):
         return sum([q.marks for q in self.questions.all()])
