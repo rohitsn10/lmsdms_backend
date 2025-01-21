@@ -241,8 +241,11 @@ class ClassroomTraining(models.Model):
     is_assesment = models.CharField(max_length=20, choices=TRAINING_TYPE_CHOICES)
     classroom_name = models.CharField(max_length=255)
     description = models.TextField()
-    upload_doc = models.FileField(upload_to='classroom_trainings/', null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='assigned')
+
+class ClassroomTrainingFile(models.Model):
+    classroom_training = models.ForeignKey(ClassroomTraining, related_name='files', on_delete=models.CASCADE)
+    upload_doc = models.FileField(upload_to='classroom_trainings/', null=True, blank=True)
 
 class Session(models.Model):
     session_name = models.CharField(max_length=255)

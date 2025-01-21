@@ -245,11 +245,16 @@ class InductionDesignationSerializer(serializers.ModelSerializer):
         fields = ['id', 'induction_designation_name', 'designation_code', 'induction', 'created_date', 'created_by']
         read_only_fields = ['created_date', 'created_by']        
 
+class ClassroomTrainingFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClassroomTrainingFile
+        fields = ['upload_doc']
 
 class ClassroomTrainingSerializer(serializers.ModelSerializer):
+    files = ClassroomTrainingFileSerializer(many=True, read_only=True)
     class Meta:
         model = ClassroomTraining
-        fields = '__all__'
+        fields = ['classroom_name', 'is_assesment', 'description', 'status', 'files']
     # department_of_employee_first_name  = serializers.ReadOnlyField(source='department_or_employee.first_name')
     # department_of_employee_last_name = serializers.ReadOnlyField(source='department_or_employee.last_name')
     # class Meta:

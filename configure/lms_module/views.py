@@ -2152,6 +2152,7 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
             is_assesment = request.data.get('is_assesment')
             description = request.data.get('description')
             upload_doc = request.FILES.getlist('upload_doc')
+            print("====", upload_doc)
             status = request.data.get('status')
             if not classroom_name or not description or not upload_doc or not is_assesment or not status:
                 return Response({'status': False, 'message': 'All fields are required.'})
@@ -2160,13 +2161,12 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
                 classroom_name=classroom_name,
                 is_assesment=is_assesment,
                 description=description,
-                upload_doc=upload_doc,
                 status=status,
             )
 
-            if upload_doc:
-                classroom_training.upload_doc = upload_doc
-                classroom_training.save()
+            for file in upload_doc:
+                ClassroomTrainingFile.objects.create(classroom_training=classroom_training, upload_doc=file)
+
 
             serializer = ClassroomTrainingSerializer(classroom_training, context={'request': request})
             return Response({"status": True,"message": "Classroom training created successfully","data": serializer.data})
