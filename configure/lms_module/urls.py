@@ -51,10 +51,12 @@ urlpatterns = [
     path('create_induction_designation', InductionDesignationCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_induction_designation'),
     path('update_induction_designation/<int:id>', InductionDesignationUpdateViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='update_induction_designation'),
 
-    path('create_classroom_training', ClassroomTrainingCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_classroom_training'),
-    path('update_classroom_training/<int:id>', ClassroomTrainingUpdateViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='update_classroom_training'),
-    path('mark_classroom_training_completed/<int:id>', ClassroomTrainingCreateViewSet.as_view({'post': 'mark_completed'}), name='mark_classroom_training_completed'),
+    path('create_classroom', ClassroomCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_classroom_training'),
+    # path('update_classroom_training/<int:id>', ClassroomTrainingUpdateViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='update_classroom_training'),
+    # path('mark_classroom_training_completed/<int:id>', ClassroomTrainingCreateViewSet.as_view({'post': 'mark_completed'}), name='mark_classroom_training_completed'),
+    path('create_session', SessionCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='createsession'),
 
+    
     path('training_list', TrainingListViewSet.as_view({'get': 'list'}), name='training_list'),
     path('job_training_list', JobroleListingViewSet.as_view({'get': 'list'}), name='job_training_list'),
     path('jobrole_assign_training/<int:training_id>', TrainingAssignViewSet.as_view({'put': 'update'}), name='jobrole_assign_training'),

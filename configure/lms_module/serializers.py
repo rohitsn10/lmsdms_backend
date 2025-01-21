@@ -218,16 +218,22 @@ class InductionDesignationSerializer(serializers.ModelSerializer):
 
 
 class ClassroomTrainingSerializer(serializers.ModelSerializer):
-    department_of_employee_first_name  = serializers.ReadOnlyField(source='department_or_employee.first_name')
-    department_of_employee_last_name = serializers.ReadOnlyField(source='department_or_employee.last_name')
     class Meta:
         model = ClassroomTraining
-        fields = [
-            'id', 'classroom_training_type', 'title', 'description', 'department_or_employee','department_of_employee_first_name','department_of_employee_last_name',
-            'document', 'sop', 'start_date', 'start_time', 'end_time',
-            'created_at', 'created_by', 'status','acknowledged_by_employee'
-        ]
-
+        fields = '__all__'
+    # department_of_employee_first_name  = serializers.ReadOnlyField(source='department_or_employee.first_name')
+    # department_of_employee_last_name = serializers.ReadOnlyField(source='department_or_employee.last_name')
+    # class Meta:
+    #     model = ClassroomTraining
+    #     fields = [
+    #         'id', 'classroom_training_type', 'title', 'description', 'department_or_employee','department_of_employee_first_name','department_of_employee_last_name',
+    #         'document', 'sop', 'start_date', 'start_time', 'end_time',
+    #         'created_at', 'created_by', 'status','acknowledged_by_employee'
+    #     ]
+class SessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Session
+        fields = '__all__'
 
 # class TrainingListSerializer(serializers.ModelSerializer):
 #     class Meta:
