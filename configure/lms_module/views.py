@@ -2142,139 +2142,248 @@ class InductionDesignationUpdateViewSet(viewsets.ModelViewSet):
 
 
 
-class ClassroomTrainingCreateViewSet(viewsets.ModelViewSet):
+class ClassroomCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ClassroomTrainingSerializer
-    queryset = ClassroomTraining.objects.all().order_by('-created_at')
 
     def create(self, request, *args, **kwargs):
         try:
-            title = request.data.get('title')
-            department_or_employee = request.data.get('department_or_employee')
-            training_type = request.data.get('classroom_training_type')
+            classroom_name = request.data.get('classroom_name')
+            is_assesment = request.data.get('is_assesment')
             description = request.data.get('description')
-            sop = request.data.get('sop')
-            start_date = request.data.get('start_date')
-            start_time = request.data.get('start_time')
-            end_time = request.data.get('end_time')
-            document = request.data.get('document')
-            status = request.data.get('status', 'assigned')
-            created_by = request.user.id
-
-            # Validation
-            if not title or not department_or_employee or not training_type or not description:
+            upload_doc = request.data.get('upload_doc')
+            status = request.data.get('status')
+            if not classroom_name or not description or not upload_doc or not is_assesment or not status:
                 return Response({'status': False, 'message': 'All fields are required.'})
-
-            # Create Classroom Training
+            
             classroom_training = ClassroomTraining.objects.create(
-                title=title,
-                department_or_employee_id=department_or_employee,
-                classroom_training_type=training_type,
+                classroom_name=classroom_name,
+                is_assesment=is_assesment,
                 description=description,
-                sop=sop,
-                start_date=start_date,
-                start_time=start_time,
-                end_time=end_time,
-                created_by_id=created_by,
-                status=status
+                upload_doc=upload_doc,
+                status=status,
             )
 
-            if document:
-                classroom_training.document = document
+            if upload_doc:
+                classroom_training.upload_doc = upload_doc
                 classroom_training.save()
 
             serializer = ClassroomTrainingSerializer(classroom_training, context={'request': request})
-            return Response({
-                "status": True,
-                "message": "Classroom training created successfully",
-                "data": serializer.data
-            })
+            return Response({"status": True,"message": "Classroom training created successfully","data": serializer.data})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+    def list(self, request):
+        queryset = ClassroomTraining.objects.all().order_by('-id')
+        
+        try:
+            if queryset.exists():
+                serializer = ClassroomTrainingSerializer(queryset, many=True)
+                return Response({"status": True,"message": "Classroom training fetched successfully","data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No classroom training found","data": []})
+            
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+    # def create(self, request, *args, **kwargs):
+    #     try:
+    #         title = request.data.get('title')
+    #         department_or_employee = request.data.get('department_or_employee')
+    #         training_type = request.data.get('classroom_training_type')
+    #         description = request.data.get('description')
+    #         sop = request.data.get('sop')
+    #         start_date = request.data.get('start_date')
+    #         start_time = request.data.get('start_time')
+    #         end_time = request.data.get('end_time')
+    #         document = request.data.get('document')
+    #         status = request.data.get('status', 'assigned')
+    #         created_by = request.user.id
+
+    #         # Validation
+    #         if not title or not department_or_employee or not training_type or not description:
+    #             return Response({'status': False, 'message': 'All fields are required.'})
+
+    #         # Create Classroom Training
+    #         classroom_training = ClassroomTraining.objects.create(
+    #             title=title,
+    #             department_or_employee_id=department_or_employee,
+    #             classroom_training_type=training_type,
+    #             description=description,
+    #             sop=sop,
+    #             start_date=start_date,
+    #             start_time=start_time,
+    #             end_time=end_time,
+    #             created_by_id=created_by,
+    #             status=status
+    #         )
+
+    #         if document:
+    #             classroom_training.document = document
+    #             classroom_training.save()
+
+    #         serializer = ClassroomTrainingSerializer(classroom_training, context={'request': request})
+    #         return Response({
+    #             "status": True,
+    #             "message": "Classroom training created successfully",
+    #             "data": serializer.data
+    #         })
+
+    #     except Exception as e:
+    #         return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+    # def mark_completed(self, request, *args, **kwargs):
+    #     try:
+    #         # Get the classroom training object
+    #         classroom_training = self.get_object()
+    #         if classroom_training.classroom_training_type == "assessment":
+    #             # Check if all users have provided assessment results
+    #             users = classroom_training.department_or_employee.users.all()  # Assuming `users` is a related field
+    #             missing_assessment = []
+
+    #             for user in users:
+    #                 if not user.assessment_result:  # Assuming `assessment_result` is the field on the user model
+    #                     missing_assessment.append(user.username)
+
+    #             if missing_assessment:
+    #                 return Response({
+    #                     "status": False,
+    #                     "message": f"Please provide assessment results for the following users: {', '.join(missing_assessment)}"
+    #                 })
+
+    #         # If no missing assessment or no assessment type, change status to completed
+    #         classroom_training.status = 'completed'
+    #         classroom_training.save()
+
+    #         return Response({
+    #             "status": True,
+    #             "message": "Classroom training status updated to completed successfully"
+    #         })
+    #     except Exception as e:
+    #         return Response({
+    #             "status": False,
+    #             "message": f"Something went wrong: {str(e)}"
+    #         })
+
+class SessionCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SessionSerializer
+    queryset = Session.objects.all().order_by('-id')
+
+    def create(self, request, *args, **kwargs):
+        try:
+            session_name = request.data.get('session_name')
+            venue = request.data.get('venue')
+            start_date = request.data.get('start_date')
+            end_date = request.data.get('end_date')
+            start_time = request.data.get('start_time')
+            end_time = request.data.get('end_time')
+            user_ids = request.data.get('user_ids')
+            classroom_id = request.data.get('classroom_id')
+            print(user_ids)
+            print(f"user_ids type: {type(user_ids)}")
+            if not session_name:
+                return Response({'status': False, 'message': 'Session name is required.'})
+            if not venue:
+                return Response({'status': False, 'message': 'Venue is required.'})
+            if not user_ids or not isinstance(user_ids, list):
+                return Response({'status': False, 'message': 'User is required.'})
+            if not classroom_id:
+                return Response({'status': False, 'message': 'Classroom ID is required.'})
+
+            try:
+                classroom = ClassroomTraining.objects.get(id=classroom_id)
+            except ClassroomTraining.DoesNotExist:
+                return Response({"status": False, "message": "Classroom not found."})
+            
+            session = Session.objects.create(
+                session_name=session_name,
+                venue=venue,
+                start_date=start_date,
+                end_date=end_date,
+                start_time=start_time,
+                end_time=end_time,
+                classroom_id=classroom_id
+            )
+            users = CustomUser.objects.filter(id__in=user_ids)
+            session.user_ids.set(users)
+            if not users.exists():
+                return Response({"status": False, "message": "One or more user IDs are invalid."})
+            
+            session.save()
+
+            serializer = SessionSerializer(session, context={'request': request})
+            return Response({"status": True, "message": "Session created successfully", "data": serializer.data})
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
-
-    def mark_completed(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):
         try:
-            # Get the classroom training object
-            classroom_training = self.get_object()
-            if classroom_training.classroom_training_type == "assessment":
-                # Check if all users have provided assessment results
-                users = classroom_training.department_or_employee.users.all()  # Assuming `users` is a related field
-                missing_assessment = []
+            classroom_id = request.query_params.get('classroom_id')
 
-                for user in users:
-                    if not user.assessment_result:  # Assuming `assessment_result` is the field on the user model
-                        missing_assessment.append(user.username)
-
-                if missing_assessment:
-                    return Response({
-                        "status": False,
-                        "message": f"Please provide assessment results for the following users: {', '.join(missing_assessment)}"
-                    })
-
-            # If no missing assessment or no assessment type, change status to completed
-            classroom_training.status = 'completed'
-            classroom_training.save()
-
-            return Response({
-                "status": True,
-                "message": "Classroom training status updated to completed successfully"
-            })
+            if classroom_id:
+                queryset = self.queryset.filter(classroom_id=classroom_id)
+            else:
+                return Response({"status": False, "message": "classroom_id is required."})
+            
+            if queryset.exists():
+                serializer = SessionSerializer(queryset, many=True)
+                return Response({"status": True, "message": "Sessions fetched successfully", "data": serializer.data})
+            else:
+                return Response({"status": True, "message": "No sessions found", "data": []})
+        
         except Exception as e:
-            return Response({
-                "status": False,
-                "message": f"Something went wrong: {str(e)}"
-            })
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
+# class ClassroomTrainingUpdateViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     serializer_class = ClassroomTrainingSerializer
+#     queryset = ClassroomTraining.objects.all()
+#     lookup_field = 'id'
 
-class ClassroomTrainingUpdateViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = ClassroomTrainingSerializer
-    queryset = ClassroomTraining.objects.all()
-    lookup_field = 'id'
+#     def update(self, request, *args, **kwargs):
+#         try:
+#             classroom_training = self.get_object()
+#             training_type = request.data.get('classroom_training_type')
+#             title = request.data.get('title')
+#             department_or_employee = request.data.get('department_or_employee')
+#             description = request.data.get('description')
+#             sop = request.data.get('sop')
+#             start_date = request.data.get('start_date')
+#             start_time = request.data.get('start_time')
+#             end_time = request.data.get('end_time')
+#             status = request.data.get('status')
+#             acknowledged_by_employee = request.data.get('acknowledged_by_employee')
 
-    def update(self, request, *args, **kwargs):
-        try:
-            classroom_training = self.get_object()
-            training_type = request.data.get('classroom_training_type')
-            title = request.data.get('title')
-            department_or_employee = request.data.get('department_or_employee')
-            description = request.data.get('description')
-            sop = request.data.get('sop')
-            start_date = request.data.get('start_date')
-            start_time = request.data.get('start_time')
-            end_time = request.data.get('end_time')
-            status = request.data.get('status')
-            acknowledged_by_employee = request.data.get('acknowledged_by_employee')
+#             # Updating fields
+#             if training_type: classroom_training.classroom_training_type = training_type
+#             if title: classroom_training.title = title
+#             if department_or_employee: classroom_training.department_or_employee_id = department_or_employee
+#             if description: classroom_training.description = description
+#             if sop: classroom_training.sop = sop
+#             if start_date: classroom_training.start_date = start_date
+#             if start_time: classroom_training.start_time = start_time
+#             if end_time: classroom_training.end_time = end_time
+#             if status: classroom_training.status = status
+#             if acknowledged_by_employee is not None:
+#                 classroom_training.acknowledged_by_employee = acknowledged_by_employee
 
-            # Updating fields
-            if training_type: classroom_training.classroom_training_type = training_type
-            if title: classroom_training.title = title
-            if department_or_employee: classroom_training.department_or_employee_id = department_or_employee
-            if description: classroom_training.description = description
-            if sop: classroom_training.sop = sop
-            if start_date: classroom_training.start_date = start_date
-            if start_time: classroom_training.start_time = start_time
-            if end_time: classroom_training.end_time = end_time
-            if status: classroom_training.status = status
-            if acknowledged_by_employee is not None:
-                classroom_training.acknowledged_by_employee = acknowledged_by_employee
+#             classroom_training.save()
+#             serializer = ClassroomTrainingSerializer(classroom_training, context={'request': request})
+#             return Response({"status": True, "message": "Classroom training updated successfully", "data": serializer.data})
 
-            classroom_training.save()
-            serializer = ClassroomTrainingSerializer(classroom_training, context={'request': request})
-            return Response({"status": True, "message": "Classroom training updated successfully", "data": serializer.data})
+#         except Exception as e:
+#             return Response({"status": False, "message": f"Something went wrong: {str(e)}", "data": []})
 
-        except Exception as e:
-            return Response({"status": False, "message": f"Something went wrong: {str(e)}", "data": []})
-
-    def destroy(self, request, *args, **kwargs):
-        try:
-            classroom_training = self.get_object()
-            classroom_training.delete()
-            return Response({"status": True, "message": "Classroom training deleted successfully"})
-        except Exception as e:
-            return Response({"status": False, "message": f"Something went wrong: {str(e)}"})
+#     def destroy(self, request, *args, **kwargs):
+#         try:
+#             classroom_training = self.get_object()
+#             classroom_training.delete()
+#             return Response({"status": True, "message": "Classroom training deleted successfully"})
+#         except Exception as e:
+#             return Response({"status": False, "message": f"Something went wrong: {str(e)}"})
         
 # class TrainingListViewSet(viewsets.ModelViewSet):
 #     permission_classes = [permissions.IsAuthenticated]
