@@ -2186,6 +2186,51 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
             
         except Exception as e:
             return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+        
+class ClassroomUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ClassroomTrainingSerializer
+    queryset = ClassroomTraining.objects.all()
+    lookup_field = 'id'
+
+    def update(self, request, *args, **kwargs):
+        try:
+            classroom_training = self.get_object()
+            classroom_name = request.data.get('classroom_name')
+            is_assesment = request.data.get('is_assesment')
+            description = request.data.get('description')
+            upload_doc = request.FILES.getlist('upload_doc')
+            status = request.data.get('status')
+
+            if classroom_name:
+                classroom_training.classroom_name = classroom_name
+            if is_assesment:
+                classroom_training.is_assesment = is_assesment
+            if description:
+                classroom_training.description = description
+            if status:
+                classroom_training.status = status
+
+            classroom_training.save()
+
+            if upload_doc:
+                for file in upload_doc:
+                    ClassroomTrainingFile.objects.create(classroom_training=classroom_training, upload_doc=file)
+
+            serializer = ClassroomTrainingSerializer(classroom_training, context={'request': request})
+            return Response({"status": True, "message": "Classroom training updated successfully", "data": serializer.data})
+
+        except Exception as e:
+            return Response({"status": False, "message": f"Something went wrong: {str(e)}"})
+        
+    def destroy(self, request, *args, **kwargs):
+        try:
+            classroom_training = self.get_object()
+            classroom_training.delete()
+            return Response({"status": True, "message": "Classroom deleted successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": f"Something went wrong: {str(e)}"})
+
     # def create(self, request, *args, **kwargs):
     #     try:
     #         title = request.data.get('title')
@@ -2336,6 +2381,61 @@ class SessionCreateViewSet(viewsets.ModelViewSet):
         
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+class SessionUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SessionSerializer
+    queryset = Session.objects.all()
+    lookup_field = 'id'
+
+    def update(self, request, *args, **kwargs):
+        try:
+            session = self.get_object()
+            session_name = request.data.get('session_name')
+            venue = request.data.get('venue')
+            start_date = request.data.get('start_date')
+            end_date = request.data.get('end_date')
+            start_time = request.data.get('start_time')
+            end_time = request.data.get('end_time')
+            user_ids = request.data.get('user_ids')
+            classroom_id = request.data.get('classroom_id')
+
+            if session_name:
+                session.session_name = session_name
+            if venue:
+                session.venue = venue
+            if start_date:
+                session.start_date = start_date
+            if end_date:
+                session.end_date = end_date
+            if start_time:
+                session.start_time = start_time
+            if end_time:
+                session.end_time = end_time
+            if classroom_id:
+                session.classroom_id = classroom_id
+
+            session.save()
+
+            if user_ids:
+                users = CustomUser.objects.filter(id__in=user_ids)
+                session.user_ids.set(users)
+                if not users.exists():
+                    return Response({"status": False, "message": "One or more user IDs are invalid."})
+
+            serializer = SessionSerializer(session, context={'request': request})
+            return Response({"status": True, "message": "Session updated successfully", "data": serializer.data})
+
+        except Exception as e:
+            return Response({"status": False, "message": f"Something went wrong: {str(e)}"})
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            session = self.get_object()
+            session.delete()
+            return Response({"status": True, "message": "Session deleted successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": f"Something went wrong: {str(e)}"})
 
 # class ClassroomTrainingUpdateViewSet(viewsets.ModelViewSet):
 #     permission_classes = [permissions.IsAuthenticated]
