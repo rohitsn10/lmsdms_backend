@@ -120,10 +120,11 @@ class TrainingMaterialSerializer(serializers.ModelSerializer):
         return None
 
 class TrainingNestedSectionSerializer(serializers.ModelSerializer):
+    training_name = serializers.CharField(source='training.training_name', read_only=True)
     material = TrainingMaterialSerializer(many=True, source='materials')  # Use 'materials' to reference related materials
     class Meta:
         model = TrainingSection
-        fields = ['id', 'training', 'section_name', 'section_description', 'section_order', 'material']
+        fields = ['id', 'training', 'training_name', 'section_name', 'section_description', 'section_order', 'material']
 
 class TrainingQuestinSerializer(serializers.ModelSerializer):
     # Create custom fields to return URLs for audio and video files
