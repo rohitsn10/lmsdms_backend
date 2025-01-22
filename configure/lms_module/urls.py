@@ -58,6 +58,9 @@ urlpatterns = [
     path('create_session', SessionCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='createsession'),
     path('update_session', SessionUpdateViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name = 'updatesession'),
     
+    path('attendance', AttendanceCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='attendance'),
+
+
     path('training_list', TrainingListViewSet.as_view({'get': 'list'}), name='training_list'),
     path('job_training_list', JobroleListingViewSet.as_view({'get': 'list'}), name='job_training_list'),
     path('jobrole_assign_training/<int:training_id>', TrainingAssignViewSet.as_view({'put': 'update'}), name='jobrole_assign_training'),

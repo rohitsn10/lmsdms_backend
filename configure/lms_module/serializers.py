@@ -269,6 +269,10 @@ class SessionSerializer(serializers.ModelSerializer):
         model = Session
         fields = '__all__'
 
+class AttendanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Attendance
+        fields = '__all__'
 # class TrainingListSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = TrainingCreate
