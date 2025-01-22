@@ -242,6 +242,7 @@ class ClassroomTraining(models.Model):
     classroom_name = models.CharField(max_length=255)
     description = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='assigned')
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
 class ClassroomTrainingFile(models.Model):
     classroom_training = models.ForeignKey(ClassroomTraining, related_name='files', on_delete=models.CASCADE)

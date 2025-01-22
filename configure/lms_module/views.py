@@ -2487,12 +2487,22 @@ class AttendanceCreateViewSet(viewsets.ModelViewSet):
             if session_id:
                 session = Session.objects.get(id=session_id)
                 queryset = Attendance.objects.filter(session=session)
+
+                attendance_data = []
+                for attendance in queryset:
+                    user = attendance.user
+                    attendance_data.append({
+                        "attendance_id": attendance.id,
+                        "user_id": user.id,
+                        "user_name": user.username,
+                        "status": attendance.status
+                    })
             else:
                 return Response({"status": False, "message": "session_id is required."})
             
             if queryset.exists():
                 serializer = AttendanceSerializer(queryset, many=True)
-                return Response({"status": True, "message": "Attendance fetched successfully", "data": serializer.data})
+                return Response({"status": True, "message": "Attendance fetched successfully", "data": attendance_data})
             else:
                 return Response({"status": True, "message": "No attendance found", "data": []})
         
