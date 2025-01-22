@@ -1133,9 +1133,16 @@ class TrainingSectionViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            queryset = self.filter_queryset(self.get_queryset())
-            serializer = TrainingSectionSerializer(queryset, many=True, context={'request': request})
-            return Response({"status": True, "message": "Training section list", "data": serializer.data})
+            training_id = request.query_params.get('training_id')
+            if not training_id:
+                return Response({"status": False, "message": "training_id is required", "data": []})
+            
+            queryset = TrainingSection.objects.filter(training_id=training_id)
+            if queryset.exists():
+                serializer = TrainingSectionSerializer(queryset, many=True, context={'request': request})
+                return Response({"status": True, "message": "Training section list", "data": serializer.data})
+            else:
+                return Response({"status": True, "message": "No training section found", "data": []})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
