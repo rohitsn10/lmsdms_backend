@@ -257,6 +257,16 @@ class Session(models.Model):
     user_ids = models.ManyToManyField(CustomUser)
     classroom = models.ForeignKey(ClassroomTraining, related_name="sessions", on_delete=models.CASCADE)
 
+class Attendance(models.Model):
+    PRESENT = 'present'
+    ABSENT = 'absent'
+    STATUS_CHOICES = [
+        (PRESENT, 'Present'),
+        (ABSENT, 'Absent'),
+    ]
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    session = models.ForeignKey(Session, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=ABSENT)
 
 class TrainingMatrix(models.Model):
     EVALUATION_STATUS_CHOICES = [

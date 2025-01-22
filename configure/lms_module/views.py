@@ -2437,6 +2437,68 @@ class SessionUpdateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": f"Something went wrong: {str(e)}"})
 
+class AttendanceCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        try:
+            session_id = request.data.get('session_id')
+            user_ids = request.data.get('user_ids')
+            status = request.data.get('status')
+            print(f"user_ids type: {type(user_ids)}")
+            if not session_id or not user_ids:
+                return Response({'status': False, 'message': 'Session ID and user IDs are required.'})
+
+            if status not in ['present', 'absent']:
+                return Response({'status': False, 'message': 'Invalid status value.'})
+            
+            if isinstance(user_ids, str):
+                try:
+                    user_ids = [int(uid) for uid in user_ids.split(',')]
+                except ValueError:
+                    return Response({'status': False, 'message': 'Invalid user_ids format.'})
+
+            if not isinstance(user_ids, list) or not all(isinstance(uid, int) for uid in user_ids):
+                return Response({'status': False, 'message': 'user_ids should be a list of integers.'})
+            
+            try:
+                session = Session.objects.get(id=session_id)
+            except Session.DoesNotExist:
+                return Response({"status": False, "message": "Session not found."})
+            
+            users = CustomUser.objects.filter(id__in=user_ids)
+            if not users.exists():
+                return Response({"status": False, "message": "One or more user IDs are invalid."})
+            
+            for user in users:
+                attendance, created = Attendance.objects.get_or_create(user=user, session=session)
+                attendance.status = status
+                attendance.save()
+
+            return Response({"status": True, "message": "Attendance marked successfully."})
+        
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+    def list(self, request, *args, **kwargs):
+        try:
+            session_id = request.query_params.get('session_id')
+
+            if session_id:
+                session = Session.objects.get(id=session_id)
+                queryset = Attendance.objects.filter(session=session)
+            else:
+                return Response({"status": False, "message": "session_id is required."})
+            
+            if queryset.exists():
+                serializer = AttendanceSerializer(queryset, many=True)
+                return Response({"status": True, "message": "Attendance fetched successfully", "data": serializer.data})
+            else:
+                return Response({"status": True, "message": "No attendance found", "data": []})
+        
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
 # class ClassroomTrainingUpdateViewSet(viewsets.ModelViewSet):
 #     permission_classes = [permissions.IsAuthenticated]
 #     serializer_class = ClassroomTrainingSerializer
