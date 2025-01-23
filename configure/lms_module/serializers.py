@@ -268,8 +268,18 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
     #         'created_at', 'created_by', 'status','acknowledged_by_employee'
     #     ]
 class SessionSerializer(serializers.ModelSerializer):
+    is_completed = serializers.SerializerMethodField()
     class Meta:
         model = Session
+        fields = ['id', 'session_name', 'venue', 'start_date', 'start_time', 'classroom_id', 'is_completed']
+
+    def get_is_completed(self, obj):
+        session_complete = SessionComplete.objects.filter(session=obj, is_completed=True).first()
+        return session_complete is not None
+
+class SessionCompleteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SessionComplete
         fields = '__all__'
 
 class AttendanceSerializer(serializers.ModelSerializer):

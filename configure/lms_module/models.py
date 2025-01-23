@@ -258,6 +258,11 @@ class Session(models.Model):
     user_ids = models.ManyToManyField(CustomUser)
     classroom = models.ForeignKey(ClassroomTraining, related_name="sessions", on_delete=models.CASCADE)
 
+class SessionComplete(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    session = models.ForeignKey(Session, on_delete=models.CASCADE)
+    is_completed = models.BooleanField(default=False)
+
 class Attendance(models.Model):
     PRESENT = 'present'
     ABSENT = 'absent'
