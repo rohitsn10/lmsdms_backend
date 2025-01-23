@@ -4352,14 +4352,15 @@ def onlyoffice_callback(request):
 #         employee_id = kwargs.get('employee_id')
 #         try:
 #             employee = CustomUser.objects.get(id=employee_id)
-#             print(employee.first_name, employee.last_name, employee.designation, employee.department)
+#             department = Department.objects.filter(id=employee.department_id).first()
+#             print(employee.username, employee.designation, employee.department)
 #             context = {
-#                 'employee_name': f"{employee.first_name} {employee.last_name}",
+#                 'employee_name': employee.username,
 #                 'designation': employee.designation,
-#                 'department': employee.department.name if employee.department else 'N/A',
+#                 'department': department.department_name,
 #                 'joining_date': employee.created_at.strftime('%d/%m/%Y'),
 #                 'company_name': 'Promount Technologies LLP',
-#                 'department_name': employee.department.name if employee.department else 'N/A',
+#                 'department_name': department.department_name,
 #             }
 #             print(context, "context")
 #             template = get_template('employee_job_role.html')

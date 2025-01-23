@@ -271,7 +271,7 @@ class SessionSerializer(serializers.ModelSerializer):
     is_completed = serializers.SerializerMethodField()
     class Meta:
         model = Session
-        fields = ['id', 'session_name', 'venue', 'start_date', 'start_time', 'classroom_id', 'is_completed']
+        fields = ['id', 'session_name', 'venue', 'start_date', 'start_time', 'classroom_id', 'is_completed', 'user_ids']
 
     def get_is_completed(self, obj):
         session_complete = SessionComplete.objects.filter(session=obj, is_completed=True).first()
