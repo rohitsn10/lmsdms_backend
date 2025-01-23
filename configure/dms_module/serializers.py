@@ -111,7 +111,8 @@ class TemplateDocumentSerializer(serializers.ModelSerializer):
         if obj.template_doc:
             # Replace the host part with 'host.docker.internal'
             document_url = request.build_absolute_uri(obj.template_doc.url)
-            document_url = document_url.replace("127.0.0.1", "host.docker.internal")
+            # document_url = document_url.replace("127.0.0.1", "host.docker.internal")
+            document_url = document_url.replace("43.204.122.158:8080", "host.docker.internal:8000")
             return document_url
         return None
     
