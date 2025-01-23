@@ -4340,3 +4340,47 @@ def onlyoffice_callback(request):
             print("Error:", e)
             return JsonResponse({"error": 1}, status=500)
     return JsonResponse({"error": 1}, status=400)
+
+
+
+
+# class EmployeeJobRoleView(viewsets.ViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     lookup_field = 'employee_id'
+    
+#     def list(self, request, *args, **kwargs):
+#         employee_id = kwargs.get('employee_id')
+#         try:
+#             employee = CustomUser.objects.get(id=employee_id)
+#             department = Department.objects.filter(id=employee.department_id).first()
+#             print(employee.username, employee.designation, employee.department)
+#             context = {
+#                 'employee_name': employee.username,
+#                 'designation': employee.designation,
+#                 'department': department.department_name,
+#                 'joining_date': employee.created_at.strftime('%d/%m/%Y'),
+#                 'company_name': 'Promount Technologies LLP',
+#                 'department_name': department.department_name,
+#             }
+#             print(context, "context")
+#             template = get_template('employee_job_role.html')
+#             html = template.render(context)
+#             print(html, "html")
+#             timestamp = int(time.time())  # Timestamp in seconds
+#             filename = f"employee_job_role{timestamp}.pdf"
+#             file_path = os.path.join(settings.MEDIA_ROOT, 'employee_report', filename)
+#             os.makedirs(os.path.dirname(file_path), exist_ok=True)
+#             with open(file_path, 'wb') as output_file:
+#                 pisa_status = pisa.CreatePDF(html, dest=output_file)
+#                 print(pisa_status, "pisa_status")
+#             if pisa_status.err:
+#                 return Response({"status": False, "message": "Error occurred while generating PDF", "data": ""})
+            
+#             pdf_file_url = f"{settings.MEDIA_URL}employee_report/{filename}"
+#             full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+#             return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
+
+#         except Document.DoesNotExist:
+#             return Response({"status": False, "message": "Document not found", "data": ""})
+#         except Exception as e:
+#             return Response({"status": False, "message": str(e), "data": ""})

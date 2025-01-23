@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Job Role Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f9f9f9;
+        }
+        .container {
+            width: 800px;
+            border: 1px solid black;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: white;
+            height:90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .header {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .footerName{
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+    <div>
+        <div class="header">Employee Job Role Report</div>
+        <table>
+            <tr>
+                <td>Employee No: <span>4</span></td>
+            </tr>
+            <tr>
+                <td>Employee Name: {{ username }}</td>
+            </tr>
+            <tr>
+                <td>Designation: {{ designation }}</td>
+            </tr>
+            <tr>
+                <td>Department: {{ department_name }}</td>
+            </tr>
+            <tr>
+                <td>Joining Date: {{ joining_date }}</td>
+            </tr>
+        </table>
+
+        <div class="header">Job Responsibilities</div>
+        <table>
+            <tr>
+                <th>Sr No</th>
+                <th>Company Name</th>
+                <th>Department Name</th>
+                <th>Job Role Name</th>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td>Promount Technologies LLP</td>
+                <td>Quantity Assurance High</td>
+                <td>Production Head</td>
+            </tr>
+        </table>
+    </div>
+        <div class="footer">
+            <div class="footerName"> 
+                <div class="">Approved by: Sanyam Mehta (3) </div>
+                <div class="">22-02-2023 20:02 </div>
+            </div>
+            <div class="footerName">
+                <div>Acknowledged by: -</div> 
+                <div class=""> - </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
