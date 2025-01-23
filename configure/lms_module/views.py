@@ -2338,9 +2338,9 @@ class SessionCreateViewSet(viewsets.ModelViewSet):
             session_name = request.data.get('session_name')
             venue = request.data.get('venue')
             start_date = request.data.get('start_date')
-            end_date = request.data.get('end_date')
+            # end_date = request.data.get('end_date')
             start_time = request.data.get('start_time')
-            end_time = request.data.get('end_time')
+            # end_time = request.data.get('end_time')
             user_ids = request.data.get('user_ids')
             classroom_id = request.data.get('classroom_id')
             print(user_ids)
@@ -2363,9 +2363,9 @@ class SessionCreateViewSet(viewsets.ModelViewSet):
                 session_name=session_name,
                 venue=venue,
                 start_date=start_date,
-                end_date=end_date,
+                # end_date=end_date,
                 start_time=start_time,
-                end_time=end_time,
+                # end_time=end_time,
                 classroom_id=classroom_id
             )
             users = CustomUser.objects.filter(id__in=user_ids)
@@ -2398,6 +2398,29 @@ class SessionCreateViewSet(viewsets.ModelViewSet):
         
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+class SessionCompletedViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SessionCompleteSerializer
+    queryset = SessionComplete.objects.all().order_by('-id')
+
+    def mark_completed(self, request, *args, **kwargs):
+        try:
+            session_id = self.kwargs.get('session_id')
+            session_instance = Session.objects.filter(id=session_id).first()
+            if not session_instance:
+                return Response({"status": False, "message": "Session not found."})
+            
+            user = request.user
+
+            session_complete = SessionComplete.objects.create(session=session_instance, user=user, is_completed=True)
+
+            serializer = SessionCompleteSerializer(session_complete, context={'request': request})
+            return Response({"status": True, "message": "Session completed successfully", "data": serializer.data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+    
+
 
 class SessionUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
