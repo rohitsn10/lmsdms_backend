@@ -1312,11 +1312,21 @@ class TrainingSectionWiseTrainingMaterialViewset(viewsets.ModelViewSet):
             section_id = request.query_params.get('section_id')
             if not section_id:
                 return Response({"status": False, "message": "Section ID is required", "data": []})
+            
+            section = TrainingSection.objects.filter(id=section_id).first()
+            if not section:
+                return Response({"status": False, "message": "Section not found", "data": []})
 
             queryset = TrainingMaterial.objects.filter(section=section_id)
             serializer = TrainingMaterialSerializer(queryset, many=True, context = {'request': request})
-            data = serializer.data
-            return Response({"status": True,"message": "Training material list fetched successfully","data": data})
+            section_data = {
+                "id": section.id,
+                "section_name": section.section_name,
+                "section_description": section.section_description,
+                "section_order": section.section_order,
+                "training_name": section.training.training_name,
+            }
+            return Response({"status": True,"message": "Training material list fetched successfully","data": {"section": section_data,"materials": serializer.data}})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
