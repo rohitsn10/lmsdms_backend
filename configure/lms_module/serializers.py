@@ -108,10 +108,11 @@ class TrainingSectionSerializer(serializers.ModelSerializer):
 
 class TrainingMaterialSerializer(serializers.ModelSerializer):
     material_file_url = serializers.SerializerMethodField()
+    section_data = TrainingSectionSerializer(source='section', read_only=True)
 
     class Meta:
         model = TrainingMaterial
-        fields = ['material_title', 'material_type', 'material_file_url', 'minimum_reading_time', 'material_created_at']
+        fields = ['material_title', 'material_type', 'material_file_url', 'minimum_reading_time', 'material_created_at', 'section_data']
 
     def get_material_file_url(self, obj):
         request = self.context.get('request')
