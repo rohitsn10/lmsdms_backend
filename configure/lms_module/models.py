@@ -145,9 +145,8 @@ class TrainingQuestions(models.Model):
 
     training = models.ForeignKey(TrainingCreate, related_name='questions', on_delete=models.CASCADE)
     question_type = models.CharField(max_length=50, choices=QUESTION_TYPE_CHOICES)
-    image_file = models.FileField(upload_to='image_files/', null=True, blank=True)
-    audio_file = models.FileField(upload_to='audio_files/', null=True, blank=True)  # To store audio files
-    video_file = models.FileField(upload_to='video_files/', null=True, blank=True)
+    selected_file_type = models.CharField(max_length=50, null=True, blank=True)
+    selected_file = models.FileField(upload_to='question_files/', null=True, blank=True)
     question_text = models.TextField()
     options = models.JSONField(null=True, blank=True)  # Store options for MCQ questions (as a list of strings)
     correct_answer = models.TextField()  # Store the correct answer (can be the option value or index)

@@ -1204,20 +1204,26 @@ class TrainingSectionUpdateViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         try:
-            section_id = self.kwargs.get("section_id")
-            if not section_id:
+            training_section_id = self.kwargs.get("training_section_id")
+            if not training_section_id:
                 return Response({"status": False, "message": "Section ID is required", "data": []})
             
             try:
-                section = TrainingSection.objects.get(id=section_id)
+                training_section_id = TrainingSection.objects.get(id=training_section_id)
             except TrainingSection.DoesNotExist:
                 return Response({"status": False, "message": "Section ID not found", "data": []})
             
-            section.delete()
-            return Response({"status": True, "message": "Training section deleted successfully", "data": []})
+            materials = training_section_id.materials.all()
+            for material in materials:
+                material.material_file.clear() 
+                material.delete()
+
+            training_section_id.delete()
+
+            return Response({"status": True, "message": "Training section and associated materials deleted successfully", "data": []})
 
         except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "data": []})
+            return Response({"status": False, "message": f"Something went wrong: {str(e)}", "data": []})
                 
 from django.db.models import Prefetch
 
@@ -1393,18 +1399,17 @@ class TrainingMaterialUpdateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
 
-        
+    
     def destroy(self, request, *args, **kwargs):
         try:
-            section_id = self.kwargs.get('section_id')
-            
+            training_material_id = self.kwargs.get('training_material_id')
             try:
-                section = TrainingMaterial.objects.get(id=section_id)
+                training_material_id = TrainingMaterial.objects.get(id=training_material_id)
             except TrainingMaterial.DoesNotExist:
                 return Response({"status": False, "message": "Section ID not found", "data": []})
             
-            section.delete()
-            return Response({"status": True, "message": "Training material deleted successfully", "data": []})
+            training_material_id.delete()
+            return Response({"status": True, "message": "Material deleted successfully", "data": []})
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "data": []})
@@ -1438,7 +1443,6 @@ class TrainingQuestionCreateViewSet(viewsets.ModelViewSet):
             if not question_text:
                 return Response({"status": False, "message": "Question text is required", "data": []})
             
-            # Validate correct_answer based on question type
             if question_type == 'mcq' and not options:
                 return Response({"status": False, "message": "MCQ questions must have options", "data": []})
 
@@ -1450,21 +1454,9 @@ class TrainingQuestionCreateViewSet(viewsets.ModelViewSet):
 
             if question_type == 'fill_in_the_blank' and not correct_answer:
                 return Response({"status": False, "message": "Fill-in-the-blank questions must have a correct answer", "data": []})
+            selected_file_type = request.data.get('selected_file_type')
+            selected_file = request.FILES.get('selected_file', None)
 
-            # File validation for audio and video files (max 25MB)
-            image_file = request.FILES.get('image_file', None)
-            audio_file = request.FILES.get('audio_file', None)
-            video_file = request.FILES.get('video_file', None)
-
-            if audio_file:
-                if audio_file.size > 25 * 1024 * 1024:  # 25MB limit
-                    return Response({"status": False, "message": "Audio file size must be less than 25MB.", "data": []})
-
-            if video_file:
-                if video_file.size > 25 * 1024 * 1024:  # 25MB limit
-                    return Response({"status": False, "message": "Video file size must be less than 25MB.", "data": []})
-
-            # Create the TrainingQuestion instance
             training_question = TrainingQuestions.objects.create(
                 training=training,
                 question_type=question_type,
@@ -1473,9 +1465,8 @@ class TrainingQuestionCreateViewSet(viewsets.ModelViewSet):
                 correct_answer=correct_answer,
                 marks=marks,
                 created_by=user,
-                image_file=image_file,
-                audio_file=audio_file,
-                video_file=video_file,
+                selected_file_type = selected_file_type,
+                selected_file=selected_file,
                 question_created_at=timezone.now()
             )
 
