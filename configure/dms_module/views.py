@@ -9,6 +9,7 @@ from user_profile.function_call import *
 from django.contrib.auth.models import Group
 from django.core.mail import send_mail
 from user_profile.email_utils import *
+from lms_module.models import *
 from django.db.models import Q
 import ipdb
 import logging
@@ -4381,3 +4382,58 @@ class EmployeeJobRoleView(viewsets.ViewSet):
             return Response({"status": False, "message": "Document not found", "data": ""})
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": ""})
+
+
+class EmployeeRecordLogView(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def list(self, request, *args, **kwargs):
+        try:
+            users = CustomUser.objects.all()
+
+            all_users_data = []
+            for user in users:
+                if user.department:
+                    department_name = user.department.department_name
+                else:
+                    department_name = "No Department"
+                datestatus = QuizSession.objects.filter(user=user).first()
+                name = TrainingCreate.objects.filter(created_by=user).first()
+
+                training_date = datestatus.started_at if datestatus else "Not started"
+                status = datestatus.status if datestatus else "No Status"
+                training_name = name.training_name if name else "No Training"
+
+                user_data  = {
+                    'employee_name': user.username,
+                    'designation': user.designation,
+                    'department_name': department_name,
+                    'training_date': training_date,
+                    'training_name': training_name,
+                    'status': status,
+                }
+                print(user_data)
+                all_users_data.append(user_data)
+            context = {'users_data': all_users_data}
+
+            template = get_template('employee_record_log.html')
+            html = template.render(context)
+            print(html)
+            timestamp = int(time.time())
+            filename = f"employee_record_log{timestamp}.pdf"
+            file_path = os.path.join(settings.MEDIA_ROOT, 'employee_record_log', filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'wb') as output_file:
+                pisa_status = pisa.CreatePDF(html, dest=output_file)
+            if pisa_status.err:
+                return Response({"status": False, "message": "Error occurred while generating PDF", "data": ""})
+            
+            pdf_file_url = f"{settings.MEDIA_URL}employee_record_log/{filename}"
+            full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+            return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
+
+        except Document.DoesNotExist:
+            return Response({"status": False, "message": "Document not found", "data": ""})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": ""})
+

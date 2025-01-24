@@ -129,4 +129,7 @@ urlpatterns = [
    path('onlyoffice_callback', onlyoffice_callback, name='onlyoffice_callback'),
 
    path('employee_list/<int:employee_id>', EmployeeJobRoleView.as_view({'get':'list'}),name='employee_list'),
+
+   path('employee_record_log', EmployeeRecordLogView.as_view({'get':'list'}),name='employee_record_log'),
+
 ]

@@ -958,7 +958,28 @@ class DocAdminAllUserListViewSet(viewsets.ReadOnlyModelViewSet):
                 'error': str(e)
             })
 
+class AssignDepartmentViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def update(self, request, *args, **kwargs):
+        user_id = kwargs.get('user_id')
+        department_id = request.data.get('department_id')
+
+        if not department_id:
+            return Response({"status": False, "message": "Department ID is required", "data": []})
         
+        try:
+            user = CustomUser.objects.get(id=user_id)
+            department = Department.objects.get(id=department_id)
+
+            user.department = department
+            user.save()
+
+            return Response({"status": True, "message": "Department assigned successfully"})
+        
+        except CustomUser.DoesNotExist:
+            return Response({"status": False, "message": "User not found", "data": []})
+
         
         
         
