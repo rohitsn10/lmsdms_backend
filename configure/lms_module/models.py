@@ -252,11 +252,12 @@ class Session(models.Model):
     session_name = models.CharField(max_length=255)
     venue = models.CharField(max_length=255)
     start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
+    # end_date = models.DateTimeField()
     start_time = models.TimeField()
-    end_time = models.TimeField()
+    # end_time = models.TimeField()
     user_ids = models.ManyToManyField(CustomUser)
     classroom = models.ForeignKey(ClassroomTraining, related_name="sessions", on_delete=models.CASCADE)
+    attend = models.BooleanField(default=False)
 
 class SessionComplete(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
