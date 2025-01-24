@@ -129,9 +129,7 @@ class TrainingNestedSectionSerializer(serializers.ModelSerializer):
 
 class TrainingQuestinSerializer(serializers.ModelSerializer):
     # Create custom fields to return URLs for audio and video files
-    image_file_url = serializers.SerializerMethodField()
-    audio_file_url = serializers.SerializerMethodField()
-    video_file_url = serializers.SerializerMethodField()
+    selected_file = serializers.SerializerMethodField()
 
     class Meta:
         model = TrainingQuestions
@@ -139,25 +137,13 @@ class TrainingQuestinSerializer(serializers.ModelSerializer):
             'id', 'training', 'question_type', 'question_text', 'options', 
             'correct_answer', 'marks', 'status', 
             'question_created_at', 'question_updated_at', 
-            'created_by', 'updated_by','image_file_url','audio_file_url', 'video_file_url'
+            'created_by', 'updated_by','selected_file_type','selected_file'
         ]
 
-    def get_image_file_url(self, obj):
+    def get_selected_file(self, obj):
         request = self.context.get('request')
-        if obj.image_file and hasattr(obj.image_file, 'url'):
-            return request.build_absolute_uri(obj.image_file.url)
-        return None
-    
-    def get_audio_file_url(self, obj):
-        request = self.context.get('request')
-        if obj.audio_file and hasattr(obj.audio_file, 'url'):
-            return request.build_absolute_uri(obj.audio_file.url)
-        return None
-
-    def get_video_file_url(self, obj):
-        request = self.context.get('request')
-        if obj.video_file and hasattr(obj.video_file, 'url'):
-            return request.build_absolute_uri(obj.video_file.url)
+        if obj.selected_file and hasattr(obj.selected_file, 'url'):
+            return request.build_absolute_uri(obj.selected_file.url)
         return None
     
 
@@ -165,32 +151,20 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
     question_text = serializers.CharField(source='question.question_text')
     options = serializers.SerializerMethodField()
     correct_answer = serializers.CharField(source='question.correct_answer')
-    image_url = serializers.SerializerMethodField()
-    video_url = serializers.SerializerMethodField()
-    audio_url = serializers.SerializerMethodField()
+    selected_file = serializers.SerializerMethodField()
+    selected_file_type = serializers.CharField(source='question.selected_file_type')
     class Meta:
         model = QuizQuestion
-        fields = ['id','question', 'marks','question_text','options','correct_answer','image_url','video_url','audio_url']
+        fields = ['id','question', 'marks','question_text','options','correct_answer','selected_file_type','selected_file']
     def get_options(self, obj):
         return obj.question.options
     
-    def get_image_url(self, obj):
+    def get_selected_file(self, obj):
         request = self.context.get('request')
-        if obj.question.image_file and hasattr(obj.question.image_file, 'url'):
-            return request.build_absolute_uri(obj.question.image_file.url)
+        if obj.question.selected_file and hasattr(obj.question.selected_file, 'url'):
+            return request.build_absolute_uri(obj.question.selected_file.url)
         return None
     
-    def get_video_url(self, obj):
-        request = self.context.get('request')
-        if obj.question.video_file and hasattr(obj.question.video_file, 'url'):
-            return request.build_absolute_uri(obj.question.video_file.url)
-        return None
-
-    def get_audio_url(self, obj):
-        request = self.context.get('request')
-        if obj.question.audio_file and hasattr(obj.question.audio_file, 'url'):
-            return request.build_absolute_uri(obj.question.audio_file.url)
-        return None
 
 class TrainingQuizSerializer(serializers.ModelSerializer):
     questions = QuizQuestionSerializer(many=True)
