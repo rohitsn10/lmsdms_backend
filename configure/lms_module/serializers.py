@@ -108,10 +108,11 @@ class TrainingSectionSerializer(serializers.ModelSerializer):
 
 class TrainingMaterialSerializer(serializers.ModelSerializer):
     material_file_url = serializers.SerializerMethodField()
+    section_data = TrainingSectionSerializer(source='section', read_only=True)
 
     class Meta:
         model = TrainingMaterial
-        fields = ['material_title', 'material_type', 'material_file_url', 'minimum_reading_time', 'material_created_at']
+        fields = ['material_title', 'material_type', 'material_file_url', 'minimum_reading_time', 'material_created_at', 'section_data']
 
     def get_material_file_url(self, obj):
         request = self.context.get('request')
@@ -120,10 +121,11 @@ class TrainingMaterialSerializer(serializers.ModelSerializer):
         return None
 
 class TrainingNestedSectionSerializer(serializers.ModelSerializer):
+    training_name = serializers.CharField(source='training.training_name', read_only=True)
     material = TrainingMaterialSerializer(many=True, source='materials')  # Use 'materials' to reference related materials
     class Meta:
         model = TrainingSection
-        fields = ['id', 'training', 'section_name', 'section_description', 'section_order', 'material']
+        fields = ['id', 'training', 'training_name', 'section_name', 'section_description', 'section_order', 'material']
 
 class TrainingQuestinSerializer(serializers.ModelSerializer):
     # Create custom fields to return URLs for audio and video files
@@ -245,19 +247,45 @@ class InductionDesignationSerializer(serializers.ModelSerializer):
         fields = ['id', 'induction_designation_name', 'designation_code', 'induction', 'created_date', 'created_by']
         read_only_fields = ['created_date', 'created_by']        
 
+class ClassroomTrainingFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClassroomTrainingFile
+        fields = ['upload_doc']
 
 class ClassroomTrainingSerializer(serializers.ModelSerializer):
-    department_of_employee_first_name  = serializers.ReadOnlyField(source='department_or_employee.first_name')
-    department_of_employee_last_name = serializers.ReadOnlyField(source='department_or_employee.last_name')
+    files = ClassroomTrainingFileSerializer(many=True, read_only=True)
+    classroom_id = serializers.IntegerField(source='id')
     class Meta:
         model = ClassroomTraining
-        fields = [
-            'id', 'classroom_training_type', 'title', 'description', 'department_or_employee','department_of_employee_first_name','department_of_employee_last_name',
-            'document', 'sop', 'start_date', 'start_time', 'end_time',
-            'created_at', 'created_by', 'status','acknowledged_by_employee'
-        ]
+        fields = ['classroom_id', 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at']
+    # department_of_employee_first_name  = serializers.ReadOnlyField(source='department_or_employee.first_name')
+    # department_of_employee_last_name = serializers.ReadOnlyField(source='department_or_employee.last_name')
+    # class Meta:
+    #     model = ClassroomTraining
+    #     fields = [
+    #         'id', 'classroom_training_type', 'title', 'description', 'department_or_employee','department_of_employee_first_name','department_of_employee_last_name',
+    #         'document', 'sop', 'start_date', 'start_time', 'end_time',
+    #         'created_at', 'created_by', 'status','acknowledged_by_employee'
+    #     ]
+class SessionSerializer(serializers.ModelSerializer):
+    is_completed = serializers.SerializerMethodField()
+    class Meta:
+        model = Session
+        fields = ['id', 'session_name', 'venue', 'start_date', 'start_time', 'classroom_id', 'is_completed', 'user_ids', 'attend']
 
+    def get_is_completed(self, obj):
+        session_complete = SessionComplete.objects.filter(session=obj, is_completed=True).first()
+        return session_complete is not None
 
+class SessionCompleteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SessionComplete
+        fields = '__all__'
+
+class AttendanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Attendance
+        fields = '__all__'
 # class TrainingListSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = TrainingCreate

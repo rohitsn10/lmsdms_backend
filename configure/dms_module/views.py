@@ -4320,6 +4320,7 @@ def get_editor_config(request):
                 "user": {"id": "1", "name": "Rohit Sharma"},
             },
         }
+        
 
         # Secret for encoding the JWT token
         secret = "45540a6bfecc97ab6d06c436a74c333b1b54447c4de5fd41b8ad0b8361a395c6"
