@@ -37,6 +37,7 @@ urlpatterns = [
     path('approver_users', ApproverAllUserListViewSet.as_view({'get':'list'}), name='approver_users'),
     path('docadmin_users', DocAdminAllUserListViewSet.as_view({'get':'list'}), name='docadmin_users'),
 
+    path('assigndepartment/<int:user_id>', AssignDepartmentViewSet.as_view({'put':'update'}), name='assigndepartment'),
 
 
 
