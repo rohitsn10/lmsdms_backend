@@ -1204,20 +1204,26 @@ class TrainingSectionUpdateViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         try:
-            section_id = self.kwargs.get("section_id")
-            if not section_id:
+            training_section_id = self.kwargs.get("training_section_id")
+            if not training_section_id:
                 return Response({"status": False, "message": "Section ID is required", "data": []})
             
             try:
-                section = TrainingSection.objects.get(id=section_id)
+                training_section_id = TrainingSection.objects.get(id=training_section_id)
             except TrainingSection.DoesNotExist:
                 return Response({"status": False, "message": "Section ID not found", "data": []})
             
-            section.delete()
-            return Response({"status": True, "message": "Training section deleted successfully", "data": []})
+            materials = training_section_id.materials.all()
+            for material in materials:
+                material.material_file.clear() 
+                material.delete()
+                
+            training_section_id.delete()
+
+            return Response({"status": True, "message": "Training section and associated materials deleted successfully", "data": []})
 
         except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "data": []})
+            return Response({"status": False, "message": f"Something went wrong: {str(e)}", "data": []})
                 
 from django.db.models import Prefetch
 
@@ -1393,18 +1399,17 @@ class TrainingMaterialUpdateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
 
-        
+    
     def destroy(self, request, *args, **kwargs):
         try:
-            section_id = self.kwargs.get('section_id')
-            
+            training_material_id = self.kwargs.get('training_material_id')
             try:
-                section = TrainingMaterial.objects.get(id=section_id)
+                training_material_id = TrainingMaterial.objects.get(id=training_material_id)
             except TrainingMaterial.DoesNotExist:
                 return Response({"status": False, "message": "Section ID not found", "data": []})
             
-            section.delete()
-            return Response({"status": True, "message": "Training material deleted successfully", "data": []})
+            training_material_id.delete()
+            return Response({"status": True, "message": "Material deleted successfully", "data": []})
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "data": []})
