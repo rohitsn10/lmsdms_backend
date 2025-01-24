@@ -2365,6 +2365,7 @@ class SessionCreateViewSet(viewsets.ModelViewSet):
             )
             users = CustomUser.objects.filter(id__in=user_ids)
             session.user_ids.set(users)
+            session.save()
             if not users.exists():
                 return Response({"status": False, "message": "One or more user IDs are invalid."})
             
@@ -2395,6 +2396,8 @@ class SessionCreateViewSet(viewsets.ModelViewSet):
                     "start_time": session.start_time,
                     "attend": session.attend
                 }
+                user_ids = session.user_ids.values_list('id', flat=True)
+                session_info["user_ids"] = list(user_ids)
 
                 user = request.user
                 session_complete = SessionComplete.objects.filter(session=session, user=user).first()
