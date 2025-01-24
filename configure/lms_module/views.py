@@ -2390,12 +2390,23 @@ class SessionCreateViewSet(viewsets.ModelViewSet):
             else:
                 return Response({"status": False, "message": "classroom_id is required."})
             
-            if queryset.exists():
-                serializer = SessionSerializer(queryset, many=True)
-                return Response({"status": True, "message": "Sessions fetched successfully", "data": serializer.data})
+            session_data = []
+            for session in queryset:
+                session_info = {
+                    "session_id": session.id,
+                    "session_name": session.session_name,
+                    "venue": session.venue,
+                    "start_date": session.start_date,
+                    "start_time": session.start_time,
+                    "attend": session.attend
+                }
+                session_data.append(session_info)
+
+            if session_data:
+                return Response({"status": True, "message": "Sessions fetched successfully", "data": session_data})
             else:
                 return Response({"status": True, "message": "No sessions found", "data": []})
-        
+
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
@@ -2514,6 +2525,12 @@ class AttendanceCreateViewSet(viewsets.ModelViewSet):
                 attendance, created = Attendance.objects.get_or_create(user=user, session=session)
                 attendance.status = status
                 attendance.save()
+
+            if Attendance.objects.filter(session=session, status='present').exists():
+                session.attend = True
+            else:
+                session.attend = False
+            session.save()
 
             return Response({"status": True, "message": "Attendance marked successfully."})
         
