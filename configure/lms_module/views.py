@@ -2400,6 +2400,11 @@ class SessionCreateViewSet(viewsets.ModelViewSet):
                     "start_time": session.start_time,
                     "attend": session.attend
                 }
+
+                user = request.user
+                session_complete = SessionComplete.objects.filter(session=session, user=user).first()
+                session_info["is_completed"] = session_complete.is_completed if session_complete else False
+                
                 session_data.append(session_info)
 
             if session_data:
