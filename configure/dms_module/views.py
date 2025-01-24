@@ -3220,6 +3220,7 @@ class GetDocumentCertificateDataListViewSet(viewsets.ViewSet):
             
             # Prepare data to return in the response
             document_data = {
+                'document_id': document.id,
                 'document_title': document.document_title,
                 'document_number': document.document_number,
                 'version': document.version,

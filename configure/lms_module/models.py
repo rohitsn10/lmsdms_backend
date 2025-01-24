@@ -266,10 +266,17 @@ class TrainingMatrix(models.Model):
     
 
 class QuizSession(models.Model):
+    STATUS_CHOICES = (
+        ('try_again', 'Try Again'),
+        ('passed', 'Passed'),
+        ('failed', 'Failed'),
+    )
+
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     quiz = models.ForeignKey(TrainingQuiz, on_delete=models.CASCADE)
-    current_question_index = models.IntegerField(default=0)  # To keep track of the question index
+    current_question_index = models.IntegerField(default=0)
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
-    score = models.PositiveIntegerField(default=0)  # To track score if needed
-    status = models.BooleanField(default=False)  # To track if quiz is completed or not
+    score = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='try_again')  # Updated status field
+    attempts = models.PositiveIntegerField(default=0)
