@@ -1341,63 +1341,58 @@ class TrainingMaterialUpdateViewSet(viewsets.ModelViewSet):
         try:
             user = self.request.user
             training_material_id = self.kwargs.get('training_material_id')
-            
-            # Check if training material ID is provided
+
             if not training_material_id:
                 return Response({"status": False, "message": "Training material ID is required", "data": []})
 
-            # Fetch the training material
             try:
                 training_material = TrainingMaterial.objects.get(id=training_material_id)
             except TrainingMaterial.DoesNotExist:
                 return Response({"status": False, "message": "Training material not found", "data": []})
 
-            section_ids_str = request.data.get('section_ids', None)
-            if section_ids_str:
+            section_id = request.data.get('section_id', None)
+            if section_id:
                 try:
-                    section_ids = ast.literal_eval(section_ids_str)
-                    if not isinstance(section_ids, list):
-                        return Response({"status": False, "message": "Section IDs must be a valid list", "data": []})
-                    section_ids = [int(id) for id in section_ids]
-                except (ValueError, SyntaxError):
-                    return Response({"status": False, "message": "Section IDs must be a valid list of integers", "data": []})
+                    section = TrainingSection.objects.get(id=section_id)
+                    training_material.section = section
+                except TrainingSection.DoesNotExist:
+                    return Response({"status": False, "message": "Section not found", "data": []})
 
-                sections = TrainingSection.objects.filter(id__in=section_ids)
-                if sections.count() != len(section_ids):
-                    return Response({"status": False, "message": "Some section IDs are invalid", "data": []})
-
-                training_material.section.set(sections)
-
-            # Retrieve other fields from request data or keep existing values
             material_title = request.data.get('material_title', training_material.material_title)
             material_type = request.data.get('material_type', training_material.material_type)
-            material_file = request.FILES.get('material_file', training_material.material_file)
+            material_files = request.FILES.getlist('material_file', [])
             minimum_reading_time = request.data.get('minimum_reading_time', training_material.minimum_reading_time)
 
-            # Update fields if provided
             if material_title:
                 training_material.material_title = material_title
             if material_type:
                 training_material.material_type = material_type
-            if material_file:
-                training_material.material_file = material_file
             if minimum_reading_time:
                 training_material.minimum_reading_time = minimum_reading_time
-            
-            # Set the user who updated the material
+
             training_material.updated_by = user
             training_material.material_updated_at = timezone.now()
 
-            # Save the changes to the material
             training_material.save()
+            if material_files:
+                training_material.material_file.clear()
 
-            # Serialize the updated material and return the response
+                for material_file in material_files:
+                    attachment = TrainingMaterialAttachments.objects.create(
+                        user=user,
+                        material_file=material_file
+                    )
+                    training_material.material_file.add(attachment)
+
+            training_material.save()
             serializer = TrainingMaterialSerializer(training_material, context={'request': request})
             data = serializer.data
+
             return Response({"status": True, "message": "Training material updated successfully", "data": data})
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+
         
     def destroy(self, request, *args, **kwargs):
         try:
@@ -2370,6 +2365,7 @@ class SessionCreateViewSet(viewsets.ModelViewSet):
             )
             users = CustomUser.objects.filter(id__in=user_ids)
             session.user_ids.set(users)
+            session.save()
             if not users.exists():
                 return Response({"status": False, "message": "One or more user IDs are invalid."})
             
@@ -2390,12 +2386,30 @@ class SessionCreateViewSet(viewsets.ModelViewSet):
             else:
                 return Response({"status": False, "message": "classroom_id is required."})
             
-            if queryset.exists():
-                serializer = SessionSerializer(queryset, many=True)
-                return Response({"status": True, "message": "Sessions fetched successfully", "data": serializer.data})
+            session_data = []
+            for session in queryset:
+                session_info = {
+                    "session_id": session.id,
+                    "session_name": session.session_name,
+                    "venue": session.venue,
+                    "start_date": session.start_date,
+                    "start_time": session.start_time,
+                    "attend": session.attend
+                }
+                user_ids = session.user_ids.values_list('id', flat=True)
+                session_info["user_ids"] = list(user_ids)
+
+                user = request.user
+                session_complete = SessionComplete.objects.filter(session=session, user=user).first()
+                session_info["is_completed"] = session_complete.is_completed if session_complete else False
+                
+                session_data.append(session_info)
+
+            if session_data:
+                return Response({"status": True, "message": "Sessions fetched successfully", "data": session_data})
             else:
                 return Response({"status": True, "message": "No sessions found", "data": []})
-        
+
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
@@ -2514,6 +2528,12 @@ class AttendanceCreateViewSet(viewsets.ModelViewSet):
                 attendance, created = Attendance.objects.get_or_create(user=user, session=session)
                 attendance.status = status
                 attendance.save()
+
+            if Attendance.objects.filter(session=session, status='present').exists():
+                session.attend = True
+            else:
+                session.attend = False
+            session.save()
 
             return Response({"status": True, "message": "Attendance marked successfully."})
         
@@ -3037,18 +3057,40 @@ class StartExam(viewsets.ModelViewSet):
     serializer_class = QuizSessionSerializer
 
     def create(self, request, *args, **kwargs):
-        # Fetch the quiz
         quiz_id = request.data.get('quiz_id')
         quiz = TrainingQuiz.objects.get(id=quiz_id)
         user = self.request.user  # Get the authenticated user
 
-        # Create the QuizSession
-        quiz_session = QuizSession.objects.create(user=user, quiz=quiz)
+        # Check how many times the user has already attempted the quiz
+        attempts_count = QuizSession.objects.filter(user=user, quiz=quiz).count()
+        if attempts_count >= 3:
+            return Response({
+                "status": False,
+                "message": "You have already attempted this exam 3 times. Further attempts are not allowed."
+            })
+        
+        # Create the QuizSession for a new attempt
+        quiz_session = QuizSession.objects.create(user=user, quiz=quiz, attempts=attempts_count + 1)
 
         return Response({
             "status": True,
             "message": "Exam started successfully.",
-            "quiz_session_id": quiz_session.id})
+            "quiz_session_id": quiz_session.id
+        })
+    
+
+    def list(self, request, *args, **kwargs):
+        session_id = self.kwargs.get('session_id')
+
+        quiz_session = QuizSession.objects.get(id=session_id)
+        data = TrainingQuizSerializer(quiz_session.quiz).data
+
+
+        return Response({
+            
+        })
+
+
 
 
 class GetNextQuestion(viewsets.ModelViewSet):
@@ -3075,34 +3117,53 @@ class GetNextQuestion(viewsets.ModelViewSet):
         else:
             return Response({"status": True,"message": "All questions completed.","data": []})
 
-    def update(self, request, *args, **kwargs):
-        # Get the QuizSession instance
-        session_id = self.kwargs.get('session_id')
-        quiz_session = QuizSession.objects.get(id=session_id)
-
-        question_id = request.data.get('question_id')
-        user_answer = request.data.get('user_answer')
-
-        # Get the current question
-        current_question = TrainingQuestions.objects.get(id=question_id)
-
-        # Check the answer
-        correct_answer = current_question.correct_answer
-        is_correct = (user_answer == correct_answer)
-
-        # Update the score if the answer is correct
-        if is_correct:
-            quiz_session.score += current_question.marks  # Increment score by the question's marks
-
-        # Increment the current_question_index to move to the next question
-        quiz_session.current_question_index += 1
-        quiz_session.save()
-
-        # Return the response
-        return Response({
-            "status": True,
-            "message": "Answer submitted successfully.",
-            "is_correct": is_correct,
-            "score": quiz_session.score,
-            "next_question_index": quiz_session.current_question_index
-        })
+    class GetNextQuestion(viewsets.ModelViewSet):
+        queryset = QuizSession.objects.all()
+        serializer_class = QuizSessionSerializer
+    
+        def update(self, request, *args, **kwargs):
+            session_id = self.kwargs.get('session_id')
+            quiz_session = QuizSession.objects.get(id=session_id)
+            question_id = request.data.get('question_id')
+            user_answer = request.data.get('user_answer')
+    
+            current_question = TrainingQuestions.objects.get(id=question_id)
+            correct_answer = current_question.correct_answer
+            is_correct = (user_answer == correct_answer)
+    
+            if is_correct:
+                quiz_session.score += current_question.marks
+    
+            quiz_session.current_question_index += 1
+            quiz_session.save()
+    
+            questions = quiz_session.quiz.questions.all()
+            if quiz_session.current_question_index >= len(questions):
+            
+                pass_criteria = quiz_session.quiz.pass_criteria
+                if quiz_session.score >= pass_criteria:
+                    quiz_session.status = 'passed'  
+                    
+                    quiz_session.quiz.status = True
+                    quiz_session.quiz.save()
+    
+                elif quiz_session.attempts >= 3:
+                    quiz_session.status = 'failed'
+                    quiz_session.quiz.status = False 
+                    quiz_session.quiz.save()
+    
+                elif quiz_session.score < pass_criteria and quiz_session.attempts < 3:
+                    quiz_session.status = 'try_again'  
+                    quiz_session.quiz.status = True  
+                    quiz_session.quiz.save()
+    
+                quiz_session.completed_at = timezone.now()
+                quiz_session.save()
+    
+            return Response({
+                "status": True,
+                "message": "Answer submitted successfully.",
+                "is_correct": is_correct,
+                "score": quiz_session.score,
+                "next_question_index": quiz_session.current_question_index
+            })

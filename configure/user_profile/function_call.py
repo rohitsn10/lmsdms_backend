@@ -211,5 +211,3 @@ def get_file_data(request: Request, obj, field_name: str):
     return None
 
 
-
-
