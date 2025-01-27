@@ -4438,3 +4438,70 @@ class EmployeeRecordLogView(viewsets.ViewSet):
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": ""})
 
+
+class EmployeeTrainingNeedIdentyView(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'employee_id'
+
+    def list(self, request, *args, **kwargs):
+        employee_id = kwargs.get('employee_id')
+        try:
+            employee = CustomUser.objects.get(id=employee_id)
+
+            failed_quiz_sessions = QuizSession.objects.filter(user=employee, status='failed')
+            if not failed_quiz_sessions.exists():
+                return Response({"status": True, "message": "User has passed all quizzes"})
+
+            users = CustomUser.objects.filter(id__in=failed_quiz_sessions.values_list('user_id', flat=True))
+
+            all_users_data = []
+            for user in users:
+                if user.department:
+                    department_name = user.department.department_name
+                else:
+                    department_name = "No Department"
+
+                user_failed_sessions = failed_quiz_sessions.filter(user=user)
+                user_training_data = []
+                
+                for session in user_failed_sessions:
+                    training = TrainingCreate.objects.filter(created_by=user).first()
+                    if training:
+                        user_training_data.append({
+                            'training_name': training.training_name,
+                            'training_number': training.training_number
+                        })
+                print(user_training_data)
+                status = user_failed_sessions.first().status if user_failed_sessions else "No Status"
+                
+                user_data = {
+                    'employee_name': user.username,
+                    'designation': user.designation,
+                    'department_name': department_name,
+                    'status': status,
+                    'trainings': user_training_data, 
+                }
+                all_users_data.append(user_data)
+
+            context = {'users_data': all_users_data}
+            template = get_template('training_need_identy.html')
+            html = template.render(context)
+
+            timestamp = int(time.time())
+            filename = f"employee_training_need_identy{timestamp}.pdf"
+            file_path = os.path.join(settings.MEDIA_ROOT, 'employee_training_need_identy', filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'wb') as output_file:
+                pisa_status = pisa.CreatePDF(html, dest=output_file)
+
+            if pisa_status.err:
+                return Response({"status": False, "message": "Error occurred while generating PDF", "data": ""})
+
+            pdf_file_url = f"{settings.MEDIA_URL}employee_training_need_identy/{filename}"
+            full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+            return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
+
+        except CustomUser.DoesNotExist:
+            return Response({"status": False, "message": "User not found", "data": ""})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": ""})
