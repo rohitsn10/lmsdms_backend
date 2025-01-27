@@ -132,4 +132,5 @@ urlpatterns = [
 
    path('employee_record_log', EmployeeRecordLogView.as_view({'get':'list'}),name='employee_record_log'),
 
+   path('employee_training_need_identy/<int:employee_id>', EmployeeTrainingNeedIdentyView.as_view({'get':'list'}),name='employee_training_need_identy'),
 ]
