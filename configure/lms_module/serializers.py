@@ -371,3 +371,13 @@ class TrainingdataSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrainingCreate
         fields = ['id', 'training_name','training_number']
+
+class HRacnowledgementSerializer(serializers.ModelSerializer):
+    groups_list = serializers.SerializerMethodField()
+    class Meta:
+        model = HRacknowledgement
+        fields = ['remarks','groups_list']
+
+    def get_groups_list(self, obj):
+        return [group.name for group in obj.groups.all()]
+    

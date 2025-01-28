@@ -10,6 +10,10 @@ from django.db import IntegrityError
 import random
 from django.db.models import Q
 import ast
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+import time
+import pdfkit
 
 class DepartmentAddView(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -3162,3 +3166,87 @@ class GetNextQuestion(viewsets.ModelViewSet):
                 "score": quiz_session.score,
                 "next_question_index": quiz_session.current_question_index
             })
+
+
+class HrAcknowledgementViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializers_class = HRacnowledgementSerializer
+
+    def create(self, request, *args, **kwargs):
+        try:
+            if not request.user.groups.filter(name="HR").exists():
+                return Response({'status': False, 'message': 'Only HR can create acknowledgements.'})
+
+            user_id = self.kwargs.get('user_id')
+            user = CustomUser.objects.get(id=user_id)
+            remarks = request.data.get('remarks')
+            if not remarks:
+                return Response({'status': False, 'message': 'Remarks cannot be empty.'})
+            hr_acknowledgement = HRacknowledgement.objects.create(user=user, remarks=remarks)
+            serializer = HRacnowledgementSerializer(hr_acknowledgement)
+            return Response({'status': True, 'message': 'Acknowledgement created successfully', 'data': serializer.data})
+        except CustomUser.DoesNotExist:
+            return Response({'status': False, 'message': 'User not found.'})
+        except Exception as e:
+            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+        
+    def list(self, request, *args, **kwargs):
+        try:
+            if not request.user.groups.filter(name="HR").exists():
+                return Response({'status': False, 'message': 'Only HR can get acknowledgements.'}, status=403)
+            
+            user_id = self.kwargs.get('user_id')
+            user = CustomUser.objects.get(id=user_id)
+            hr_acknowledgements = HRacknowledgement.objects.filter(user=user)
+            serializer = HRacnowledgementSerializer(hr_acknowledgements, many=True)
+            return Response({'status': True, 'message': 'Acknowledgements fetched successfully', 'data': serializer.data})
+        except CustomUser.DoesNotExist:
+            return Response({'status': False, 'message': 'User not found.'})
+        except Exception as e:
+            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+
+
+class InductionCertificateViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated] 
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user_id = self.kwargs.get('user_id')
+            user = CustomUser.objects.get(id=user_id)
+            username = user.username
+
+            user_data = {
+                'username': username,
+            }
+
+            # Render HTML template
+            context = {'users_data': user_data}
+            template = get_template('index.html')  # Make sure this template path is correct
+            html_content = template.render(context)
+
+            # Prepare PDF file path
+            timestamp = int(time.time())
+            filename = f"induction_certificate{timestamp}.pdf"
+            file_path = os.path.join(settings.MEDIA_ROOT, 'induction_certificate', filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+            wkhtmltopdf_path = r'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe'  # Update this to your actual path
+            config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+
+            # Convert HTML to PDF
+            pdfkit.from_string(html_content, file_path, options={
+                'page-size': 'Letter',
+                'encoding': 'UTF-8',
+                'quiet': '',
+                '--enable-local-file-access': ''
+            }, configuration=config)
+
+            # Return the generated PDF file URL
+            pdf_file_url = f"{settings.MEDIA_URL}induction_certificate/{filename}"
+            full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+            return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
+
+        except CustomUser.DoesNotExist:
+            return Response({"status": False, "message": "User not found", "data": ""})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": ""})

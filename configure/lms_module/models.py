@@ -231,7 +231,7 @@ class ClassroomTraining(models.Model):
     # department_or_employee = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='classroom_trainings',blank=True, null=True)
     # document = models.FileField(upload_to='classroom_trainings/', null=True, blank=True)
     # sop = models.CharField(max_length=255)  # Assuming SOP refers to a string value
-    # start_date = models.DateField()
+    start_date = models.DateField(auto_now_add=True, null=True, blank=True)
     # start_time = models.TimeField()
     # end_time = models.TimeField()
     # created_at = models.DateTimeField(auto_now_add=True)
@@ -306,3 +306,7 @@ class QuizSession(models.Model):
     score = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='try_again')  # Updated status field
     attempts = models.PositiveIntegerField(default=0)
+
+class HRacknowledgement(models.Model):
+    remarks = models.TextField(null=True, blank=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
