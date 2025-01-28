@@ -81,5 +81,8 @@ urlpatterns = [
     path('start_exam', StartExam.as_view({'post': 'create'}), name='start_exam'),
     path('get_next_question/<int:session_id>', GetNextQuestion.as_view({'get': 'list','put': 'update'}), name='get_next_question'),
 
+    path('hracnowledgement/<int:user_id>', HrAcknowledgementViewSet.as_view({'post': 'create', 'get': 'list'}), name='hracnowledgement'),
+
+    path('inductioncertificate/<int:user_id>', InductionCertificateViewSet.as_view({'post': 'create'}), name='inductioncertificate'),
 
 ]
