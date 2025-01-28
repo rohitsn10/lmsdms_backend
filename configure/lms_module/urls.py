@@ -85,4 +85,6 @@ urlpatterns = [
 
     path('inductioncertificate/<int:user_id>', InductionCertificateViewSet.as_view({'post': 'create'}), name='inductioncertificate'),
 
+    path('trainer_create', TrainerViewSet.as_view({'post': 'create', 'get': 'list'}), name='trainer_create'),
+    path('trainer_update/<int:trainer_id>', TrainerViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='trainer_update'),
 ]

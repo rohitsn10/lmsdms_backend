@@ -231,7 +231,7 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
     classroom_id = serializers.IntegerField(source='id')
     class Meta:
         model = ClassroomTraining
-        fields = ['classroom_id', 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at']
+        fields = ['classroom_id', 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at', 'trainer']
     # department_of_employee_first_name  = serializers.ReadOnlyField(source='department_or_employee.first_name')
     # department_of_employee_last_name = serializers.ReadOnlyField(source='department_or_employee.last_name')
     # class Meta:
@@ -355,3 +355,7 @@ class HRacnowledgementSerializer(serializers.ModelSerializer):
     def get_groups_list(self, obj):
         return [group.name for group in obj.groups.all()]
     
+class TrainerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Trainer
+        fields = '__all__'

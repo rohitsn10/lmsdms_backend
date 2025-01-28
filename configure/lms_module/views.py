@@ -2159,16 +2159,22 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
             is_assesment = request.data.get('is_assesment')
             description = request.data.get('description')
             upload_doc = request.FILES.getlist('upload_doc')
+            trainer_id = request.data.get('trainer')
             print("====", upload_doc)
             status = request.data.get('status')
-            if not classroom_name or not description or not upload_doc or not is_assesment or not status:
+            if not classroom_name or not description or not upload_doc or not is_assesment or not status or not trainer_id:
                 return Response({'status': False, 'message': 'All fields are required.'})
+            
+            trainer = Trainer.objects.filter(id=trainer_id).first()
+            if not trainer:
+                return Response({'status': False, 'message': 'Invalid trainer selected.'})
             
             classroom_training = ClassroomTraining.objects.create(
                 classroom_name=classroom_name,
                 is_assesment=is_assesment,
                 description=description,
                 status=status,
+                trainer=trainer,
             )
 
             for file in upload_doc:
@@ -3210,21 +3216,18 @@ class InductionCertificateViewSet(viewsets.ViewSet):
                 'username': username,
             }
 
-            # Render HTML template
             context = {'users_data': user_data}
-            template = get_template('index.html')  # Make sure this template path is correct
+            template = get_template('index.html') 
             html_content = template.render(context)
 
-            # Prepare PDF file path
             timestamp = int(time.time())
             filename = f"induction_certificate{timestamp}.pdf"
             file_path = os.path.join(settings.MEDIA_ROOT, 'induction_certificate', filename)
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            wkhtmltopdf_path = r'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe'  # Update this to your actual path
+            wkhtmltopdf_path = r'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe'
             config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
-            # Convert HTML to PDF
             pdfkit.from_string(html_content, file_path, options={
                 'page-size': 'Letter',
                 'encoding': 'UTF-8',
@@ -3232,7 +3235,6 @@ class InductionCertificateViewSet(viewsets.ViewSet):
                 '--enable-local-file-access': ''
             }, configuration=config)
 
-            # Return the generated PDF file URL
             pdf_file_url = f"{settings.MEDIA_URL}induction_certificate/{filename}"
             full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
             return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
@@ -3241,3 +3243,68 @@ class InductionCertificateViewSet(viewsets.ViewSet):
             return Response({"status": False, "message": "User not found", "data": ""})
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": ""})
+        
+class TrainerViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        try:
+            trainer_name = request.data.get('trainer_name')
+            description = request.data.get('description')
+
+            if not trainer_name or not description:
+                return Response({"status": False, "message": "Trainer name and description are required."})
+
+            trainer = Trainer.objects.create(user=request.user,trainer_name=trainer_name,description=description,)
+
+            return Response({"status": True, "message": "Trainer created successfully.", "data": TrainerSerializer(trainer).data})
+
+        except Exception as e:
+            return Response({"status": False, "message": str(e)})
+
+    def list(self, request, *args, **kwargs):
+        try:
+            trainers = Trainer.objects.filter(user=request.user)
+            serialized_data = TrainerSerializer(trainers, many=True).data
+
+            return Response({"status": True, "message": "Trainer list fetched successfully.", "data": serialized_data})
+
+        except Exception as e:
+            return Response({"status": False, "message": str(e)})
+
+    def update(self, request, *args, **kwargs):
+        try:
+            trainer_id = kwargs.get('trainer_id')
+            trainer = Trainer.objects.filter(user=request.user, id=trainer_id).first()
+
+            if not trainer:
+                return Response({"status": False, "message": "Trainer not found."},)
+
+            trainer_name = request.data.get('trainer_name')
+            description = request.data.get('description')
+
+            if trainer_name:
+                trainer.trainer_name = trainer_name
+            if description:
+                trainer.description = description
+            trainer.save()
+
+            return Response({"status": True, "message": "Trainer updated successfully.", "data": TrainerSerializer(trainer).data})
+
+        except Exception as e:
+            return Response({"status": False, "message": str(e)})
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            trainer_id = kwargs.get('trainer_id')
+            trainer = Trainer.objects.filter(user=request.user, id=trainer_id).first()
+
+            if not trainer:
+                return Response({"status": False, "message": "Trainer not found."})
+
+            trainer.delete()
+
+            return Response({"status": True, "message": "Trainer deleted successfully."})
+
+        except Exception as e:
+            return Response({"status": False, "message": str(e)})
