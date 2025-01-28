@@ -212,7 +212,12 @@ class InductionDesignation(models.Model):
     def __str__(self):
         return self.induction_designation_name    
 
-
+class Trainer(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    trainer_name = models.CharField(max_length=255)
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
 class ClassroomTraining(models.Model):
     TRAINING_TYPE_CHOICES = [
         ('with_assessment', 'With Assessment'),
@@ -243,7 +248,7 @@ class ClassroomTraining(models.Model):
     description = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='assigned')
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-
+    trainer = models.ForeignKey(Trainer, on_delete=models.CASCADE, null=True, blank=True)
 class ClassroomTrainingFile(models.Model):
     classroom_training = models.ForeignKey(ClassroomTraining, related_name='files', on_delete=models.CASCADE)
     upload_doc = models.FileField(upload_to='classroom_trainings/', null=True, blank=True)
