@@ -78,18 +78,18 @@ class DocumentdataSerializer(serializers.ModelSerializer):
         model = Document
         fields = ['id', 'select_template', 'template_url']
 
-    # def get_template_url(self, obj):
-    #     request = self.context.get('request')
-    #     if obj.select_template and obj.select_template.template_doc:
-    #         return request.build_absolute_uri(obj.select_template.template_doc.url)
-    #     return None
     def get_template_url(self, obj):
+        request = self.context.get('request')
         if obj.select_template and obj.select_template.template_doc:
-            # Build the full template URL
-            original_url = obj.select_template.template_doc.url
-            base_url = "http://host.docker.internal:8000"
-            return f"{base_url}{original_url}"
+            return request.build_absolute_uri(obj.select_template.template_doc.url)
         return None
+    # def get_template_url(self, obj):
+    #     if obj.select_template and obj.select_template.template_doc:
+    #         # Build the full template URL
+    #         original_url = obj.select_template.template_doc.url
+    #         base_url = "http://host.docker.internal:8000"
+    #         return f"{base_url}{original_url}"
+    #     return None
     
 
 class TemplateDocumentSerializer(serializers.ModelSerializer):
