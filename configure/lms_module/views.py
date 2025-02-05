@@ -14,6 +14,7 @@ from django.template.loader import get_template
 from xhtml2pdf import pisa
 import time
 import pdfkit
+from dms_module.serializers import *
 
 class DepartmentAddView(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -961,15 +962,48 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
 
+    # def list(self, request, *args, **kwargs):
+    #     try:
+    #         queryset = self.filter_queryset(self.get_queryset())
+    #         serializer = TrainingCreateSerializer(queryset, many=True, context = {'request': request})
+    #         data = serializer.data
+    #         return Response({"status": True,"message": "Training list fetched successfully","data": data})
+    #     except Exception as e:
+    #         return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
     def list(self, request, *args, **kwargs):
         try:
-            queryset = self.filter_queryset(self.get_queryset())
-            serializer = TrainingCreateSerializer(queryset, many=True, context = {'request': request})
-            data = serializer.data
-            return Response({"status": True,"message": "Training list fetched successfully","data": data})
+            user = self.request.user
+            if not user.groups.filter(name="DTC").exists():
+                return Response({"status": False, "message": "You do not have permission to view these documents."})
+
+            # user_group_ids = list(user.groups.values_list('id', flat=True))
+            # department_id = self.request.query_params.get('department_id', None)
+            # start_date = request.query_params.get('start_date', None)
+            # end_date = request.query_params.get('end_date', None)
+
+            # start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
+            # if error:
+            #     return Response({"status": False, "message": error, "data": [], "user_group_ids": list(user_group_ids)})
+
+            # if start_date_obj:
+            #     start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
+            # if end_date_obj:
+            #     end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
+
+            queryset_documents = Document.objects.filter(document_current_status="1").order_by('-id')
+
+            # if start_date_obj and end_date_obj:
+            #     queryset_documents = queryset_documents.filter(created_at__range=[start_date_obj, end_date_obj])
+    
+            queryset_documents = self.filter_queryset(queryset_documents)
+            document_serializer = DocumentviewSerializer(queryset_documents, many=True, context={'request': request})
+            document_data = document_serializer.data
+
+            return Response({"status": True,"message": "Document list fetched successfully","document_data": document_data})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
-        
+
 
 
 class TrainingUpdateViewSet(viewsets.ModelViewSet):
@@ -1107,10 +1141,14 @@ class TrainingSectionViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             user = self.request.user
-            training_id = request.data.get('training_id')
-            training = TrainingCreate.objects.get(id=training_id)
-            if not training:
-                return Response({"status": False, "message": "Training ID not found", "data": []})
+            # training_id = request.data.get('training_id')
+            # training = TrainingCreate.objects.get(id=training_id)
+            document_id = request.data.get('document_id')
+            document = Document.objects.get(id=document_id)
+            # if not training:
+            #     return Response({"status": False, "message": "Training ID not found", "data": []})
+            if not document:
+                return Response({"status": False, "message": "Document ID not found", "data": []})
             
             section_name = request.data.get('section_name')
             section_description = request.data.get('section_description')
@@ -1121,7 +1159,9 @@ class TrainingSectionViewSet(viewsets.ModelViewSet):
                 section_order = str(section_order)
 
             training_section = TrainingSection.objects.create(
-                training=training,
+                # training=training,
+                document=document,
+                
                 section_name=section_name,
                 section_description=section_description,
                 section_order=section_order,
@@ -1137,11 +1177,17 @@ class TrainingSectionViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            training_id = request.query_params.get('training_id')
-            if not training_id:
-                return Response({"status": False, "message": "training_id is required", "data": []})
+            # training_id = request.query_params.get('training_id')
+            document_id = request.query_params.get('document_id')
+            # if not training_id:
+            #     return Response({"status": False, "message": "training_id is required", "data": []})
+            if not document_id:
+                return Response({"status": False, "message": "document_id is required", "data": []})
             
-            queryset = TrainingSection.objects.filter(training_id=training_id)
+            
+            # queryset = TrainingSection.objects.filter(training_id=training_id)
+            queryset = TrainingSection.objects.filter(document_id=document_id)
+
             if queryset.exists():
                 serializer = TrainingSectionSerializer(queryset, many=True, context={'request': request})
                 return Response({"status": True, "message": "Training section list", "data": serializer.data})
@@ -1301,11 +1347,16 @@ class TrainingIdWiseTrainingSectionViewset(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            training_id = request.query_params.get('training_id')
-            if not training_id:
-                return Response({"status": False, "message": "Training ID is required", "data": []})
+            # training_id = request.query_params.get('training_id')
+            # if not training_id:
+                # return Response({"status": False, "message": "Training ID is required", "data": []})
+            document_id = request.query_params.get('document_id')
+            if not document_id:
+                return Response({"status": False, "message": "Document ID is required", "data": []})
 
-            queryset = TrainingSection.objects.filter(training=training_id)
+            # queryset = TrainingSection.objects.filter(training=training_id)
+            queryset = TrainingSection.objects.filter(document=document_id)
+            
             serializer = TrainingSectionSerializer(queryset, many=True, context = {'request': request})
             data = serializer.data
             return Response({"status": True,"message": "Training section list fetched successfully","data": data})
@@ -1428,13 +1479,19 @@ class TrainingQuestionCreateViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             user = self.request.user
-            training = request.data.get('training_id')
-            if not training:
-                return Response({"status": False, "message": "Training ID is required", "data": []})
+            # training = request.data.get('training_id')
+            # if not training:
+                # return Response({"status": False, "message": "Training ID is required", "data": []})
+            document_id = self.request.POST.get('document_id')
+            if not document_id:
+                return Response({"status": False, "message": "Document ID is required", "data": []})
 
-            training = TrainingCreate.objects.get(id=training)
-            if not training:
-                return Response({"status": False, "message": "Training ID not found", "data": []})
+            # training = TrainingCreate.objects.get(id=training)
+            # if not training:
+                # return Response({"status": False, "message": "Training ID not found", "data": []})
+            document = Document.objects.get(id=document_id)
+            if not document:
+                return Response({"status": False, "message": "Document ID not found", "data": []})
 
             question_type = request.data.get('question_type')
             question_text = request.data.get('question_text')
@@ -1462,7 +1519,9 @@ class TrainingQuestionCreateViewSet(viewsets.ModelViewSet):
             selected_file = request.FILES.get('selected_file', None)
 
             training_question = TrainingQuestions.objects.create(
-                training=training,
+                # training=training,
+                document=document,
+                
                 question_type=question_type,
                 question_text=question_text,
                 options=options,
@@ -1497,20 +1556,26 @@ class TrainingIdWiseQuestionsViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TrainingQuestinSerializer
     queryset = TrainingQuestions.objects.all().order_by('-question_created_at')
-    lookup_field = 'training_id'
+    # lookup_field = 'training_id'
+    lookup_field = 'document_id'
 
 
     def list(self, request, *args, **kwargs):
         try:
-            training_id = self.kwargs.get('training_id')
-            if not training_id:
-                return Response({
-                    "status": False,
-                    "message": "Training ID is required.",
-                    "data": []
-                })
+            # training_id = self.kwargs.get('training_id')
+            document_id = self.kwargs.get('document_id')
+            # if not training_id:
+            #     return Response({
+            #         "status": False,
+            #         "message": "Training ID is required.",
+            #         "data": []
+            #     })
+            if not document_id:
+                return Response({"status": False, "message": "Document ID is required", "data": []})
+                    
 
-            queryset = self.filter_queryset(self.get_queryset().filter(training_id=training_id))
+            # queryset = self.filter_queryset(self.get_queryset().filter(training_id=training_id))
+            queryset = self.filter_queryset(self.get_queryset().filter(document_id=document_id))
             serializer = TrainingQuestinSerializer(queryset, many=True, context={'request': request})
             data = serializer.data
 
@@ -1633,7 +1698,8 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
         try:
             # Extracting data from the request
             user = self.request.user
-            training_id = request.data.get('training_id')
+            # training_id = request.data.get('training_id')
+            document_id = request.data.get('document_id')
             quiz_name = request.data.get('name')
             pass_criteria = request.data.get('pass_criteria')
             quiz_time = request.data.get('quiz_time')
@@ -1645,13 +1711,16 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
             if pass_criteria > total_marks:
                 return Response({"status": False, "message": "Pass criteria cannot be greater than total marks", "data": []})
             # Validate required fields
-            if not all([training_id, quiz_name, pass_criteria, quiz_time, quiz_type, total_marks]):
+            if not all([document_id, quiz_name, pass_criteria, quiz_time, quiz_type, total_marks]):
                 return Response({"status": False, "message": "Missing required fields", "data": []})
 
             try:
-                training = TrainingCreate.objects.get(id=training_id)
-            except TrainingCreate.DoesNotExist:
-                return Response({"status": False, "message": "Training not found", "data": []})
+                # training = TrainingCreate.objects.get(id=training_id)
+                document = Document.objects.get(id=document_id)
+            # except TrainingCreate.DoesNotExist:
+            #     return Response({"status": False, "message": "Training not found", "data": []})
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Document not found", "data": []})
 
             # Parse marks_breakdown if it's a string (in case it's sent as a string representation)
             if isinstance(marks_breakdown, str):
@@ -1667,7 +1736,8 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
                 quiz_time=quiz_time,
                 quiz_type=quiz_type,
                 created_by=user,
-                training=training,
+                # training=training,
+                document=document,
             )
 
             total_marks_accumulated = 0  
@@ -1681,7 +1751,8 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
                     count = int(count)  # Ensure count is an integer
 
                     questions = list(TrainingQuestions.objects.filter(
-                        training=training,  # The training filter
+                        # training=training,  # The training filter
+                        document=document,
                         marks=marks,        # Marks filter
                         status=True          # Only active questions
                     ))
@@ -1734,7 +1805,8 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
 
                 questions = TrainingQuestions.objects.filter(
                     id__in=selected_questions,  
-                    training=training,  
+                    # training=training,  
+                    document=document,  
                     status=True
                 )
 
@@ -1811,7 +1883,8 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
             if not quiz.status:
                 return Response({"status": False, "message": "Quiz is not active", "data": []})
 
-            training_id = request.data.get('training_id', quiz.training.id)
+            # training_id = request.data.get('training_id', quiz.training.id)
+            document_id = request.data.get('document_id', quiz.document.id)
             quiz_name = request.data.get('name', quiz.quiz_name)
             pass_criteria = request.data.get('pass_criteria', quiz.pass_criteria)
             quiz_time = request.data.get('quiz_time', quiz.quiz_time)
@@ -1821,15 +1894,19 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
             selected_questions = request.data.get('selected_questions', [])
             status = request.data.get('status',quiz.status)
 
-            if not all([training_id, quiz_name, pass_criteria, quiz_time, quiz_type, total_marks]):
+            if not all([document_id, quiz_name, pass_criteria, quiz_time, quiz_type, total_marks]):
                 return Response({"status": False, "message": "Missing required fields", "data": []})
 
             try:
-                training = TrainingCreate.objects.get(id=training_id)
-            except TrainingCreate.DoesNotExist:
-                return Response({"status": False, "message": "Training not found", "data": []})
+                # training = TrainingCreate.objects.get(id=training_id)
+                document = Document.objects.get(id=document_id)
+            # except TrainingCreate.DoesNotExist:
+            #     return Response({"status": False, "message": "Training not found", "data": []})
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Document not found", "data": []})
 
-            quiz.training = training
+            # quiz.training = training
+            quiz.document = document
             quiz.quiz_name = quiz_name
             quiz.pass_criteria = pass_criteria
             quiz.quiz_time = quiz_time
@@ -1860,7 +1937,8 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
                         count = int(count)  
 
                         questions = TrainingQuestions.objects.filter(
-                            training=training,  
+                            # training=training,  
+                            document=document,  
                             marks=marks,       
                             status=True         
                         )
@@ -1893,7 +1971,8 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
                 if selected_questions:
                     questions = TrainingQuestions.objects.filter(
                         id__in=selected_questions,  
-                        training=training,  
+                        # training=training,  
+                        document=document,  
                         status=True
                     )
 
@@ -2155,7 +2234,11 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
+            user = request.user
+            if not user.groups.filter(name="DTC").exists():
+                return Response({"status": False, "message": "You do not have permission to view these documents."})
             classroom_name = request.data.get('classroom_name')
+            document_id = request.data.get('document_id')
             is_assesment = request.data.get('is_assesment')
             description = request.data.get('description')
             upload_doc = request.FILES.getlist('upload_doc')
@@ -2164,10 +2247,11 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
             status = request.data.get('status')
             if not classroom_name or not description or not upload_doc or not is_assesment or not status or not trainer_id:
                 return Response({'status': False, 'message': 'All fields are required.'})
-            
             trainer = Trainer.objects.filter(id=trainer_id).first()
             if not trainer:
                 return Response({'status': False, 'message': 'Invalid trainer selected.'})
+            
+            document = Document.objects.filter(id=document_id).first()
             
             classroom_training = ClassroomTraining.objects.create(
                 classroom_name=classroom_name,
@@ -2175,6 +2259,8 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
                 description=description,
                 status=status,
                 trainer=trainer,
+                document=document,
+                
             )
 
             for file in upload_doc:
@@ -2208,13 +2294,15 @@ class ClassroomUpdateViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         try:
+            user = request.user
+            if not user.groups.filter(name="DTC").exists():
+                return Response({"status": False, "message": "You do not have permission to view these documents."})
             classroom_training = self.get_object()
             classroom_name = request.data.get('classroom_name')
             is_assesment = request.data.get('is_assesment')
             description = request.data.get('description')
             upload_doc = request.FILES.getlist('upload_doc')
             status = request.data.get('status')
-
             if classroom_name:
                 classroom_training.classroom_name = classroom_name
             if is_assesment:
@@ -2331,6 +2419,9 @@ class SessionCreateViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
+            user = request.user
+            if not user.groups.filter(name="DTC").exists():
+                return Response({"status": False, "message": "You do not have permission to view these documents."})
             session_name = request.data.get('session_name')
             venue = request.data.get('venue')
             start_date = request.data.get('start_date')
@@ -2421,13 +2512,14 @@ class SessionCompletedViewSet(viewsets.ModelViewSet):
 
     def mark_completed(self, request, *args, **kwargs):
         try:
+            user = request.user
+            if not user.groups.filter(name="DTC").exists():
+                return Response({"status": False, "message": "You do not have permission to view these documents."})
             session_id = self.kwargs.get('session_id')
             session_instance = Session.objects.filter(id=session_id).first()
             if not session_instance:
                 return Response({"status": False, "message": "Session not found."})
             
-            user = request.user
-
             session_complete = SessionComplete.objects.create(session=session_instance, user=user, is_completed=True)
 
             serializer = SessionCompleteSerializer(session_complete, context={'request': request})
@@ -2445,6 +2537,9 @@ class SessionUpdateViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         try:
+            user = request.user
+            if not user.groups.filter(name="DTC").exists():
+                return Response({"status": False, "message": "You do not have permission to view these documents."})
             session = self.get_object()
             session_name = request.data.get('session_name')
             venue = request.data.get('venue')
@@ -3055,24 +3150,27 @@ class StartExam(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         quiz_id = request.data.get('quiz_id')
         quiz = TrainingQuiz.objects.get(id=quiz_id)
-        user = self.request.user  # Get the authenticated user
+        user = self.request.user 
 
-        # Check how many times the user has already attempted the quiz
         attempts_count = QuizSession.objects.filter(user=user, quiz=quiz).count()
-        if attempts_count >= 3:
+
+        if attempts_count < 3:
+            quiz_session = QuizSession.objects.create(user=user, quiz=quiz, attempts=attempts_count + 1)
+            return Response({
+                "status": True,
+                "message": "Exam started successfully.",
+                "quiz_session_id": quiz_session.id
+            })
+
+        session_complete = SessionComplete.objects.filter(session__quiz=quiz, user=user, is_completed=True).first()
+        if not session_complete:
             return Response({
                 "status": False,
-                "message": "You have already attempted this exam 3 times. Further attempts are not allowed."
-            })
-        
-        # Create the QuizSession for a new attempt
+                "message": "You must complete the session before starting the exam again."})
+
         quiz_session = QuizSession.objects.create(user=user, quiz=quiz, attempts=attempts_count + 1)
 
-        return Response({
-            "status": True,
-            "message": "Exam started successfully.",
-            "quiz_session_id": quiz_session.id
-        })
+        return Response({"status": True,"message": "Exam started successfully.","quiz_session_id": quiz_session.id})
     
 
     def list(self, request, *args, **kwargs):
@@ -3113,57 +3211,71 @@ class GetNextQuestion(viewsets.ModelViewSet):
         else:
             return Response({"status": True,"message": "All questions completed.","data": []})
 
-    class GetNextQuestion(viewsets.ModelViewSet):
-        queryset = QuizSession.objects.all()
-        serializer_class = QuizSessionSerializer
+class GetNextQuestion(viewsets.ModelViewSet):
+    queryset = QuizSession.objects.all()
+    serializer_class = QuizSessionSerializer
+    lookup_field = 'session_id'
     
-        def update(self, request, *args, **kwargs):
-            session_id = self.kwargs.get('session_id')
-            quiz_session = QuizSession.objects.get(id=session_id)
-            question_id = request.data.get('question_id')
-            user_answer = request.data.get('user_answer')
-    
-            current_question = TrainingQuestions.objects.get(id=question_id)
-            correct_answer = current_question.correct_answer
-            is_correct = (user_answer == correct_answer)
-    
-            if is_correct:
-                quiz_session.score += current_question.marks
-    
-            quiz_session.current_question_index += 1
-            quiz_session.save()
-    
-            questions = quiz_session.quiz.questions.all()
-            if quiz_session.current_question_index >= len(questions):
-            
-                pass_criteria = quiz_session.quiz.pass_criteria
-                if quiz_session.score >= pass_criteria:
-                    quiz_session.status = 'passed'  
-                    
-                    quiz_session.quiz.status = True
-                    quiz_session.quiz.save()
-    
-                elif quiz_session.attempts >= 3:
-                    quiz_session.status = 'failed'
-                    quiz_session.quiz.status = False 
-                    quiz_session.quiz.save()
-    
-                elif quiz_session.score < pass_criteria and quiz_session.attempts < 3:
-                    quiz_session.status = 'try_again'  
-                    quiz_session.quiz.status = True  
-                    quiz_session.quiz.save()
-    
-                quiz_session.completed_at = timezone.now()
-                quiz_session.save()
-    
-            return Response({
-                "status": True,
-                "message": "Answer submitted successfully.",
-                "is_correct": is_correct,
-                "score": quiz_session.score,
-                "next_question_index": quiz_session.current_question_index
-            })
+    def update(self, request, *args, **kwargs):
+        session_id = self.kwargs.get('session_id')
+        quiz_session = QuizSession.objects.get(id=session_id)
+        question_id = request.data.get('question_id')
+        user_answer = request.data.get('user_answer')
+        user = request.user
+        current_question = TrainingQuestions.objects.get(id=question_id)
+        correct_answer = current_question.correct_answer
+        is_correct = (user_answer == correct_answer)
 
+        if is_correct:
+            quiz_session.score += current_question.marks
+
+        quiz_session.current_question_index += 1
+        quiz_session.save()
+
+        questions = quiz_session.quiz.questions.all()
+        if quiz_session.current_question_index >= len(questions):
+        
+            pass_criteria = quiz_session.quiz.pass_criteria
+            if quiz_session.score >= pass_criteria:
+                quiz_session.status = 'passed'  
+                
+                quiz_session.quiz.status = True
+                quiz_session.quiz.save()
+
+            elif quiz_session.attempts >= 3:
+                quiz_session.status = 'failed'
+                quiz_session.quiz.status = False 
+                quiz_session.quiz.save()
+
+            elif quiz_session.score < pass_criteria and quiz_session.attempts < 3:
+                AttemptLog.objects.create(user=user, quiz_session=quiz_session, question_id=question_id)
+                quiz_session.status = 'try_again'
+                quiz_session.quiz.status = True
+                quiz_session.quiz.save()
+
+            quiz_session.completed_at = timezone.now()
+            quiz_session.save()
+
+        return Response({
+            "status": True,
+            "message": "Answer submitted successfully.",
+            "is_correct": is_correct,
+            "score": quiz_session.score,
+            "next_question_index": quiz_session.current_question_index
+        })
+
+
+class FailedUserViewSet(viewsets.ModelViewSet):
+    queryset = QuizSession.objects.all()
+    serializer_class = QuizSessionSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            failed_users = QuizSession.objects.filter(status='failed', quiz__status=True)
+            serializer = QuizSessionSerializer(failed_users, many=True)
+            return Response({'status': True, 'message': 'Failed users fetched successfully', 'data': serializer.data})
+        except Exception as e:
+            return Response({'status': False,'message': 'Something went wrong', 'error': str(e)})
 
 class HrAcknowledgementViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -3308,3 +3420,308 @@ class TrainerViewSet(viewsets.ViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": str(e)})
+        
+
+class ClassroomQuestionViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ClassroomQuestionSerializer
+    queryset = ClassroomQuestion.objects.all().order_by('-question_created_at')
+    
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            # training = request.data.get('training_id')
+            # if not training:
+                # return Response({"status": False, "message": "Training ID is required", "data": []})
+            classroom_id = self.request.POST.get('classroom_id')
+            if not classroom_id:
+                return Response({"status": False, "message": "Classroom ID is required", "data": []})
+
+            # training = TrainingCreate.objects.get(id=training)
+            # if not training:
+                # return Response({"status": False, "message": "Training ID not found", "data": []})
+            classroom = ClassroomTraining.objects.get(id=classroom_id)
+            if not classroom:
+                return Response({"status": False, "message": "Classroom ID not found", "data": []})
+
+            question_type = request.data.get('question_type')
+            question_text = request.data.get('question_text')
+            options = request.data.get('options', [])
+            correct_answer = request.data.get('correct_answer')
+            marks = request.data.get('marks')
+
+            if not question_type:
+                return Response({"status": False, "message": "Question type is required", "data": []})
+            if not question_text:
+                return Response({"status": False, "message": "Question text is required", "data": []})
+            
+            if question_type == 'mcq' and not options:
+                return Response({"status": False, "message": "MCQ questions must have options", "data": []})
+
+            if question_type == 'mcq' and correct_answer not in options:
+                return Response({"status": False, "message": "MCQ correct answer must be one of the options", "data": []})
+
+            if question_type == 'true_false' and correct_answer not in ['True', 'False']:
+                return Response({"status": False, "message": "True/False correct answer must be 'True' or 'False'", "data": []})
+
+            if question_type == 'fill_in_the_blank' and not correct_answer:
+                return Response({"status": False, "message": "Fill-in-the-blank questions must have a correct answer", "data": []})
+            selected_file_type = request.data.get('selected_file_type')
+            selected_file = request.FILES.get('selected_file', None)
+
+            training_question = ClassroomQuestion.objects.create(
+                # training=training,
+                classroom=classroom,
+                
+                question_type=question_type,
+                question_text=question_text,
+                options=options,
+                correct_answer=correct_answer,
+                marks=marks,
+                created_by=user,
+                selected_file_type = selected_file_type,
+                selected_file=selected_file,
+                question_created_at=timezone.now()
+            )
+
+            # Serialize and return the response
+            serializer = ClassroomQuestionSerializer(training_question, context={'request': request})
+            data = serializer.data
+            return Response({"status": True, "message": "Training question created successfully", "data": data})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+        
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = ClassroomQuestionSerializer(queryset, many=True, context = {'request': request})
+            data = serializer.data
+            return Response({"status": True,"message": "Training question list fetched successfully","data": data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+
+class ClassroomQuizViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ClassroomQuizSerializer
+    queryset = ClassroomQuiz.objects.all().order_by('-created_at')
+
+    def create(self, request, *args, **kwargs):
+        try:
+            # Extracting data from the request
+            user = self.request.user
+            classroom_id = request.data.get('classroom_id')
+            quiz_name = request.data.get('name')
+            pass_criteria = request.data.get('pass_criteria')
+            quiz_time = request.data.get('quiz_time')
+            total_marks = int(request.data.get('total_marks', 0))
+            selected_questions = request.data.get('selected_questions', [])  # For manual quizzes only
+            
+            pass_criteria = int(pass_criteria) if pass_criteria else 0
+            if pass_criteria > total_marks:
+                return Response({"status": False, "message": "Pass criteria cannot be greater than total marks", "data": []})
+
+            # Validate required fields
+            if not all([classroom_id, quiz_name, pass_criteria, quiz_time, total_marks]):
+                return Response({"status": False, "message": "Missing required fields", "data": []})
+
+            try:
+                classroom = ClassroomTraining.objects.get(id=classroom_id)
+            except ClassroomTraining.DoesNotExist:
+                return Response({"status": False, "message": "Document not found", "data": []})
+
+            # Create the new quiz
+            quiz = ClassroomQuiz.objects.create(
+                quiz_name=quiz_name,
+                pass_criteria=pass_criteria,
+                quiz_time=quiz_time,
+                quiz_type='manual',  # Only allow manual quizzes
+                created_by=user,
+                classroom=classroom,
+            )
+
+            total_marks_accumulated = 0  
+            total_questions = 0  
+
+            # Handle manual-type quizzes
+            if not selected_questions or not isinstance(selected_questions, list):
+                return Response({
+                    "status": False,
+                    "message": "You must provide a list of selected questions for manual quiz creation.",
+                    "data": []
+                })
+
+            if isinstance(selected_questions, str) and selected_questions.strip() == "":
+                selected_questions = []  # Handle the case where it's an empty string
+
+            if not isinstance(selected_questions, list):
+                return Response({
+                    "status": False,
+                    "message": "selected_questions must be a list.",
+                    "data": []
+                })
+
+            # Validate that each item in selected_questions is an integer (question ID)
+            if any(not isinstance(q, int) for q in selected_questions):
+                return Response({
+                    "status": False,
+                    "message": "Each element in selected_questions must be an integer (question ID).",
+                    "data": []
+                })
+
+            questions = ClassroomQuestion.objects.filter(
+                id__in=selected_questions,
+                classroom=classroom,
+                status=True
+            )
+
+            if len(questions) != len(selected_questions):
+                return Response({
+                    "status": False,
+                    "message": "Some of the selected questions are invalid or inactive.",
+                    "data": []
+                })
+
+            # Create QuizQuestion for each selected question
+            for question in questions:
+                if total_marks_accumulated + question.marks > total_marks:
+                    return Response({
+                        "status": False,
+                        "message": f"Adding this question would exceed the total marks. Current total: {total_marks_accumulated}, question marks: {question.marks}",
+                        "data": []
+                    })
+                ClassroomquizQuestion.objects.create(quiz=quiz, question=question, marks=question.marks)
+                total_marks_accumulated += question.marks
+                total_questions += 1
+
+            # Check for total marks mismatch
+            if total_marks_accumulated != total_marks:
+                return Response({
+                    "status": False,
+                    "message": f"Total marks mismatch. The accumulated marks are {total_marks_accumulated}, but the input total_marks was {total_marks}. Please adjust.",
+                    "data": []
+                })
+
+            # Save the quiz with final total marks and total questions
+            quiz.total_marks = total_marks_accumulated
+            quiz.total_questions = total_questions
+            quiz.save()
+
+            # Return the quiz data
+            serializer = ClassroomQuizSerializer(quiz, context={'request': request})
+            return Response({"status": True, "message": "Quiz created successfully", "data": serializer.data})
+
+        except IntegrityError as e:
+            return Response({"status": False, "message": "Database Integrity Error", "error": str(e), "data": []})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+
+
+
+
+
+
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            queryset = ClassroomQuiz.objects.filter(created_by=user).order_by('-created_at')
+            serializer = ClassroomQuizSerializer(queryset, many=True, context={'request': request})
+            return Response({"status": True, "message": "Quizzes retrieved successfully", "data": serializer.data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+        
+
+class ClassroomExamViewSet(viewsets.ModelViewSet):
+    queryset = ClassroomQuizSession.objects.all()
+    serializer_class = ClassroomQuizSessionSerializer
+
+    def create(self, request, *args, **kwargs):
+        quiz_id = request.data.get('quiz_id')
+        quiz = ClassroomQuiz.objects.get(id=quiz_id)
+        user = self.request.user 
+
+        quiz_session = ClassroomQuizSession.objects.create(user=user, quiz=quiz)
+
+        return Response({"status": True,"message": "Exam started successfully.","quiz_session_id": quiz_session.id})
+    
+
+class ClassroomGetNextQuestionViewSet(viewsets.ModelViewSet):
+    queryset = ClassroomQuizSession.objects.all()
+    serializer_class = ClassroomQuizSessionSerializer
+
+    def list(self, request, *args, **kwargs):
+        # Get the QuizSession instance
+        session_id = self.kwargs.get('session_id')
+        quiz_session = ClassroomQuizSession.objects.get(id=session_id)
+        quiz = quiz_session.quiz
+
+        # Get the questions for this quiz and fetch the next question
+        questions = quiz.questions.all()  # Using related_name `questions` on the Quiz model
+
+        # Check if there are more questions to show
+        if quiz_session.current_question_index < len(questions):
+            current_question = questions[quiz_session.current_question_index]
+
+            # Prepare the data for the next question
+            question_data = ClassroomQuestionSerializer(current_question).data
+
+            return Response({"status": True,"message": "Next question fetched successfully.","data": question_data})
+        else:
+            return Response({"status": True,"message": "All questions completed.","data": []})
+
+class ClassroomUpdateGetNextQuestionViewSet(viewsets.ModelViewSet):
+    queryset = ClassroomQuizSession.objects.all()
+    serializer_class = ClassroomQuizSessionSerializer
+    lookup_field = 'session_id'
+    
+    def update(self, request, *args, **kwargs):
+        session_id = self.kwargs.get('session_id')
+        quiz_session = ClassroomQuizSession.objects.get(id=session_id)
+        question_id = request.data.get('question_id')
+        user_answer = request.data.get('user_answer')
+        user = request.user
+        current_question = ClassroomQuestion.objects.get(id=question_id)
+        correct_answer = current_question.correct_answer
+        is_correct = (user_answer == correct_answer)
+
+        if is_correct:
+            quiz_session.score += current_question.marks
+
+        quiz_session.current_question_index += 1
+        quiz_session.save()
+
+        questions = quiz_session.quiz.questions.all()
+        if quiz_session.current_question_index >= len(questions):
+        
+            pass_criteria = quiz_session.quiz.pass_criteria
+            if quiz_session.score >= pass_criteria:
+                quiz_session.status = 'passed'  
+                
+                quiz_session.quiz.status = True
+                quiz_session.quiz.save()
+
+            elif quiz_session.attempts >= 3:
+                quiz_session.status = 'failed'
+                quiz_session.quiz.status = False 
+                quiz_session.quiz.save()
+
+            elif quiz_session.score < pass_criteria and quiz_session.attempts < 3:
+                AttemptLog.objects.create(user=user, quiz_session=quiz_session, question_id=question_id)
+                quiz_session.status = 'try_again'
+                quiz_session.quiz.status = True
+                quiz_session.quiz.save()
+
+            quiz_session.completed_at = timezone.now()
+            quiz_session.save()
+
+        return Response({
+            "status": True,
+            "message": "Answer submitted successfully.",
+            "is_correct": is_correct,
+            "score": quiz_session.score,
+            "next_question_index": quiz_session.current_question_index
+        })

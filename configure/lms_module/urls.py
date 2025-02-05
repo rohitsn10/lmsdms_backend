@@ -40,7 +40,7 @@ urlpatterns = [
     path('create_training_questions', TrainingQuestionCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_training_questions'),
     path('update_training_questions/<int:training_question_id>', TrainingQuestionUpdateViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='update_training_questions'),
 
-    path('training_wise_questions/<training_id>', TrainingIdWiseQuestionsViewSet.as_view({'get': 'list'}), name='training_wise_questions'),
+    path('training_wise_questions/<int:document_id>', TrainingIdWiseQuestionsViewSet.as_view({'get': 'list'}), name='training_wise_questions'),
 
     path('create_training_quiz', TrainingQuizCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_training_quiz'),
     path('update_training_quiz/<int:training_quiz_id>', TrainingQuizUpdateView.as_view({'put': 'update', 'delete': 'destroy'}), name='update_training_quiz'),
@@ -61,6 +61,7 @@ urlpatterns = [
     
     path('attendance', AttendanceCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='attendance'),
 
+    path('failed_user', FailedUserViewSet.as_view({'get': 'list'}), name='failed_user'),
 
     path('training_list', TrainingListViewSet.as_view({'get': 'list'}), name='training_list'),
     path('job_training_list', JobroleListingViewSet.as_view({'get': 'list'}), name='job_training_list'),
@@ -75,6 +76,11 @@ urlpatterns = [
     path('training_list_data', TrainingListingViewSet.as_view({'get': 'list'}), name='training_list_data'),
     path('training_assign_jobrole', TrainingAssigntoJobroleViewSet.as_view({'post': 'create'}), name='training_assign_jobrole'),
 
+    path('classroom_questions', ClassroomQuestionViewSet.as_view({'post': 'create', 'get': 'list'}), name='classroom_questions'),
+    path('classroom_quiz', ClassroomQuizViewSet.as_view({'post': 'create', 'get': 'list'}), name='classroom_quiz'),
+    path('classroom_exam', ClassroomExamViewSet.as_view({'post': 'create'}), name='classroom_exam'),
+    path('classroom_get_next_question', ClassroomGetNextQuestionViewSet.as_view({'get': 'list'}), name='classroom_get_next_question'),
+    path('classroom_get_next_question_update', ClassroomUpdateGetNextQuestionViewSet.as_view({'put': 'update'}), name='classroom_get_next_question_update'),
 
     path('training_status_update/<int:training_id>', TrainingStatusUpdateViewset.as_view({'put': 'update'}), name='training_status_update'),
 
