@@ -87,7 +87,8 @@ class TrainingCreate(models.Model):
     end_time = models.DateTimeField(null=True, blank=True)
 
 class TrainingSection(models.Model):
-    training = models.ForeignKey(TrainingCreate, related_name='sections', on_delete=models.CASCADE)
+    training = models.ForeignKey(TrainingCreate, related_name='sections', on_delete=models.CASCADE,null=True, blank=True)
+    document = models.ForeignKey(Document, related_name='document_train', on_delete=models.CASCADE,null=True, blank=True)
     section_name = models.CharField(max_length=255)
     section_description = models.TextField(null=True, blank=True)
     section_order = models.CharField(max_length=255, default='1')
@@ -142,8 +143,8 @@ class TrainingQuestions(models.Model):
         ('fill_in_the_blank', 'Fill in the blank'),
         ('true_false', 'True/False'),
     )
-
-    training = models.ForeignKey(TrainingCreate, related_name='questions', on_delete=models.CASCADE)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
+    training = models.ForeignKey(TrainingCreate, related_name='questions', on_delete=models.CASCADE, null=True, blank=True)
     question_type = models.CharField(max_length=50, choices=QUESTION_TYPE_CHOICES)
     selected_file_type = models.CharField(max_length=50, null=True, blank=True)
     selected_file = models.FileField(upload_to='question_files/', null=True, blank=True)
@@ -164,7 +165,8 @@ class TrainingQuiz(models.Model):
         ('auto', 'Automatic'),
         ('manual', 'Manual'),
     )
-    training = models.ForeignKey(TrainingCreate, related_name='quizzes', on_delete=models.CASCADE)
+    training = models.ForeignKey(TrainingCreate, related_name='quizzes', on_delete=models.CASCADE,null=True, blank=True)
+    document = models.ForeignKey(Document,on_delete=models.CASCADE,null=True, blank=True)
     quiz_name = models.CharField(max_length=255)
     pass_criteria = models.DecimalField(max_digits=5, decimal_places=2)  # For example, pass if >= 50%
     quiz_time = models.PositiveIntegerField(null=True, blank=True)  # Time in minutes
@@ -228,7 +230,8 @@ class ClassroomTraining(models.Model):
         ('completed', 'Completed'),
         ('in_progress', 'In Progress'),
     ]
-
+    user = models.ForeignKey(CustomUser,on_delete=models.CASCADE, blank=True, null=True)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
     # classroom_training_type = models.CharField(max_length=20, choices=TRAINING_TYPE_CHOICES)
     # title = models.CharField(max_length=255)
     # description = models.TextField()
@@ -314,3 +317,70 @@ class QuizSession(models.Model):
 class HRacknowledgement(models.Model):
     remarks = models.TextField(null=True, blank=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+
+class AttemptLog(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    quiz_session = models.ForeignKey(TrainingQuiz, on_delete=models.CASCADE)
+    question_id = models.ForeignKey(TrainingQuestions, on_delete=models.CASCADE)
+
+
+class ClassroomQuestion(models.Model):
+    QUESTION_TYPE_CHOICES = (
+        ('mcq', 'MCQ'),
+        ('fill_in_the_blank', 'Fill in the blank'),
+        ('true_false', 'True/False'),
+    )
+    classroom = models.ForeignKey(ClassroomTraining, on_delete=models.CASCADE, null=True, blank=True)
+    question_type = models.CharField(max_length=50, choices=QUESTION_TYPE_CHOICES)
+    selected_file_type = models.CharField(max_length=50, null=True, blank=True)
+    selected_file = models.FileField(upload_to='question_files/', null=True, blank=True)
+    question_text = models.TextField()
+    options = models.JSONField(null=True, blank=True)  # Store options for MCQ questions (as a list of strings)
+    correct_answer = models.TextField()  # Store the correct answer (can be the option value or index)
+    marks = models.PositiveIntegerField(default=1)  # Marks for the question
+    status = models.BooleanField(default=True)  # Active/Inactive status
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='classroomm_questions_created', null=True, blank=True)
+    updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='classroomm_questions_updated', null=True, blank=True)
+    question_created_at = models.DateTimeField(auto_now_add=True)
+    question_updated_at = models.DateTimeField(auto_now=True)
+
+class ClassroomQuiz(models.Model):
+    QUIZ_TYPE_CHOICES = (
+        ('manual', 'Manual'),
+    )
+    classroom = models.ForeignKey(ClassroomTraining, on_delete=models.CASCADE, null=True, blank=True)
+    quiz_name = models.CharField(max_length=255)
+    pass_criteria = models.DecimalField(max_digits=5, decimal_places=2)  # For example, pass if >= 50%
+    quiz_time = models.PositiveIntegerField(null=True, blank=True)  # Time in minutes
+    total_marks = models.PositiveIntegerField(null=True, blank=True)
+    total_questions = models.PositiveIntegerField(null=True, blank=True)
+    quiz_type = models.CharField(max_length=10, choices=QUIZ_TYPE_CHOICES,null=True, blank=True)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='classroom_quizzes_created', null=True, blank=True)
+    updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='classroom_quizzes_updated', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    status = models.BooleanField(default=True,null=True,blank=True)
+
+    def get_total_marks(self):
+        return sum([q.marks for q in self.questions.all()])
+    
+class ClassroomquizQuestion(models.Model):
+    quiz = models.ForeignKey(ClassroomQuiz, related_name="questions", on_delete=models.CASCADE)
+    question = models.ForeignKey(ClassroomQuestion, on_delete=models.CASCADE)
+    marks = models.PositiveIntegerField()
+
+class ClassroomQuizSession(models.Model):
+    STATUS_CHOICES = (
+        ('try_again', 'Try Again'),
+        ('passed', 'Passed'),
+        ('failed', 'Failed'),
+    )
+
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    quiz = models.ForeignKey(ClassroomQuiz, on_delete=models.CASCADE)
+    current_question_index = models.IntegerField(default=0)
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    score = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='try_again')  # Updated status field
+    attempts = models.PositiveIntegerField(default=0)

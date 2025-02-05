@@ -101,7 +101,7 @@ class TrainingSectionSerializer(serializers.ModelSerializer):
     training_name = serializers.ReadOnlyField(source='training.training_name')
     class Meta:
         model = TrainingSection
-        fields = ['id', 'training','training_name','section_name', 'section_description', 'section_order']
+        fields = ['id', 'training','document','training_name','section_name', 'section_description', 'section_order']
 
     
 
@@ -134,7 +134,7 @@ class TrainingQuestinSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrainingQuestions
         fields = [
-            'id', 'training', 'question_type', 'question_text', 'options', 
+            'id', 'training', 'document', 'question_type', 'question_text', 'options', 
             'correct_answer', 'marks', 'status', 
             'question_created_at', 'question_updated_at', 
             'created_by', 'updated_by','selected_file_type','selected_file'
@@ -229,9 +229,10 @@ class ClassroomTrainingFileSerializer(serializers.ModelSerializer):
 class ClassroomTrainingSerializer(serializers.ModelSerializer):
     files = ClassroomTrainingFileSerializer(many=True, read_only=True)
     classroom_id = serializers.IntegerField(source='id')
+    document_id = serializers.IntegerField(source='document')
     class Meta:
         model = ClassroomTraining
-        fields = ['classroom_id', 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at', 'trainer']
+        fields = ['classroom_id', 'document_id' 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at', 'trainer']
     # department_of_employee_first_name  = serializers.ReadOnlyField(source='department_or_employee.first_name')
     # department_of_employee_last_name = serializers.ReadOnlyField(source='department_or_employee.last_name')
     # class Meta:
@@ -359,3 +360,34 @@ class TrainerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Trainer
         fields = '__all__'
+
+class ClassroomQuestionSerializer(serializers.ModelSerializer):
+    # Create custom fields to return URLs for audio and video files
+    selected_file = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ClassroomQuestion
+        fields = [
+            'id', 'classroom', 'question_type', 'question_text', 'options', 
+            'correct_answer', 'marks', 'status', 
+            'question_created_at', 'question_updated_at', 
+            'created_by', 'updated_by','selected_file_type','selected_file'
+        ]
+
+    def get_selected_file(self, obj):
+        request = self.context.get('request')
+        if obj.selected_file and hasattr(obj.selected_file, 'url'):
+            return request.build_absolute_uri(obj.selected_file.url)
+        return None
+    
+class ClassroomQuizSerializer(serializers.ModelSerializer):
+    questions = QuizQuestionSerializer(many=True)
+
+    class Meta:
+        model = ClassroomQuiz
+        fields = ['id', 'quiz_name', 'pass_criteria', 'quiz_time', 'total_marks', 'total_questions', 'quiz_type', 'questions', 'created_by','updated_by','created_at','updated_at','status']
+
+class ClassroomQuizSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizSession
+        fields = ['id', 'user', 'quiz', 'current_question_index', 'started_at', 'completed_at', 'score', 'status']
