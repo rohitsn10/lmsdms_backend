@@ -1,6 +1,6 @@
 from django.db import models
 from user_profile.models import *
-
+from lms_module.models import *
 class WorkFlowModel(models.Model):
     workflow_name = models.TextField(blank=True, null=True)
     workflow_description = models.TextField(blank=True, null=True)
@@ -82,7 +82,8 @@ class Document(models.Model):
     approver = models.ForeignKey(CustomUser,related_name="approver_documents",on_delete=models.SET_NULL,blank=True,null=True)
     doc_admin = models.ForeignKey(CustomUser,related_name="doc_admin_documents",on_delete=models.SET_NULL,blank=True,null=True)
     author = models.ForeignKey(CustomUser,related_name="author_documents",on_delete=models.SET_NULL,blank=True,null=True)
-    
+    job_roles = models.ManyToManyField('lms_module.JobRole')
+
 class UploadedDocument(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE)  
     word_file = models.FileField(upload_to='uploaded_docs/') 

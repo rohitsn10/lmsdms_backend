@@ -65,7 +65,7 @@ urlpatterns = [
 
     path('training_list', TrainingListViewSet.as_view({'get': 'list'}), name='training_list'),
     path('job_training_list', JobroleListingViewSet.as_view({'get': 'list'}), name='job_training_list'),
-    path('jobrole_assign_training/<int:training_id>', TrainingAssignViewSet.as_view({'put': 'update'}), name='jobrole_assign_training'),
+    path('jobrole_assign_training/<int:user_id>', TrainingAssignViewSet.as_view({'put': 'update'}), name='jobrole_assign_training'),
 
     path('training_matrix_assign_user_and_add_data', TrainingMatrixAssignUserViewSet.as_view({'post': 'create', 'get': 'list'}), name='training_list_mapping'),
     path('training_id_wise_training_section', TrainingIdWiseTrainingSectionViewset.as_view({'get': 'list'}), name='training_id_wise_training_section'),
@@ -93,4 +93,7 @@ urlpatterns = [
 
     path('trainer_create', TrainerViewSet.as_view({'post': 'create', 'get': 'list'}), name='trainer_create'),
     path('trainer_update/<int:trainer_id>', TrainerViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='trainer_update'),
+
+    path('jobdescriptioncreate', JobDescriptionCreateViewSet.as_view({'post': 'create'}), name='jobdescriptioncreate'),
+    path('hod_remarks/<int:job_description_id>',HODApprovalViewSet.as_view({'put': 'update'}), name='hod_remarks'),
 ]
