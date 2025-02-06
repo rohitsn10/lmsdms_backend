@@ -2882,34 +2882,45 @@ class JobroleListingViewSet(viewsets.ModelViewSet):
 
 class TrainingAssignViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    queryset = TrainingCreate.objects.all()
-    lookup_field = 'training_id'  
-
+    lookup_field = 'user_id'
     def update(self, request, *args, **kwargs):
         try:
-            training_id = self.kwargs.get("training_id")
+            user_id = self.kwargs.get("user_id")
+            if not user_id:
+                return Response({"status": False, "message": "user_id is missing"})
+            
+            job_assign_instance = JobAssign.objects.filter(id=user_id).first()
+            if not job_assign_instance:
+                return Response({"status": False, "message": "user_id not found"})
+            
+            job_description = JobDescription.objects.filter(user_id=user_id).first()
+            if not job_description:
+                return Response({"status": False, "message": "Job description not found for this user."})
 
-            training_instance = TrainingCreate.objects.filter(id=training_id).first()
-            if not training_instance:
-                return Response({"status": False, "message": "Training ID not found"})
+            if job_description.status != 'approved':
+                return Response({"status": False, "message": "Job description is not approved by HOD. Job roles cannot be assigned."})
 
             job_role_ids = request.data.get('job_role_ids', [])
+            remove_job_role_ids = request.data.get('remove_job_role_ids', [])
             if not isinstance(job_role_ids, list):
                 return Response({"status": False, "message": "Job role IDs should be a list"})
 
             valid_job_roles = JobRole.objects.filter(id__in=job_role_ids)
+            remove_job_role_ids = JobRole.objects.filter(id__in=remove_job_role_ids)
+
             if len(valid_job_roles) != len(job_role_ids):
                 return Response({
                     "status": False,
                     "message": "Some Job Role IDs are invalid"
                 })
 
-            training_instance.job_roles.set(valid_job_roles)
-            training_instance.save()
+            job_assign_instance.job_roles.add(*valid_job_roles)
+            job_assign_instance.job_roles.remove(*remove_job_role_ids)
+            job_assign_instance.save()
 
             return Response({
                 "status": True,
-                "message": "Training updated successfully",
+                "message": "Job roles updated for the user successfully",
             })
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
@@ -3003,33 +3014,28 @@ class TrainingAssigntoJobroleViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
 
         try:
-            # Get job_role_id from the request data
             job_role_id = request.data.get('job_role_id')
             if not job_role_id:
                 return Response({"status": False, "message": "Job role ID is required"})
 
-            # Validate JobRole existence
             job_role_instance = JobRole.objects.filter(id=job_role_id).first()
             if not job_role_instance:
                 return Response({"status": False, "message": "Invalid Job role ID"})
 
-            # Get training_ids from the request data
-            training_ids = request.data.get('training_ids', [])
-            if not isinstance(training_ids, list) or not training_ids:
-                return Response({"status": False, "message": "Training IDs should be a non-empty list"})
+            document_ids = request.data.get('document_ids', [])
+            if not isinstance(document_ids, list) or not document_ids:
+                return Response({"status": False, "message": "document_ids should be a non-empty list"})
 
-            # Validate TrainingCreate existence
-            valid_trainings = TrainingCreate.objects.filter(id__in=training_ids)
-            if len(valid_trainings) != len(training_ids):
+            valid_document = Document.objects.filter(id__in=document_ids)
+            if len(valid_document) != len(document_ids):
                 return Response({"status": False, "message": "Some Training IDs are invalid"})
 
-            # Add the new job role to each training without removing existing ones
-            for training in valid_trainings:
+            for training in valid_document:
                 training.job_roles.add(job_role_instance)
 
             return Response({
                 "status": True,
-                "message": "Trainings successfully assigned to the job role",
+                "message": "document successfully assigned to the job role",
             })
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
@@ -3725,3 +3731,84 @@ class ClassroomUpdateGetNextQuestionViewSet(viewsets.ModelViewSet):
             "score": quiz_session.score,
             "next_question_index": quiz_session.current_question_index
         })
+
+
+class JobDescriptionCreateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def create(self, request, *args, **kwargs):
+        try:
+            if not request.user.groups.filter(name='DTC').exists():
+                return Response({"status": False, "message": "You don't have permission to create job description."})
+            user_id = request.data.get('user_id')
+            job_role_id = request.data.get('job_role_id')
+            employee_job_description = request.data.get('employee_job_description')
+
+            job_role = JobRole.objects.get(id=job_role_id)
+
+            job_description = JobDescription.objects.create(
+                user_id=user_id,
+                job_role=job_role,
+                employee_job_description=employee_job_description,
+                status='pending'
+            )
+            job_description.save()
+            return Response({"status": True, "message": "Job description created successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+class JobDescriptionUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    def update(self, request, *args, **kwargs):
+        try:
+            if not request.user.groups.filter(name='DTC').exists():
+                return Response({"status": False, "message": "You don't have permission to review job description."})
+
+            job_description_id = kwargs.get('job_description_id')
+
+            employee_job_obj = HODRemark.objects.get(id=job_description_id)
+            if employee_job_obj.status != 'send_back':
+                return Response({"status": False, "message": "You can only update a job description with 'send_back' status"})
+            
+            job_role_id = request.data.get('job_role_id')
+            employee_job_description = request.data.get('employee_job_description')
+            job_role_obj = JobRole.objects.get(id=job_role_id)
+            employee_job_obj.job_role_id = job_role_id
+            employee_job_obj.employee_job_description = employee_job_description
+            employee_job_obj.save()
+            return Response({"status": True, "message": "Job description updated successfully"})
+        
+        except JobDescription.DoesNotExist:
+            return Response({"status": False, "message": "Job description not found"})
+        except CustomUser.DoesNotExist:
+            return Response({"status": False, "message": "User not found"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+class HODApprovalViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            if not request.user.groups.filter(name='HOD').exists():
+                return Response({"status": False, "message": "You don't have permission to review job description."})
+            job_description_id = kwargs.get('job_description_id')
+            employee_job_description = JobDescription.objects.get(id=job_description_id)
+
+            remarks = request.data.get('remarks')
+            status = request.data.get('status')
+            if status not in ['approved', 'send_back']:
+                return Response({"status": False, "message": "Invalid status"})
+
+            hod_remark = HODRemark.objects.create(
+                employee_job_description=employee_job_description,
+                remarks=remarks,
+                status=status
+            )
+
+            employee_job_description.status = status
+            employee_job_description.save()
+
+            return Response({"status": True, "message": "Job description reviewed Successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})

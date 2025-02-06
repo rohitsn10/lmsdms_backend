@@ -7,7 +7,6 @@ import os
 from django.utils.timezone import now,timedelta
 from django.conf import settings
 
-
 class Department(models.Model):
     department_name = models.TextField()
     department_description = models.TextField(null=True, blank=True)
@@ -34,6 +33,7 @@ class CustomUserManager(BaseUserManager):
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(null=True, blank=True)    #email = models.EmailField(unique=True, validators=[EmailValidator(message="Invalid email address")])
+    employee_number = models.CharField(max_length=100,null=True, blank=True)
     username = models.CharField(max_length=255, unique=True, null=True, blank=True)
     first_name = models.CharField(max_length=30, null=True, blank=True)
     last_name = models.CharField(max_length=30, null=True, blank=True)

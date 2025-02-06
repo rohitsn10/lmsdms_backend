@@ -391,3 +391,8 @@ class ClassroomQuizSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuizSession
         fields = ['id', 'user', 'quiz', 'current_question_index', 'started_at', 'completed_at', 'score', 'status']
+
+class JobAssignSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobAssign
+        fields = ['id', 'user', 'job_roles']

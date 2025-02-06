@@ -27,6 +27,10 @@ class JobRole(models.Model):
     job_role_name = models.TextField(null=True,blank=True)
     job_role_description = models.TextField(null=True,blank=True)
 
+class JobAssign(models.Model):
+    job_roles = models.ManyToManyField(JobRole,related_name='job_assigns')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='job_assigns')
+
 class Assessment(models.Model):
     title = models.TextField(blank=True, null=True)
     time_limit = models.TextField(blank=True, null=True)
@@ -68,6 +72,7 @@ class TrainingCreate(models.Model):
         ('in_progress', 'In Progress'),
         ('Completed', 'Completed'),
     ]
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='assigned_trainings',null=True,blank=True)
     plant = models.ForeignKey(Plant, on_delete=models.CASCADE)
     training_type = models.ForeignKey(TrainingType, on_delete=models.CASCADE)
     training_number = models.CharField(max_length=255,null=True,blank=True)
@@ -384,3 +389,28 @@ class ClassroomQuizSession(models.Model):
     score = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='try_again')  # Updated status field
     attempts = models.PositiveIntegerField(default=0)
+
+class JobDescription(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('send_back', 'Send_back'),
+    )
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,null=True, blank=True) 
+    job_role = models.ForeignKey(JobRole, on_delete=models.CASCADE,null=True, blank=True) 
+    employee_job_description = models.TextField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True,null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True,null=True, blank=True)
+
+class HODRemark(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('send_back', 'Send_back'),
+    )
+    employee_job_description = models.ForeignKey(JobDescription, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,null=True, blank=True) 
+    remarks = models.TextField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True,null=True, blank=True)
