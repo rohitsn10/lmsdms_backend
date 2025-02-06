@@ -10,11 +10,14 @@ from django.contrib.auth.models import Group
 from django.core.mail import send_mail
 from user_profile.email_utils import *
 from lms_module.models import *
+import requests
 from django.db.models import Q
 import ipdb
 import logging
 import time
 import openpyxl
+from django.core.files.base import ContentFile
+from uuid import uuid4
 from openpyxl.utils import get_column_letter
 from io import BytesIO
 from django.template.loader import get_template
@@ -4505,3 +4508,27 @@ class EmployeeTrainingNeedIdentyView(viewsets.ViewSet):
             return Response({"status": False, "message": "User not found", "data": ""})
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": ""})
+        
+@csrf_exempt
+def download_and_save_docx(request):
+    url = request.POST.get('url')  
+
+    if not url:
+        return JsonResponse({"status": False, "message": "URL parameter is required"})
+
+    try:
+        response = requests.get(url)
+
+        document = DocumentLink()
+        document.docxfile.save(f"{uuid4()}.docx", ContentFile(response.content))
+
+        document.save()
+        local_url = request.build_absolute_uri(settings.MEDIA_URL)
+        file_url = f"{local_url}{document.docxfile.name}"
+
+        return JsonResponse({"status": True, "file_url": file_url})
+
+    except requests.RequestException as e:
+        return JsonResponse({"status": False, "message": f"Error downloading file: {str(e)}"})
+    except Exception as e:
+        return JsonResponse({"status": False, "message": f"An error occurred: {str(e)}"})

@@ -127,6 +127,8 @@ urlpatterns = [
 
    path('get_editor_config', get_editor_config, name='get_editor_config'),
    path('onlyoffice_callback', onlyoffice_callback, name='onlyoffice_callback'),
+   
+   path('download_and_save_docx', download_and_save_docx, name='download_and_save_docx'),
 
    path('employee_list/<int:employee_id>', EmployeeJobRoleView.as_view({'get':'list'}),name='employee_list'),
 

@@ -214,3 +214,7 @@ class Archived(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     version = models.CharField(max_length=10)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class DocumentLink(models.Model):
+    docxfile = models.FileField(upload_to='file/', null=True, blank=True)
