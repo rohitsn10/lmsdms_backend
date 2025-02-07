@@ -3116,6 +3116,7 @@ class DocAdminUpdateViewSet(viewsets.ModelViewSet):
 
 
 
+
 class DocumentCertificatePdfExportView(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'document_id'
@@ -4532,3 +4533,61 @@ def download_and_save_docx(request):
         return JsonResponse({"status": False, "message": f"Error downloading file: {str(e)}"})
     except Exception as e:
         return JsonResponse({"status": False, "message": f"An error occurred: {str(e)}"})
+    
+class DocumentObsoleteNotificationViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    def list(self, request, *args, **kwargs):
+        try:
+            obsolete_documents = Document.objects.filter(document_current_status__id=3)
+
+            if not obsolete_documents.exists():
+                return Response({"status": False,"message": "No obsolete documents found."})
+
+            users_notified = []
+
+            for document in obsolete_documents:
+                job_roles = document.job_roles.all()
+                if not job_roles.exists():
+                    return Response({"status": False,"message": "Job roles not found."})
+                
+                job_role_ids = job_roles.values_list('id', flat=True)
+                users = JobAssign.objects.filter(job_roles__in=job_roles).values_list('user_id', flat=True).distinct()
+                
+                if not users.exists():
+                    continue 
+
+                users = CustomUser.objects.filter(id__in=users)
+                for user in users:
+                    print(f"User: {user.username}, Email: {user.email}")
+                user_emails = set(user.email for user in users if user.email)
+                
+                if user_emails:
+                    subject = f"Document {document.document_title} is Obsolete"
+                    message = (
+                        f"The document '{document.document_title}' with document number "
+                        f"'{document.document_number}' has been marked as obsolete. "
+                        "Please review the document and take necessary actions."
+                    )
+                    from_email = settings.DEFAULT_FROM_EMAIL
+
+                    send_mail(
+                        subject, message, from_email, list(user_emails), fail_silently=False
+                    )
+
+                    users_notified.append({
+                        "document_id": document.id,
+                        "document_title": document.document_title,
+                        "emails_notified": list(user_emails)
+                    })
+
+            if not users_notified:
+                return Response({"status": False,"message": "No users to notify for the obsolete documents.",})
+
+            return Response({
+                "status": True,
+                "message": "Emails sent successfully to users assigned to obsolete documents.",
+                "data": users_notified
+            })
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
