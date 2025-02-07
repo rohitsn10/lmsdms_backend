@@ -3157,7 +3157,16 @@ class StartExam(viewsets.ModelViewSet):
         quiz_id = request.data.get('quiz_id')
         quiz = TrainingQuiz.objects.get(id=quiz_id)
         user = self.request.user 
+        assigned_document = quiz.document
+        assigned_document_version = assigned_document.version
 
+        previous_session = QuizSession.objects.filter(user=user, quiz=quiz).order_by('-id').first()
+        if previous_session:
+            previous_major_version = previous_session.document_version.split('.')[0]
+            current_major_version = assigned_document_version.split('.')[0]
+            if previous_major_version != current_major_version:
+                return Response({"status": True,"message": "Exam started successfully.","quiz_session_id": quiz_session.id})
+            
         attempts_count = QuizSession.objects.filter(user=user, quiz=quiz).count()
 
         if attempts_count < 3:
@@ -3812,3 +3821,5 @@ class HODApprovalViewSet(viewsets.ModelViewSet):
             return Response({"status": True, "message": "Job description reviewed Successfully"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
