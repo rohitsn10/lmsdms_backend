@@ -1820,14 +1820,34 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
                 status_approve=status
             )
 
-            # Update document current status
-            document.document_current_status = status
+            # Check if all reviewers have approved
+            total_reviewers = document.reviewers.count()
+            approved_reviews = DocumentReviewerAction.objects.filter(
+                document=document,
+                status_approve=9
+            ).count()
+
+            # If any reviewer sends it back, document is not approved
+            sent_back_reviews = DocumentReviewerAction.objects.filter(
+                document=document,
+                status_approve=8 
+            ).count()
+
+            if sent_back_reviews > 0:
+                document.document_current_status = 8 #send back
+            elif approved_reviews == total_reviewers:
+                # All reviewers have approved, update status
+                document.document_current_status = 9 #approve
+            else:
+                # Still waiting for all reviewers to approve
+                document.document_current_status = 3  #Under Review
+
             document.assigned_to = None
             version_number = document.version  # Get the current version
             new_version = increment_version(version_number)
             document.version = new_version
             document.save()
-            
+
             Archived.objects.create(
                 document=document,
                 version=version_number
@@ -1838,7 +1858,7 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
             approver_user = Group.objects.get(name='Approver')
             approvers = CustomUser.objects.filter(groups=approver_user)
             department_users = CustomUser.objects.filter(department=document.user.department)
-            
+
             # Use union without distinct() to avoid the error
             users_to_notify = approvers.union(department_users)
 
