@@ -1820,28 +1820,35 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
                 status_approve=status
             )
 
-            # Check if all reviewers have approved
-            total_reviewers = document.reviewers.count()
+            # Fetch the status for 'Send Back' and 'Approved'
+            send_back_status = DynamicStatus.objects.get(id=8)
+            approve_status = DynamicStatus.objects.get(id=9)
+
+            # Get the total number of assigned reviewers
+            total_reviewers = document.visible_to_users.count()
+
+            # Check how many reviewers have approved and how many sent it back
             approved_reviews = DocumentReviewerAction.objects.filter(
                 document=document,
-                status_approve=9
+                status_approve=status
             ).count()
-
-            # If any reviewer sends it back, document is not approved
+            
             sent_back_reviews = DocumentReviewerAction.objects.filter(
                 document=document,
-                status_approve=8 
+                status_approve=send_back_status
             ).count()
-
+            print(sent_back_reviews,"sent_back_reviews")
+            print(approved_reviews,"approved_reviews")
+            print(total_reviewers,"total_")
+            # If any reviewer sends it back, don't change the status
             if sent_back_reviews > 0:
-                document.document_current_status = 8 #send back
+                document.document_current_status = send_back_status  # 'Send Back'
             elif approved_reviews == total_reviewers:
-                # All reviewers have approved, update status
-                document.document_current_status = 9 #approve
-            else:
-                # Still waiting for all reviewers to approve
-                document.document_current_status = 3  #Under Review
-
+                # Only change to 'Approved' if all reviewers have approved
+                document.document_current_status = approve_status  # 'Approved'
+            # Otherwise, don't change the status
+            
+            # Proceed with the rest of the document update
             document.assigned_to = None
             version_number = document.version  # Get the current version
             new_version = increment_version(version_number)
@@ -1871,7 +1878,6 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
-
 
 
 class DocumentApproverActionCreateViewSet(viewsets.ModelViewSet):
