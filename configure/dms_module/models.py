@@ -219,3 +219,12 @@ class Archived(models.Model):
 
 class DocumentLink(models.Model):
     docxfile = models.FileField(upload_to='file/', null=True, blank=True)
+
+
+class DocumentReviewStatus(models.Model):
+    document = models.ForeignKey(Document, on_delete=models.CASCADE)
+    reviewer = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    status_approve = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
+    remark = models.TextField()
+    approved = models.BooleanField(default=False)
+    sent_back = models.BooleanField(default=False)
