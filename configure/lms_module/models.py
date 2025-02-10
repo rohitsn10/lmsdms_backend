@@ -229,7 +229,10 @@ class ClassroomTraining(models.Model):
         ('with_assessment', 'With Assessment'),
         ('without_assessment', 'Without Assessment'),
     ]
-    
+    ONLINE_OFFLINE_CHOICES = [
+        ('online', 'Online'),
+        ('offline', 'Offline'),
+    ]
     STATUS_CHOICES = [
         ('assigned', 'Assigned'),
         ('completed', 'Completed'),
@@ -244,6 +247,7 @@ class ClassroomTraining(models.Model):
     # document = models.FileField(upload_to='classroom_trainings/', null=True, blank=True)
     # sop = models.CharField(max_length=255)  # Assuming SOP refers to a string value
     start_date = models.DateField(auto_now_add=True, null=True, blank=True)
+    online_offline_status = models.CharField(max_length=255,choices=ONLINE_OFFLINE_CHOICES, null=True, blank=True)
     # start_time = models.TimeField()
     # end_time = models.TimeField()
     # created_at = models.DateTimeField(auto_now_add=True)
