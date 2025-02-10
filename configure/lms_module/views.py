@@ -974,8 +974,10 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             user = self.request.user
-            if not user.groups.filter(name="DTC").exists():
-                return Response({"status": False, "message": "You do not have permission to view these documents."})
+            if user.groups.filter(name="DTC").exists():
+                queryset_documents = Document.objects.all()
+            else:
+                queryset_documents = Document.objects.filter(models.Q(assigned_to=user) | models.Q(visible_to_users=user))
 
             # user_group_ids = list(user.groups.values_list('id', flat=True))
             # department_id = self.request.query_params.get('department_id', None)
@@ -991,7 +993,7 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
             # if end_date_obj:
             #     end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
 
-            queryset_documents = Document.objects.filter(document_current_status="1").order_by('-id')
+            # queryset_documents = Document.objects.filter(document_current_status="1").order_by('-id')
 
             # if start_date_obj and end_date_obj:
             #     queryset_documents = queryset_documents.filter(created_at__range=[start_date_obj, end_date_obj])
