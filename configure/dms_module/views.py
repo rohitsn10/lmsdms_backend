@@ -1822,7 +1822,7 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
 
             # Fetch the status for 'Send Back' and 'Approved'
             send_back_status = DynamicStatus.objects.get(id=8)
-            approve_status = DynamicStatus.objects.get(id=9)
+            approve_status = DynamicStatus.objects.get(id=4)
 
             # Get the total number of assigned reviewers
             total_reviewers = document.visible_to_users.count()

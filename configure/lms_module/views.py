@@ -2243,10 +2243,24 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
             description = request.data.get('description')
             upload_doc = request.FILES.getlist('upload_doc')
             trainer_id = request.data.get('trainer')
-            print("====", upload_doc)
+            online_offline_status = request.data.get('online_offline_status')
             status = request.data.get('status')
-            if not classroom_name or not description or not upload_doc or not is_assesment or not status or not trainer_id:
-                return Response({'status': False, 'message': 'All fields are required.'})
+            if not classroom_name:
+                return Response({'status': False,'message': 'Classroom name is required.'})
+            if not document_id:
+                return Response({'status': False,'message': 'Document ID is required.'})
+            if not is_assesment:
+                return Response({'status': False,'message': 'Is assessment is required.'})
+            if not description:
+                return Response({'status': False,'message': 'Description is required.'})
+            if not trainer_id:
+                return Response({'status': False,'message': 'Trainer ID is required.'})
+            if not online_offline_status:
+                return Response({'status': False,'message': 'Online/offline status is required.'})
+            if online_offline_status == 'offline':
+                if not upload_doc:
+                    return Response({'status': False,'message': 'Please upload document for offline training.'})
+            
             trainer = Trainer.objects.filter(id=trainer_id).first()
             if not trainer:
                 return Response({'status': False, 'message': 'Invalid trainer selected.'})
@@ -2260,6 +2274,8 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
                 status=status,
                 trainer=trainer,
                 document=document,
+                online_offline_status=online_offline_status,
+                
                 
             )
 
