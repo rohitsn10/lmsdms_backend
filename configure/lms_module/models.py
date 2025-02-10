@@ -171,7 +171,7 @@ class TrainingQuiz(models.Model):
         ('manual', 'Manual'),
     )
     training = models.ForeignKey(TrainingCreate, related_name='quizzes', on_delete=models.CASCADE,null=True, blank=True)
-    document = models.ForeignKey('dms_module.Document',on_delete=models.CASCADE,null=True, blank=True)
+    document = models.ForeignKey(Document,on_delete=models.CASCADE,null=True, blank=True)
     quiz_name = models.CharField(max_length=255)
     pass_criteria = models.DecimalField(max_digits=5, decimal_places=2)  # For example, pass if >= 50%
     quiz_time = models.PositiveIntegerField(null=True, blank=True)  # Time in minutes
