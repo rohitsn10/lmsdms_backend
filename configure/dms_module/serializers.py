@@ -325,6 +325,7 @@ class DocumentSerializer(serializers.ModelSerializer):
             'document_type', 
             'revise_request_id',
             'revision_created_at',
+            'job_roles'
         ]
 
     def get_user(self, obj):

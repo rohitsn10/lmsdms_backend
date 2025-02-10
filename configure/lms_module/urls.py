@@ -74,7 +74,7 @@ urlpatterns = [
 
     path('job_training_list_mapping', JobroleListingapiViewSet.as_view({'get': 'list'}), name='job_training_list_mapping'),
     path('training_list_data', TrainingListingViewSet.as_view({'get': 'list'}), name='training_list_data'),
-    path('training_assign_jobrole', TrainingAssigntoJobroleViewSet.as_view({'post': 'create'}), name='training_assign_jobrole'),
+    path('training_assign_jobrole', TrainingAssigntoJobroleViewSet.as_view({'post': 'create', 'get': 'list'}), name='training_assign_jobrole'),
 
     path('classroom_questions', ClassroomQuestionViewSet.as_view({'post': 'create', 'get': 'list'}), name='classroom_questions'),
     path('classroom_quiz', ClassroomQuizViewSet.as_view({'post': 'create', 'get': 'list'}), name='classroom_quiz'),
