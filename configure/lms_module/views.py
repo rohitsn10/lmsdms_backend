@@ -3057,6 +3057,27 @@ class TrainingAssigntoJobroleViewSet(viewsets.ModelViewSet):
             })
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+    def list(self, request, *args, **kwargs):
+        try:
+            job_role_id = request.query_params.get('job_role_id')
+            if not job_role_id:
+                return Response({"status": False, "message": "Job role ID is required"})
+
+            job_role_instance = JobRole.objects.filter(id=job_role_id).first()
+            if not job_role_instance:
+                return Response({"status": False, "message": "Invalid Job role ID"})
+
+            assigned_documents = Document.objects.filter(job_roles=job_role_instance)
+            serialized_documents = DocumentSerializer(assigned_documents, many=True)
+
+            return Response({
+                "status": True,
+                "message": "Documents retrieved successfully",
+                "documents": serialized_documents.data
+            })
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
 class MaterialStartStopReadingView(viewsets.ModelViewSet):
