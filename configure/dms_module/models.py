@@ -82,7 +82,7 @@ class Document(models.Model):
     approver = models.ForeignKey(CustomUser,related_name="approver_documents",on_delete=models.SET_NULL,blank=True,null=True)
     doc_admin = models.ForeignKey(CustomUser,related_name="doc_admin_documents",on_delete=models.SET_NULL,blank=True,null=True)
     author = models.ForeignKey(CustomUser,related_name="author_documents",on_delete=models.SET_NULL,blank=True,null=True)
-    job_roles = models.ManyToManyField('lms_module.JobRole')
+    job_roles = models.ManyToManyField('lms_module.JobRole', related_name='documents')
 
 class UploadedDocument(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE)  

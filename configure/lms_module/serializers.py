@@ -396,3 +396,8 @@ class JobAssignSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobAssign
         fields = ['id', 'user', 'job_roles']
+
+class JobDescriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobDescription
+        fields = ['user', 'id', 'job_role', 'employee_job_description', 'status']
