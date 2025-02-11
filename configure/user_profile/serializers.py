@@ -41,7 +41,10 @@ class CustomUserdataSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id','email','full_name','first_name','last_name','phone','username','created_at','groups_list']
+        fields = ['id','email','full_name','first_name','last_name','phone','username','created_at','groups_list',
+                   'is_user_created', 'is_department_assigned', 'is_induction_complete', 'is_induction_certificate',
+                   'is_description', 'is_jr_assign', 'is_jr_approve', 'is_tni_generate', 'is_tni_consent', 
+                   'is_qualification']
     
     def get_full_name(self, obj):
         return f"{obj.first_name} {obj.last_name}".strip()
