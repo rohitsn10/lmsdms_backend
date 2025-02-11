@@ -129,6 +129,7 @@ urlpatterns = [
    path('onlyoffice_callback', onlyoffice_callback, name='onlyoffice_callback'),
    
    path('download_and_save_docx', download_and_save_docx, name='download_and_save_docx'),
+   path('add_path_url_data_for_comments',AddNewDocumentCommentsdataViewSet.as_view({'post':'create','get':'list'}),name='add_path_url_data_for_comments'),
 
    path('employee_list/<int:employee_id>', EmployeeJobRoleView.as_view({'get':'list'}),name='employee_list'),
 

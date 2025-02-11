@@ -228,3 +228,14 @@ class DocumentReviewStatus(models.Model):
     remark = models.TextField()
     approved = models.BooleanField(default=False)
     sent_back = models.BooleanField(default=False)
+
+
+class NewDocumentCommentsData(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE)
+    comment_data = models.JSONField(blank=True, null=True)
+    version_no = models.CharField(max_length=10)
+    front_file_url = models.FileField(max_length=500, null=True, blank=True)
+    template = models.ForeignKey(TemplateModel, on_delete=models.CASCADE,blank=True, null=True)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE,blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)

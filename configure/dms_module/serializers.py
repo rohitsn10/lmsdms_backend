@@ -426,3 +426,9 @@ class ArchivedSerializer(serializers.ModelSerializer):
     class Meta:
         model = Archived
         fields = ['document', 'version', 'created_at']
+
+
+class AddNewDocumentCommentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NewDocumentCommentsData
+        fields = ['user', 'document_id', 'comment_data', 'version_no', 'front_file_url', 'template_id', 'department_id']

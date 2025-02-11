@@ -4617,3 +4617,65 @@ class DocumentObsoleteNotificationViewSet(viewsets.ViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+
+
+class AddNewDocumentCommentsdataViewSet(viewsets.ModelViewSet):
+    queryset = NewDocumentCommentsData.objects.all().order_by('-id')
+    serializer_class = AddNewDocumentCommentsSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            document_id = request.data.get('document_id')
+            comment_data = request.data.get('comment_data')
+            version_no = request.data.get('version_no')
+            front_file_url = request.data.get('front_file_url')
+            template_id = request.data.get('template_id')
+            department_id = request.data.get('department_id')
+
+            # Check if front_file_url is provided
+            if not front_file_url:
+                return Response({"status": False, "message": "front_file_url parameter is required", "data": []})
+
+            # Download the file from the provided URL
+            response = requests.get(front_file_url)
+
+            if response.status_code != 200:
+                return Response({"status": False, "message": "Failed to download the file from the provided URL", "data": []})
+
+            # Save the document file locally
+            document = NewDocumentCommentsData()
+            # Save the file with a unique name using uuid4
+            document.front_file_url.save(f"{uuid4()}.docx", ContentFile(response.content))
+
+            # Create the NewDocumentCommentsData object
+            created = NewDocumentCommentsData.objects.create(
+                user=user,
+                document_id=document_id,
+                comment_data=comment_data,
+                version_no=version_no,
+                front_file_url=document.front_file_url.name,  # Save the file path here
+                template_id=template_id,
+                department_id=department_id
+            )
+
+            # Serialize the created data
+            serializer = AddNewDocumentCommentsSerializer(created)
+
+            # Generate the absolute URL for the saved file
+            local_url = request.build_absolute_uri(settings.MEDIA_URL)
+            file_url = f"{local_url}{document.front_file_url.name}"
+
+            return Response({
+                "status": True,
+                "message": "Document comments created successfully",
+                "data": serializer.data,
+                "file_url": file_url  # Return the new URL for the saved file
+            })
+
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": []})
+
