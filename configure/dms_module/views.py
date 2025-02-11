@@ -4650,16 +4650,31 @@ class AddNewDocumentCommentsdataViewSet(viewsets.ModelViewSet):
             document = NewDocumentCommentsData()
             # Save the file with a unique name using uuid4
             document.front_file_url.save(f"{uuid4()}.docx", ContentFile(response.content))
+            try:
+                document_data = Document.objects.get(id=document_id)
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Document not found", "data": []})
+            
+            try:
+                template_data = TemplateModel.objects.get(id=template_id)
+            except TemplateModel.DoesNotExist:
+                return Response({"status": False, "message": "Template not found", "data": []})
+            
+            try:
+                department_data = Department.objects.get(id=department_id)
+            except Department.DoesNotExist:
+                return Response({"status": False, "message": "Department not found", "data": []})
+
 
             # Create the NewDocumentCommentsData object
             created = NewDocumentCommentsData.objects.create(
                 user=user,
-                document_id=document_id,
+                document_id=document_data,
                 comment_data=comment_data,
                 version_no=version_no,
                 front_file_url=document.front_file_url.name,  # Save the file path here
-                template_id=template_id,
-                department_id=department_id
+                template_id=template_data,
+                department_id=department_data
             )
 
             # Serialize the created data
