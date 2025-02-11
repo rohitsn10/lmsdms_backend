@@ -4633,7 +4633,7 @@ class AddNewDocumentCommentsdataViewSet(viewsets.ModelViewSet):
             comment_data = request.data.get('comment_data')
             version_no = request.data.get('version_no')
             front_file_url = request.data.get('front_file_url')
-            template_id = request.data.get('template_id')
+            # template_id = request.data.get('template_id')
             department_id = request.data.get('department_id')
 
             # Check if front_file_url is provided
@@ -4655,10 +4655,10 @@ class AddNewDocumentCommentsdataViewSet(viewsets.ModelViewSet):
             except Document.DoesNotExist:
                 return Response({"status": False, "message": "Document not found", "data": []})
             
-            try:
-                template_data = TemplateModel.objects.get(id=template_id)
-            except TemplateModel.DoesNotExist:
-                return Response({"status": False, "message": "Template not found", "data": []})
+            # try:
+            #     template_data = TemplateModel.objects.get(id=template_id)
+            # except TemplateModel.DoesNotExist:
+            #     return Response({"status": False, "message": "Template not found", "data": []})
             
             try:
                 department_data = Department.objects.get(id=department_id)
@@ -4672,8 +4672,7 @@ class AddNewDocumentCommentsdataViewSet(viewsets.ModelViewSet):
                 document_id=document_data,
                 comment_data=comment_data,
                 version_no=version_no,
-                front_file_url=document.front_file_url.name,  # Save the file path here
-                template_id=template_data,
+                front_file_url=document.front_file_url.name,
                 department_id=department_data
             )
 
