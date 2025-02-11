@@ -3809,7 +3809,7 @@ class JobDescriptionCreateViewSet(viewsets.ModelViewSet):
                 status='pending'
             )
             job_description.user.is_description = True
-            job_description.save()
+            job_description.user.save()
             
             return Response({"status": True, "message": "Job description created successfully"})
         except Exception as e:
