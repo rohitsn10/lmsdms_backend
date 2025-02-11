@@ -169,7 +169,7 @@ class DocumentviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Document
-        fields = ['id', 'document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at','document_type','document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url','request_user_groups','user_department_id','user_department','workflow','document_description']
+        fields = ['id', 'document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at','document_type','document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url','request_user_groups','user_department_id','user_department','workflow','document_description', 'effective_date', 'revision_date']
 
     def get_document_type_name(self, obj):
         return obj.document_type.document_name if obj.document_type else None

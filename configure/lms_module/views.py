@@ -2907,17 +2907,11 @@ class TrainingAssignViewSet(viewsets.ModelViewSet):
             if not user_id:
                 return Response({"status": False, "message": "user_id is missing"})
             
-            job_assign_instance = JobAssign.objects.filter(id=user_id).first()
-            if not job_assign_instance:
+            user_instance = CustomUser.objects.filter(id=user_id).first()
+            if not user_instance:
                 return Response({"status": False, "message": "user_id not found"})
+            job_assign_instance, created = JobAssign.objects.get_or_create(user=user_instance)
             
-            job_description = JobDescription.objects.filter(user_id=user_id).first()
-            if not job_description:
-                return Response({"status": False, "message": "Job description not found for this user."})
-
-            if job_description.status != 'approved':
-                return Response({"status": False, "message": "Job description is not approved by HOD. Job roles cannot be assigned."})
-
             job_role_ids = request.data.get('job_role_ids', [])
             remove_job_role_ids = request.data.get('remove_job_role_ids', [])
             if not isinstance(job_role_ids, list):
