@@ -2928,6 +2928,8 @@ class TrainingAssignViewSet(viewsets.ModelViewSet):
 
             job_assign_instance.job_roles.add(*valid_job_roles)
             job_assign_instance.job_roles.remove(*remove_job_role_ids)
+            user_instance.is_jr_assign = True
+            user_instance.save()
             job_assign_instance.save()
 
             return Response({
@@ -3189,7 +3191,7 @@ class StartExam(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         quiz_id = request.data.get('quiz_id')
         quiz = TrainingQuiz.objects.get(id=quiz_id)
-        user = self.request.user 
+        user = self.request.user
         assigned_document = quiz.document
         assigned_document_version = assigned_document.version
 
@@ -3198,12 +3200,16 @@ class StartExam(viewsets.ModelViewSet):
             previous_major_version = previous_session.document_version.split('.')[0]
             current_major_version = assigned_document_version.split('.')[0]
             if previous_major_version != current_major_version:
+                user.is_tni_consent = True
+                user.save()
                 return Response({"status": True,"message": "Exam started successfully.","quiz_session_id": quiz_session.id})
             
         attempts_count = QuizSession.objects.filter(user=user, quiz=quiz).count()
 
         if attempts_count < 3:
             quiz_session = QuizSession.objects.create(user=user, quiz=quiz, attempts=attempts_count + 1)
+            user.is_tni_consent = True
+            user.save()
             return Response({
                 "status": True,
                 "message": "Exam started successfully.",
@@ -3217,7 +3223,8 @@ class StartExam(viewsets.ModelViewSet):
                 "message": "You must complete the session before starting the exam again."})
 
         quiz_session = QuizSession.objects.create(user=user, quiz=quiz, attempts=attempts_count + 1)
-
+        user.is_tni_consent = True
+        user.save()
         return Response({"status": True,"message": "Exam started successfully.","quiz_session_id": quiz_session.id})
     
 
@@ -3286,7 +3293,8 @@ class GetNextQuestion(viewsets.ModelViewSet):
             pass_criteria = quiz_session.quiz.pass_criteria
             if quiz_session.score >= pass_criteria:
                 quiz_session.status = 'passed'  
-                
+                user.is_qualification = True
+                user.save()
                 quiz_session.quiz.status = True
                 quiz_session.quiz.save()
 
@@ -3341,6 +3349,8 @@ class HrAcknowledgementViewSet(viewsets.ModelViewSet):
                 return Response({'status': False, 'message': 'Remarks cannot be empty.'})
             hr_acknowledgement = HRacknowledgement.objects.create(user=user, remarks=remarks)
             serializer = HRacnowledgementSerializer(hr_acknowledgement)
+            user.is_induction_complete = True
+            user.save()
             return Response({'status': True, 'message': 'Acknowledgement created successfully', 'data': serializer.data})
         except CustomUser.DoesNotExist:
             return Response({'status': False, 'message': 'User not found.'})
@@ -3397,6 +3407,8 @@ class InductionCertificateViewSet(viewsets.ViewSet):
 
             pdf_file_url = f"{settings.MEDIA_URL}induction_certificate/{filename}"
             full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+            user.is_induction_certificate = True
+            user.save()
             return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
 
         except CustomUser.DoesNotExist:
@@ -3783,22 +3795,41 @@ class JobDescriptionCreateViewSet(viewsets.ModelViewSet):
             if not request.user.groups.filter(name='DTC').exists():
                 return Response({"status": False, "message": "You don't have permission to create job description."})
             user_id = request.data.get('user_id')
-            job_role_id = request.data.get('job_role_id')
+            # job_role_id = request.data.get('job_role_id')
             employee_job_description = request.data.get('employee_job_description')
 
-            job_role = JobRole.objects.get(id=job_role_id)
+            # job_role = JobRole.objects.get(id=job_role_id)
 
             job_description = JobDescription.objects.create(
                 user_id=user_id,
-                job_role=job_role,
+                # job_role=job_role,
                 employee_job_description=employee_job_description,
                 status='pending'
             )
+            job_description.user.is_description = True
             job_description.save()
+            
             return Response({"status": True, "message": "Job description created successfully"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
+
+class JobDescriptionList(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = JobDescription.objects.all()
+    serializer_class = JobDescriptionSerializer
+    lookup_field = 'user_id'
+    
+    def list(self, request, *args, **kwargs):
+        try:
+            user_id = self.kwargs.get('user_id')
+            job_description_objects = JobDescription.objects.filter(user=user_id)
+            serializer = JobDescriptionSerializer(job_description_objects, many=True)
+            return Response({"status": True, "message": "Job descriptions retrieved successfully", "data": serializer.data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
 class JobDescriptionUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     def update(self, request, *args, **kwargs):
@@ -3850,6 +3881,14 @@ class HODApprovalViewSet(viewsets.ModelViewSet):
 
             employee_job_description.status = status
             employee_job_description.save()
+            if status == 'send_back':
+                custom_user = employee_job_description.user
+                custom_user.is_description = False
+                custom_user.save()
+            if status == 'approved':
+                custom_user = employee_job_description.user
+                custom_user.is_jr_approve = True
+                custom_user.save()
 
             return Response({"status": True, "message": "Job description reviewed Successfully"})
         except Exception as e:

@@ -60,6 +60,18 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_dms_user = models.BooleanField(default=False,null=True, blank=True)
     designation = models.CharField(max_length=255, null=True, blank=True)
     
+    is_user_created = models.BooleanField(default=True, null=True, blank=True)
+    is_department_assigned = models.BooleanField(default=False, null=True, blank=True)
+    is_induction_complete = models.BooleanField(default=False, null=True, blank=True)
+    is_induction_certificate = models.BooleanField(default=False, null=True, blank=True)
+    is_description = models.BooleanField(default=False, null=True, blank=True)
+    is_jr_assign = models.BooleanField(default=False, null=True, blank=True)
+    is_jr_approve = models.BooleanField(default=False, null=True, blank=True)
+    is_tni_generate = models.BooleanField(default=False, null=True, blank=True)
+    is_tni_consent = models.BooleanField(default=False, null=True, blank=True)
+    is_qualification = models.BooleanField(default=False, null=True, blank=True)
+    is_jr_transfer = models.BooleanField(default=False, null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

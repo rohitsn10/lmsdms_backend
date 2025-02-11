@@ -95,5 +95,6 @@ urlpatterns = [
     path('trainer_update/<int:trainer_id>', TrainerViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='trainer_update'),
 
     path('jobdescriptioncreate', JobDescriptionCreateViewSet.as_view({'post': 'create'}), name='jobdescriptioncreate'),
+    path('jobdescription_list/<int:user_id>', JobDescriptionList.as_view({'get': 'list'}), name='jobdescription_list'),
     path('hod_remarks/<int:job_description_id>',HODApprovalViewSet.as_view({'put': 'update'}), name='hod_remarks'),
 ]

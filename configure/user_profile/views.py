@@ -973,6 +973,7 @@ class AssignDepartmentViewSet(viewsets.ModelViewSet):
             department = Department.objects.get(id=department_id)
 
             user.department = department
+            user.is_department_assigned = True
             user.save()
 
             return Response({"status": True, "message": "Department assigned successfully"})
