@@ -236,6 +236,5 @@ class NewDocumentCommentsData(models.Model):
     comment_data = models.JSONField(blank=True, null=True)
     version_no = models.CharField(max_length=10)
     front_file_url = models.FileField(max_length=500, null=True, blank=True)
-    template = models.ForeignKey(TemplateModel, on_delete=models.CASCADE,blank=True, null=True)
     department = models.ForeignKey(Department, on_delete=models.CASCADE,blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
