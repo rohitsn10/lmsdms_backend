@@ -1861,8 +1861,10 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            user = self.request.user
-            queryset = TrainingQuiz.objects.filter(created_by=user).order_by('-created_at')
+            document_id = kwargs.get('document_id')
+            document = Document.objects.get(id=document_id)
+            queryset = TrainingQuiz.objects.filter(document=document)
+
             serializer = TrainingQuizSerializer(queryset, many=True, context={'request': request})
             return Response({"status": True, "message": "Quizzes retrieved successfully", "data": serializer.data})
         except Exception as e:
@@ -3807,7 +3809,7 @@ class JobDescriptionCreateViewSet(viewsets.ModelViewSet):
                 status='pending'
             )
             job_description.user.is_description = True
-            job_description.save()
+            job_description.user.save()
             
             return Response({"status": True, "message": "Job description created successfully"})
         except Exception as e:
