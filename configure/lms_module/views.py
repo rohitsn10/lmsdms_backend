@@ -975,7 +975,7 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
         try:
             user = self.request.user
             if user.groups.filter(name="DTC").exists():
-                queryset_documents = Document.objects.all()
+                queryset_documents = Document.objects.filter(document_current_status = 6)
             else:
                 queryset_documents = Document.objects.filter(models.Q(assigned_to=user) | models.Q(visible_to_users=user))
 

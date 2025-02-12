@@ -47,7 +47,7 @@ urlpatterns = [
     path('create_training_quiz', TrainingQuizCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_training_quiz'),
     path('list_training_quiz/<int:document_id>', TrainingQuizList.as_view({'get': 'list'}), name='create_training_quiz'),
     path('update_training_quiz/<int:training_quiz_id>', TrainingQuizUpdateView.as_view({'put': 'update', 'delete': 'destroy'}), name='update_training_quiz'),
-  
+
     path('create_induction', InductionCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_induction'),
     path('update_induction/<int:id>', InductionUpdateViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='update_induction'),
 
