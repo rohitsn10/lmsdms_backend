@@ -40,6 +40,8 @@ urlpatterns = [
     path('create_training_questions', TrainingQuestionCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_training_questions'),
     path('update_training_questions/<int:training_question_id>', TrainingQuestionUpdateViewSet.as_view({'put': 'update', 'delete': 'destroy'}), name='update_training_questions'),
 
+    path('active_deactive_question/<int:question_id>', ActiveDeactiveQuestionViewSet.as_view({'put': 'update'}), name='update_training_questions'),
+
     path('training_wise_questions/<int:document_id>', TrainingIdWiseQuestionsViewSet.as_view({'get': 'list'}), name='training_wise_questions'),
 
     path('create_training_quiz', TrainingQuizCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='create_training_quiz'),

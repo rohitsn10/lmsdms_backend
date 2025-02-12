@@ -1688,6 +1688,38 @@ class TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "data": []})
 
 
+class ActiveDeactiveQuestionViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TrainingQuestinSerializer
+    queryset = TrainingQuestions.objects.all().order_by('-question_created_at')
+    lookup_field = 'question_id'
+
+    def update(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            question_id = self.kwargs.get('question_id')
+            if not question_id:
+                return Response({"status": False, "message": "Question ID is required", "data": []})
+            
+            question = TrainingQuestions.objects.get(id=question_id)
+            if not question:
+                return Response({"status": False, "message": "Question ID not found", "data": []})
+            
+            if question.status == True:
+                question.status = False
+                question.deactivated_by = user
+                question.deactivated_at = timezone.now()
+                question.save()
+                return Response({"status": True, "message": "Question deactivated successfully", "data": []})
+            question.status = True
+            question.activated_by = user
+            question.activated_at = timezone.now()
+            question.save()
+            return Response({"status": True, "message": "Question activated successfully", "data": []})
+        
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+
 
 import json
 import ipdb
