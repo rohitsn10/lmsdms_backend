@@ -4693,3 +4693,38 @@ class AddNewDocumentCommentsdataViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
 
+
+# class DocumentEffectiveViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+
+
+#     def craete(self, request, *args, **kwargs):
+#         try:
+#             user = request.user
+#             document_id = request.data.get('document_id')
+#             status = request.data.get('status')
+
+#             if not document_id or not status:
+#                 return Response({"status": False, "message": "document_id and effective_date are required", "data": []})
+        
+#             try:
+#                 document_data = Document.objects.get(id=document_id)
+#             except Document.DoesNotExist:
+#                 return Response({"status": False, "message": "Document not found", "data": []})
+            
+#             created = DocumentEffective.objects.create(
+#                 user=user,
+#                 document=document_data,
+#                 status=status
+#             )
+
+
+#             serializer = DocumentEffectiveSerializer(created)
+#             return Response({
+#                 "status": True,
+#                 "message": "Document effective date created successfully",
+#                 "data": serializer.data
+#             })
+        
+#         except Exception as e:
+#             return Response({"status": False, "message": str(e), "data": []})

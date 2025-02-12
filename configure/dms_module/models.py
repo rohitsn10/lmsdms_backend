@@ -238,3 +238,9 @@ class NewDocumentCommentsData(models.Model):
     front_file_url = models.FileField(max_length=500, null=True, blank=True)
     department = models.ForeignKey(Department, on_delete=models.CASCADE,blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+# class DocumentEffective(models.Model):
+#     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, blank=True, null=True)
+#     document = models.ForeignKey(Document, on_delete=models.CASCADE, blank=True, null=True)
+#     status = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE, blank=True, null=True)
+

@@ -1859,6 +1859,9 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
 
 
 
+class TrainingQuizList(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'document_id'
     def list(self, request, *args, **kwargs):
         try:
             document_id = kwargs.get('document_id')
@@ -1869,7 +1872,6 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
             return Response({"status": True, "message": "Quizzes retrieved successfully", "data": serializer.data})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
-
 
 class TrainingQuizUpdateView(viewsets.ModelViewSet):
     queryset = TrainingQuiz.objects.all()

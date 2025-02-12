@@ -124,6 +124,7 @@ urlpatterns = [
    path('archived_list/<int:document_id>', ArchivedDocumentViewSet.as_view({'get':'list'}),name='archived_list'),
    path('select_user_for_document/<int:document_id>', UpdateDocumentUserViewSet.as_view({'put': 'update'}),name='select_user_for_document'),
 
+   # path('document_effective', DocumentEffectiveViewSet.as_view({'post':'create'}),name='document_effective'),
 
    path('get_editor_config', get_editor_config, name='get_editor_config'),
    path('onlyoffice_callback', onlyoffice_callback, name='onlyoffice_callback'),
