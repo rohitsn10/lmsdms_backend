@@ -3899,3 +3899,61 @@ class HODApprovalViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
 
+class AttemptedQuizViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = AttemptedQuiz.objects.all()
+    serializer_class = AttemptedQuizSerializer
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user_id = request.data.get('user_id')
+            document_id = request.data.get('document_id')
+            quiz_id = request.data.get('quiz_id')
+            questions = request.data.get('questions')
+            obtain_marks = request.data.get('obtain_marks')
+            total_marks = request.data.get('total_marks')
+            total_taken_time = request.data.get('total_taken_time')
+
+            user = CustomUser.objects.get(id=user_id)
+            document = Document.objects.get(id=document_id)
+            quiz = TrainingQuiz.objects.get(id=quiz_id)
+
+            attempted_quiz = AttemptedQuiz.objects.create(
+                user=user,
+                document=document,
+                quiz=quiz,
+                obtain_marks=obtain_marks,
+                total_marks=total_marks,
+                total_taken_time=total_taken_time
+            )
+            
+            for question in questions:
+                question_id = question.get('question_id')
+                question_text = question.get('question_text')
+                user_answer = question.get('user_answer')
+                attempted_question = AttemptedQuizQuestion.objects.create(
+                    attempted_quiz=attempted_quiz,
+                    question_id=question_id,
+                    question_text=question_text,
+                    user_answer=user_answer
+                )
+            
+            return Response({"status": True, "message": "Attempted quiz created successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+class AttemptedQuizListViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = AttemptedQuiz.objects.all()
+    serializer_class = AttemptedQuizSerializer
+    lookup_field = 'user_id'
+    
+    def list(self, request, *args, **kwargs):
+        try:
+            user_id = self.kwargs.get('user_id')
+            attempted_quiz_objects = AttemptedQuiz.objects.filter(user=user_id)
+            serializer = AttemptedQuizSerializer(attempted_quiz_objects, many=True)
+            return Response({"status": True, "message": "Attempted quizzes retrieved successfully", "data": serializer.data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})

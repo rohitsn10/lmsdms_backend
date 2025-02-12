@@ -401,3 +401,13 @@ class JobDescriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobDescription
         fields = ['user', 'id', 'job_role', 'employee_job_description', 'status']
+
+class AttemptedQuizSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AttemptedQuiz
+        fields = ['id', 'user', 'quiz', 'document', 'obtain_marks', 'total_marks', 'total_taken_time', 'created_at']
+
+class AttemptedQuizQuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AttemptedQuizQuestion
+        fields = ['id', 'attempted_quiz', 'question_id', 'question_text', 'user_answer']
