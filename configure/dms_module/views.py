@@ -4696,7 +4696,7 @@ class AddNewDocumentCommentsdataViewSet(viewsets.ModelViewSet):
 
 class DocumentEffectiveViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-
+    serializer_class = DocumentEffectiveSerializer
 
     def craete(self, request, *args, **kwargs):
         try:

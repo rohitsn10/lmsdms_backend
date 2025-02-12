@@ -433,7 +433,7 @@ class AddNewDocumentCommentsSerializer(serializers.ModelSerializer):
         model = NewDocumentCommentsData
         fields = ['user', 'document_id', 'comment_data', 'version_no', 'front_file_url', 'department_id']
 
-# class DocumentEffectiveSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = DocumentEffective
-#         fields = ['document', 'user', 'status']
+class DocumentEffectiveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentEffective
+        fields = ['document', 'status']
