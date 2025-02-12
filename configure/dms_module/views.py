@@ -4669,7 +4669,7 @@ class AddNewDocumentCommentsdataViewSet(viewsets.ModelViewSet):
             # Create the NewDocumentCommentsData object
             created = NewDocumentCommentsData.objects.create(
                 user=user,
-                document_id=document_data,
+                document=document_data,
                 comment_data=comment_data,
                 version_no=version_no,
                 front_file_url=document.front_file_url.name,
