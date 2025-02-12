@@ -231,13 +231,13 @@ class DocumentReviewStatus(models.Model):
 
 
 class NewDocumentCommentsData(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    document = models.ForeignKey(Document, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
     comment_data = models.JSONField(blank=True, null=True)
-    version_no = models.CharField(max_length=10)
+    version_no = models.CharField(max_length=10, null=True, blank=True)
     front_file_url = models.FileField(max_length=500, null=True, blank=True)
     department = models.ForeignKey(Department, on_delete=models.CASCADE,blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
 # class DocumentEffective(models.Model):
 #     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, blank=True, null=True)

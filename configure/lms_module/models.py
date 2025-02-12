@@ -432,5 +432,5 @@ class AttemptedQuiz(models.Model):
 class AttemptedQuizQuestion(models.Model):
     attempted_quiz = models.ForeignKey(AttemptedQuiz, on_delete=models.CASCADE, null=True, blank=True)
     question_id = models.CharField(max_length=500, null=True, blank=True)
-         = models.CharField(max_length=500, null=True, blank=True)
+    question_text = models.CharField(max_length=500, null=True, blank=True)
     user_answer = models.CharField(max_length=500, null=True, blank=True)
