@@ -419,3 +419,18 @@ class HODRemark(models.Model):
     remarks = models.TextField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True,null=True, blank=True)
+
+class AttemptedQuiz(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
+    quiz = models.ForeignKey(TrainingQuiz, on_delete=models.CASCADE, null=True, blank=True)
+    obtain_marks = models.CharField(max_length=500, null=True, blank=True)
+    total_marks = models.CharField(max_length=500, null=True, blank=True)
+    total_taken_time = models.CharField(max_length=500, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+
+class AttemptedQuizQuestion(models.Model):
+    attempted_quiz = models.ForeignKey(AttemptedQuiz, on_delete=models.CASCADE, null=True, blank=True)
+    question_id = models.CharField(max_length=500, null=True, blank=True)
+         = models.CharField(max_length=500, null=True, blank=True)
+    user_answer = models.CharField(max_length=500, null=True, blank=True)
