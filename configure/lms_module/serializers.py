@@ -232,7 +232,7 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
     document_id = serializers.IntegerField(source='document')
     class Meta:
         model = ClassroomTraining
-        fields = ['classroom_id', 'document_id' 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at', 'trainer']
+        fields = ['classroom_id', 'document_id', 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at', 'trainer']
     # department_of_employee_first_name  = serializers.ReadOnlyField(source='department_or_employee.first_name')
     # department_of_employee_last_name = serializers.ReadOnlyField(source='department_or_employee.last_name')
     # class Meta:
