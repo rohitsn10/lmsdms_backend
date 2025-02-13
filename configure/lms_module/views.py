@@ -3631,6 +3631,19 @@ class ClassroomIdWiseQuestionsViewSet(viewsets.ModelViewSet):
                 "message": "Something went wrong",
                 "error": str(e)
             })
+        
+class ClassroomQuizList(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'classroom_id'
+    def list(self, request, *args, **kwargs):
+        try:
+            classroom_id = kwargs.get('classroom_id')
+            queryset = ClassroomQuiz.objects.filter(classroom=classroom_id)
+
+            serializer = TrainingQuizSerializer(queryset, many=True, context={'request': request})
+            return Response({"status": True, "message": "Quizzes retrieved successfully", "data": serializer.data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
 
 
 class ClassroomQuizViewSet(viewsets.ModelViewSet):
