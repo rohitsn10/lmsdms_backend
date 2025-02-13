@@ -406,7 +406,7 @@ class JobDescriptionSerializer(serializers.ModelSerializer):
 class AttemptedQuizSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttemptedQuiz
-        fields = ['id', 'user', 'quiz', 'document', 'obtain_marks', 'total_marks', 'total_taken_time', 'created_at']
+        fields = ['id', 'user', 'quiz', 'document', 'obtain_marks', 'total_marks', 'total_taken_time', 'created_at', 'is_pass']
 
 class AttemptedQuizQuestionSerializer(serializers.ModelSerializer):
     class Meta:

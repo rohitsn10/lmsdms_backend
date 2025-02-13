@@ -975,7 +975,7 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
         try:
             user = self.request.user
             if user.groups.filter(name="DTC").exists():
-                queryset_documents = Document.objects.filter(document_current_status = 6)
+                queryset_documents = Document.objects.all()
             else:
                 queryset_documents = Document.objects.filter(models.Q(assigned_to=user) | models.Q(visible_to_users=user))
 
@@ -1470,9 +1470,8 @@ class TrainingMaterialUpdateViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "data": []})
-
-        
-
+    
+    
 class TrainingQuestionCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TrainingQuestinSerializer
@@ -3939,6 +3938,7 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
             obtain_marks = request.data.get('obtain_marks')
             total_marks = request.data.get('total_marks')
             total_taken_time = request.data.get('total_taken_time')
+            is_pass = request.data.get('is_pass')
 
             user = CustomUser.objects.get(id=user_id)
             document = Document.objects.get(id=document_id)
@@ -3950,7 +3950,8 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                 quiz=quiz,
                 obtain_marks=obtain_marks,
                 total_marks=total_marks,
-                total_taken_time=total_taken_time
+                total_taken_time=total_taken_time,
+                is_pass=is_pass
             )
             
             for question in questions:
