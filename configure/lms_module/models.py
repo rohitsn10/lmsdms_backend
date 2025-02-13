@@ -428,6 +428,7 @@ class AttemptedQuiz(models.Model):
     total_marks = models.CharField(max_length=500, null=True, blank=True)
     total_taken_time = models.CharField(max_length=500, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    is_pass = models.BooleanField(default=False, blank=True, null=True,)
 
 class AttemptedQuizQuestion(models.Model):
     attempted_quiz = models.ForeignKey(AttemptedQuiz, on_delete=models.CASCADE, null=True, blank=True)
