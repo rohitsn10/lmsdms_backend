@@ -3592,6 +3592,46 @@ class ClassroomQuestionViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
 
+class ClassroomIdWiseQuestionsViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ClassroomQuestionSerializer
+    queryset = ClassroomQuestion.objects.all().order_by('-question_created_at')
+    # lookup_field = 'training_id'
+    lookup_field = 'classroom_id'
+
+
+    def list(self, request, *args, **kwargs):
+        try:
+            # training_id = self.kwargs.get('training_id')
+            classroom_id = self.kwargs.get('classroom_id')
+            # if not training_id:
+            #     return Response({
+            #         "status": False,
+            #         "message": "Training ID is required.",
+            #         "data": []
+            #     })
+            if not classroom_id:
+                return Response({"status": False, "message": "classroom_id ID is required", "data": []})
+                    
+
+            # queryset = self.filter_queryset(self.get_queryset().filter(training_id=training_id))
+            queryset = self.filter_queryset(self.get_queryset().filter(classroom=classroom_id))
+            serializer = ClassroomQuestionSerializer(queryset, many=True, context={'request': request})
+            data = serializer.data
+
+            return Response({
+                "status": True,
+                "message": "classroom_id question list fetched successfully",
+                "data": data
+            })
+
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": "Something went wrong",
+                "error": str(e)
+            })
+
 
 class ClassroomQuizViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -3723,6 +3763,7 @@ class ClassroomQuizViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
         
+
 
 class ClassroomExamViewSet(viewsets.ModelViewSet):
     queryset = ClassroomQuizSession.objects.all()
