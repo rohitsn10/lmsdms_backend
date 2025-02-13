@@ -1002,7 +1002,15 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
             document_serializer = DocumentviewSerializer(queryset_documents, many=True, context={'request': request})
             document_data = document_serializer.data
 
-            return Response({"status": True,"message": "Document list fetched successfully","document_data": document_data})
+            quiz_sessions = QuizSession.objects.filter(user=user)
+            quiz_session_serializer = QuizSessionSerializer(quiz_sessions, many=True, context={'request': request})
+            quiz_session_data = quiz_session_serializer.data
+            
+            response_data = {
+            "documents": document_data,
+            "quiz_sessions": quiz_session_data
+            }
+            return Response({"status": True,"message": "Document list fetched successfully","document_data": response_data})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
