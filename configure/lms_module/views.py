@@ -3522,7 +3522,7 @@ class ClassroomQuestionViewSet(viewsets.ModelViewSet):
             # training = request.data.get('training_id')
             # if not training:
                 # return Response({"status": False, "message": "Training ID is required", "data": []})
-            classroom_id = self.request.POST.get('classroom_id')
+            classroom_id = request.data.get('classroom_id')
             if not classroom_id:
                 return Response({"status": False, "message": "Classroom ID is required", "data": []})
 
