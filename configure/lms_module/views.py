@@ -4178,15 +4178,29 @@ class UserIdWiseResultViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             user_id = self.kwargs.get('user_id')
-            attempted_quiz_objects = AttemptedQuizQuestion.objects.filter(attempted_quiz__user=user_id)
+            document_id = self.kwargs.get('document_id')
+
+            if not user_id:
+                return Response({"status": False, "message": "user_id is required."})
+            if not document_id:
+                return Response({"status": False, "message": "document_id is required."})
+
+            attempted_quiz_objects = AttemptedQuizQuestion.objects.filter(attempted_quiz__user=user_id, attempted_quiz__document=document_id)
+            incorrect_question_obj = AttemptedIncorrectAnswer.objects.filter(attempted_quiz__user=user_id, attempted_quiz__document=document_id)
+            correct_question_obj = AttemptedCorrectAnswer.objects.filter(attempted_quiz__user=user_id, attempted_quiz__document=document_id)
+
+            # Serialize the data
             serializer = AttemptedQuizQuestionSerializer(attempted_quiz_objects, many=True)
-            incorrect_question_obj = AttemptedIncorrectAnswer.objects.filter(attempted_quiz__user=user_id)
             incorrect_serializer = AttemptedIncorrectAnswerSerializer(incorrect_question_obj, many=True)
-            correct_question_obj = AttemptedCorrectAnswer.objects.filter(attempted_quiz__user=user_id)
             correct_serializer = AttemptedCorrectAnswerSerializer(correct_question_obj, many=True)
-            return Response({"status": True, "message": "Attempted quizzes retrieved successfully", 
-                             "questions": serializer.data, 
-                             "incorrect_questions": incorrect_serializer.sata, 
-                             "correct_questions": correct_serializer.data})
+
+            return Response({
+                "status": True, 
+                "message": "Attempted quizzes retrieved successfully",
+                "questions": serializer.data,
+                "incorrect_questions": incorrect_serializer.data, 
+                "correct_questions": correct_serializer.data
+            })
+
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})

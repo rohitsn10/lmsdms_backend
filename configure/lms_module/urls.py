@@ -111,5 +111,5 @@ urlpatterns = [
     path('attempted_quiz', AttemptedQuizViewSet.as_view({'post': 'create'}), name='attempted_quiz'),
     path('attempted_quiz_list/<int:user_id>', AttemptedQuizListViewSet.as_view({'get': 'list'}), name='attempted_quiz_list'),
 
-    path('user_id_wise_result/<int:user_id>', UserIdWiseResultViewSet.as_view({'get': 'list'}), name='user_id_wise_result'),
+    path('user_id_wise_result/<int:user_id>/<int:document_id>', UserIdWiseResultViewSet.as_view({'get': 'list'}), name='user_id_wise_result'),
 ]
