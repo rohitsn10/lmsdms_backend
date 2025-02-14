@@ -76,7 +76,7 @@ class TrainingCreate(models.Model):
     plant = models.ForeignKey(Plant, on_delete=models.CASCADE)
     training_type = models.ForeignKey(TrainingType, on_delete=models.CASCADE)
     training_number = models.CharField(max_length=255,null=True,blank=True)
-    training_name = models.TextField()
+    training_name = models.TextField(null=True,blank=True)
     training_version = models.CharField(max_length=255,null=True,blank=True)
     training_status = models.CharField(max_length=255,choices=TRAINING_STATUS_CHOICES,default='pending',null=True,blank=True)
     schedule_date = models.DateTimeField(null=True,blank=True)
