@@ -4069,6 +4069,8 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
             total_marks = request.data.get('total_marks')
             total_taken_time = request.data.get('total_taken_time')
             is_pass = request.data.get('is_pass')
+            incorrect_questions = request.data.get('incorrect_questions')
+            correct_questions = request.data.get('correct_questions')
 
             user = CustomUser.objects.get(id=user_id)
             document = Document.objects.get(id=document_id)
@@ -4081,7 +4083,7 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                 obtain_marks=obtain_marks,
                 total_marks=total_marks,
                 total_taken_time=total_taken_time,
-                is_pass=is_pass
+                is_pass=is_pass,
             )
             
             for question in questions:
@@ -4094,7 +4096,26 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                     question_text=question_text,
                     user_answer=user_answer
                 )
-            
+            for incorrect in incorrect_questions:
+                question_id = incorrect.get('question_id')
+                question_text = incorrect.get('question_text')
+                user_answer = incorrect.get('user_answer')
+                attempted_question = AttemptedIncorrectAnswer.objects.create(
+                    attempted_quiz=attempted_quiz,
+                    question_id=question_id,
+                    question_text=question_text,
+                    user_answer=user_answer
+                )
+            for correct in correct_questions:
+                question_id = correct.get('question_id')
+                question_text = correct.get('question_text')
+                user_answer = correct.get('user_answer')
+                attempted_question = AttemptedCorrectAnswer.objects.create(
+                    attempted_quiz=attempted_quiz,
+                    question_id=question_id,
+                    question_text=question_text,
+                    user_answer=user_answer
+                )
             return Response({"status": True, "message": "Attempted quiz created successfully"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
@@ -4112,5 +4133,27 @@ class AttemptedQuizListViewSet(viewsets.ModelViewSet):
             attempted_quiz_objects = AttemptedQuiz.objects.filter(user=user_id)
             serializer = AttemptedQuizSerializer(attempted_quiz_objects, many=True)
             return Response({"status": True, "message": "Attempted quizzes retrieved successfully", "data": serializer.data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+    
+class UserIdWiseResultViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = AttemptedQuiz.objects.all()
+    serializer_class = AttemptedQuizSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user_id = self.kwargs.get('user_id')
+            attempted_quiz_objects = AttemptedQuizQuestion.objects.filter(attempted_quiz__user=user_id)
+            serializer = AttemptedQuizQuestionSerializer(attempted_quiz_objects, many=True)
+            incorrect_question_obj = AttemptedIncorrectAnswer.objects.filter(attempted_quiz__user=user_id)
+            incorrect_serializer = AttemptedIncorrectAnswerSerializer(incorrect_question_obj, many=True)
+            correct_question_obj = AttemptedCorrectAnswer.objects.filter(attempted_quiz__user=user_id)
+            correct_serializer = AttemptedCorrectAnswerSerializer(correct_question_obj, many=True)
+            return Response({"status": True, "message": "Attempted quizzes retrieved successfully", 
+                             "questions": serializer.data, 
+                             "incorrect_questions": serializer.incorrect_questions, 
+                             "correct_questions": serializer.correct_questions})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
