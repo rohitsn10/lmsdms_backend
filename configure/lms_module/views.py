@@ -4091,8 +4091,11 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
             attempts_count = AttemptedQuiz.objects.filter(user=user, quiz=quiz).count()
 
             if attempts_count >= 3:
+                session = Session.objects.filter(quiz=quiz, user=user).first()
+                if not session:
+                    return Response({"status": False,"message": "No session found for this quiz."})
                 # Ensure the session is completed before allowing new attempt
-                session_complete = SessionComplete.objects.filter(session__quiz=quiz, user=user, is_completed=True).first()
+                session_complete = SessionComplete.objects.filter(session=session, user=user, is_completed=True).first()
                 if not session_complete:
                     return Response({
                         "status": False,
@@ -4112,7 +4115,7 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
             QuizSession.objects.create(
                 user=user,
                 quiz=quiz,
-                attempts_count=attempts_count + 1,
+                attempts=attempts_count + 1,
                 document_version=assigned_document_version,
                 
             )
