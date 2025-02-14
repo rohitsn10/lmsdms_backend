@@ -3427,7 +3427,7 @@ class FailedUserViewSet(viewsets.ModelViewSet):
         try:
             document_id = kwargs.get('document_id')
             document = Document.objects.get(id=document_id)
-            failed_users = QuizSession.objects.filter(status='failed', quiz__status=True,quiz__document = document)
+            failed_users = QuizSession.objects.filter(status='Failed', quiz__status=True,quiz__document = document)
             serializer = QuizSessionSerializer(failed_users, many=True)
             return Response({'status': True, 'message': 'Failed users fetched successfully', 'data': serializer.data})
         except Document.DoesNotExist:
