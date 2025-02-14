@@ -260,6 +260,7 @@ class ClassroomTraining(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='assigned')
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     trainer = models.ForeignKey(Trainer, on_delete=models.CASCADE, null=True, blank=True)
+    is_all_completed = models.BooleanField(default=False, null=True, blank=True)
 class ClassroomTrainingFile(models.Model):
     classroom_training = models.ForeignKey(ClassroomTraining, related_name='files', on_delete=models.CASCADE)
     upload_doc = models.FileField(upload_to='classroom_trainings/', null=True, blank=True)
@@ -421,6 +422,7 @@ class HODRemark(models.Model):
     created_at = models.DateTimeField(auto_now_add=True,null=True, blank=True)
 
 class AttemptedQuiz(models.Model):
+    quiz_session = models.ForeignKey(QuizSession, on_delete=models.CASCADE, null=True, blank=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
     document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
     quiz = models.ForeignKey(TrainingQuiz, on_delete=models.CASCADE, null=True, blank=True)
