@@ -172,7 +172,7 @@ class TrainingQuizSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TrainingQuiz
-        fields = ['id', 'quiz_name', 'pass_criteria', 'quiz_time', 'total_marks', 'total_questions', 'quiz_type', 'questions', 'created_by','updated_by','created_at','updated_at','status']
+        fields = ['id', 'quiz_name', 'pass_criteria', 'quiz_time', 'total_marks', 'total_questions', 'quiz_type', 'questions', 'created_by','updated_by','created_at','updated_at','status', 'document']
 
 class TrainingSerializerForInductionNested(serializers.ModelSerializer):
     plant_name = serializers.CharField(source='plant.plant_name', read_only=True)
@@ -232,7 +232,7 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
     classroom_id = serializers.IntegerField(source='id')
     class Meta:
         model = ClassroomTraining
-        fields = ['classroom_id', 'document', 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at', 'trainer']
+        fields = ['classroom_id', 'document', 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at', 'trainer', 'user']
     # department_of_employee_first_name  = serializers.ReadOnlyField(source='department_or_employee.first_name')
     # department_of_employee_last_name = serializers.ReadOnlyField(source='department_or_employee.last_name')
     # class Meta:

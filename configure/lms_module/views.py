@@ -2274,8 +2274,8 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             user = request.user
-            if not user.groups.filter(name="DTC").exists():
-                return Response({"status": False, "message": "You do not have permission to view these documents."})
+            # if not user.groups.filter(name="DTC").exists():
+            #     return Response({"status": False, "message": "You do not have permission to create these documents."})
             classroom_name = request.data.get('classroom_name')
             document_id = request.data.get('document_id')
             is_assesment = request.data.get('is_assesment')
@@ -2284,10 +2284,11 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
             trainer_id = request.data.get('trainer')
             online_offline_status = request.data.get('online_offline_status')
             status = request.data.get('status')
+            select_users = request.data.get('select_users', [])
             if not classroom_name:
                 return Response({'status': False,'message': 'Classroom name is required.'})
-            if not document_id:
-                return Response({'status': False,'message': 'Document ID is required.'})
+            # if not document_id:
+            #     return Response({'status': False,'message': 'Document ID is required.'})
             if not is_assesment:
                 return Response({'status': False,'message': 'Is assessment is required.'})
             if not description:
@@ -2304,7 +2305,18 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
             if not trainer:
                 return Response({'status': False, 'message': 'Invalid trainer selected.'})
             
-            document = Document.objects.filter(id=document_id).first()
+            document = None
+            if document_id is None:
+                if not select_users:
+                    return Response({'status': False, 'message': 'Please select users for No document training.'})
+                users = CustomUser.objects.filter(id__in=select_users)
+                if not users.exists():
+                    return Response({'status': False, 'message': 'Invalid users selected.'})
+            else:
+                document = Document.objects.filter(id=document_id).first()
+                if not document:
+                    return Response({'status': False, 'message': 'Invalid document selected.'})
+            
             
             classroom_training = ClassroomTraining.objects.create(
                 classroom_name=classroom_name,
@@ -2317,6 +2329,8 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
                 
                 
             )
+            if select_users:
+                classroom_training.user.set(users)
 
             for file in upload_doc:
                 ClassroomTrainingFile.objects.create(classroom_training=classroom_training, upload_doc=file)
@@ -3358,15 +3372,68 @@ class GetNextQuestion(viewsets.ModelViewSet):
         })
 
 
+class UserIdWiseNoOfAttemptsViewSet(viewsets.ModelViewSet):
+    queryset = QuizSession.objects.all()
+    serializer_class = QuizSessionSerializer
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user_id = request.data.get('user_id')
+            user = CustomUser.objects.get(id=user_id)
+            if not user:
+                return Response({'status': False,'message': 'User not found'})
+            quiz_sessions = QuizSession.objects.filter(user=user, quiz__status=True)
+            if not quiz_sessions.exists():
+                return Response({'status': False, 'message': 'No quiz sessions found for this user'})
+            data = []
+            for session in quiz_sessions:
+                data.append({
+                    'attempts': session.attempts,
+                    'status': session.status,
+                    'document_id': session.quiz.document.id if session.quiz.document else None 
+                })
+            return Response({'status': True,'message': 'Quiz session data fetched successfully','data': data})
+
+        except CustomUser.DoesNotExist:
+            return Response({'status': False, 'message': 'User not found'})
+        except Exception as e:
+            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+        
+class ClassRoomWiseSelectedUserViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'classroom_id'
+    
+    def list(self, request, *args, **kwargs):
+        try:
+            classroom_id = kwargs.get('classroom_id')
+            classroom = ClassroomTraining.objects.get(id=classroom_id)
+            users = ClassroomTraining.objects.filter(user__in=users)
+            return Response({'status': True, 'message': 'Selected users fetched successfully', 'data': users.data})
+        except ClassroomTraining.DoesNotExist:
+            return Response({
+                'status': False,
+                'message': 'Classroom not found'
+            })
+        except Exception as e:
+            return Response({'status': False,'message': 'Something went wrong', 'error': str(e)})
+
 class FailedUserViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
     queryset = QuizSession.objects.all()
     serializer_class = QuizSessionSerializer
 
     def list(self, request, *args, **kwargs):
         try:
-            failed_users = QuizSession.objects.filter(status='failed', quiz__status=True)
+            document_id = kwargs.get('document_id')
+            document = Document.objects.get(id=document_id)
+            failed_users = QuizSession.objects.filter(status='failed', quiz__status=True,quiz__document = document)
             serializer = QuizSessionSerializer(failed_users, many=True)
             return Response({'status': True, 'message': 'Failed users fetched successfully', 'data': serializer.data})
+        except Document.DoesNotExist:
+            return Response({
+                'status': False,
+                'message': 'Document not found'
+            })
         except Exception as e:
             return Response({'status': False,'message': 'Something went wrong', 'error': str(e)})
 
