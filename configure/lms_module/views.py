@@ -4153,7 +4153,7 @@ class UserIdWiseResultViewSet(viewsets.ModelViewSet):
             correct_serializer = AttemptedCorrectAnswerSerializer(correct_question_obj, many=True)
             return Response({"status": True, "message": "Attempted quizzes retrieved successfully", 
                              "questions": serializer.data, 
-                             "incorrect_questions": serializer.incorrect_questions, 
-                             "correct_questions": serializer.correct_questions})
+                             "incorrect_questions": incorrect_serializer.sata, 
+                             "correct_questions": correct_serializer.data})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
