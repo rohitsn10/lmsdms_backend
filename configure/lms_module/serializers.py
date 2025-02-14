@@ -232,7 +232,7 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
     classroom_id = serializers.IntegerField(source='id')
     class Meta:
         model = ClassroomTraining
-        fields = ['classroom_id', 'document', 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at', 'trainer', 'user']
+        fields = ['classroom_id', 'document', 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at', 'trainer', 'user', 'is_all_completed']
     # department_of_employee_first_name  = serializers.ReadOnlyField(source='department_or_employee.first_name')
     # department_of_employee_last_name = serializers.ReadOnlyField(source='department_or_employee.last_name')
     # class Meta:
@@ -405,9 +405,12 @@ class JobDescriptionSerializer(serializers.ModelSerializer):
         fields = ['user', 'id', 'job_role', 'employee_job_description', 'status']
 
 class AttemptedQuizSerializer(serializers.ModelSerializer):
+    attempts = serializers.CharField(source = 'quiz_session.attempts', read_only = True)
+    status = serializers.CharField(source = 'quiz_session.status', read_only = True)
+    document_name = serializers.CharField(source = 'document.document_title', read_only = True)
     class Meta:
         model = AttemptedQuiz
-        fields = ['id', 'user', 'quiz', 'document', 'obtain_marks', 'total_marks', 'total_taken_time', 'created_at', 'is_pass']
+        fields = ['id', 'user', 'quiz', 'document','document_name', 'status', 'attempts', 'obtain_marks', 'total_marks', 'total_taken_time', 'created_at', 'is_pass']
 
 class AttemptedQuizQuestionSerializer(serializers.ModelSerializer):
     class Meta:

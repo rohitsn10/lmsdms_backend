@@ -2300,6 +2300,8 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
             if online_offline_status == 'offline':
                 if not upload_doc:
                     return Response({'status': False,'message': 'Please upload document for offline training.'})
+            if not select_users:
+                return Response({'status': False, 'message': 'Please select users for No document training.'})
             
             trainer = Trainer.objects.filter(id=trainer_id).first()
             if not trainer:
@@ -2307,8 +2309,7 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
             
             document = None
             if document_id is None:
-                if not select_users:
-                    return Response({'status': False, 'message': 'Please select users for No document training.'})
+                
                 users = CustomUser.objects.filter(id__in=select_users)
                 if not users.exists():
                     return Response({'status': False, 'message': 'Invalid users selected.'})
@@ -2693,6 +2694,13 @@ class AttendanceCreateViewSet(viewsets.ModelViewSet):
                 attendance, created = Attendance.objects.get_or_create(user=user, session=session)
                 attendance.status = status
                 attendance.save()
+
+            classroom_training = ClassroomTraining.objects.filter(user__in=users).distinct().first()
+
+            if classroom_training:
+                all_present = Attendance.objects.filter(session=session, status='absent').count() == 0
+                classroom_training.is_all_completed = all_present
+                classroom_training.save()
 
             if Attendance.objects.filter(session=session, status='present').exists():
                 session.attend = True
@@ -3382,23 +3390,14 @@ class UserIdWiseNoOfAttemptsViewSet(viewsets.ModelViewSet):
             user = CustomUser.objects.get(id=user_id)
             if not user:
                 return Response({'status': False,'message': 'User not found'})
-            quiz_sessions = QuizSession.objects.filter(user=user, quiz__status=True)
+            quiz_sessions = AttemptedQuiz.objects.filter(user=user, quiz__status=True)
+            serializer = AttemptedQuizSerializer(quiz_sessions, many=True)
             if not quiz_sessions.exists():
                 return Response({'status': False, 'message': 'No quiz sessions found for this user'})
-            data = []
-            for session in quiz_sessions:
-                data.append({
-                    'attempts': session.attempts,
-                    'status': session.status,
-                    'document_id': session.quiz.document.id if session.quiz.document else None ,
-                    'document_name': session.quiz.document.document_title if session.quiz.document else None 
-                })
-            return Response({'status': True,'message': 'Quiz session data fetched successfully','data': data})
-
-        except CustomUser.DoesNotExist:
-            return Response({'status': False, 'message': 'User not found'})
+            return Response({'status': True, 'message': 'User attempts fetched successfully', 'data': serializer.data})
+        except CustomUser.DoesNotExist:return Response({'status': False,'message': 'User not found'})
         except Exception as e:
-            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+            return Response({'status': False,'message': 'Something went wrong', 'error': str(e)})
         
 class ClassRoomWiseSelectedUserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -4076,6 +4075,30 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
             document = Document.objects.get(id=document_id)
             quiz = TrainingQuiz.objects.get(id=quiz_id)
 
+            previous_session = QuizSession.objects.filter(user=user, quiz=quiz).order_by('-id').first()
+            assigned_document_version = document.version
+
+            if previous_session:
+                previous_major_version = previous_session.document_version.split('.')[0]
+                current_major_version = assigned_document_version.split('.')[0]
+
+                # Major version check
+                if previous_major_version != current_major_version:
+                    user.is_tni_consent = True
+                    user.save()
+                    return Response({"status": True, "message": "Quiz started successfully, new session created due to document version change"})
+            
+            attempts_count = AttemptedQuiz.objects.filter(user=user, quiz=quiz).count()
+
+            if attempts_count >= 3:
+                # Ensure the session is completed before allowing new attempt
+                session_complete = SessionComplete.objects.filter(session__quiz=quiz, user=user, is_completed=True).first()
+                if not session_complete:
+                    return Response({
+                        "status": False,
+                        "message": "You must complete the session before starting the exam again."
+                    })
+
             attempted_quiz = AttemptedQuiz.objects.create(
                 user=user,
                 document=document,
@@ -4084,6 +4107,14 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                 total_marks=total_marks,
                 total_taken_time=total_taken_time,
                 is_pass=is_pass,
+            )
+            attempts_count = AttemptedQuiz.objects.filter(user=user, quiz=quiz).count()
+            QuizSession.objects.create(
+                user=user,
+                quiz=quiz,
+                attempts_count=attempts_count + 1,
+                document_version=assigned_document_version,
+                
             )
             
             for question in questions:
@@ -4116,6 +4147,8 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                     question_text=question_text,
                     user_answer=user_answer
                 )
+            user.is_tni_consent = True
+            user.save()
             return Response({"status": True, "message": "Attempted quiz created successfully"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
