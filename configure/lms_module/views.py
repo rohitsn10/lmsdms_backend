@@ -3390,7 +3390,8 @@ class UserIdWiseNoOfAttemptsViewSet(viewsets.ModelViewSet):
                 data.append({
                     'attempts': session.attempts,
                     'status': session.status,
-                    'document_id': session.quiz.document.id if session.quiz.document else None 
+                    'document_id': session.quiz.document.id if session.quiz.document else None ,
+                    'document_name': session.quiz.document.document_title if session.quiz.document else None 
                 })
             return Response({'status': True,'message': 'Quiz session data fetched successfully','data': data})
 
