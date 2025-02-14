@@ -238,7 +238,7 @@ class ClassroomTraining(models.Model):
         ('completed', 'Completed'),
         ('in_progress', 'In Progress'),
     ]
-    user = models.ForeignKey(CustomUser,on_delete=models.CASCADE, blank=True, null=True)
+    user = models.ManyToManyField(CustomUser)
     document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
     # classroom_training_type = models.CharField(max_length=20, choices=TRAINING_TYPE_CHOICES)
     # title = models.CharField(max_length=255)

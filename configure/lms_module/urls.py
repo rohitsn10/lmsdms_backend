@@ -64,7 +64,11 @@ urlpatterns = [
     
     path('attendance', AttendanceCreateViewSet.as_view({'post': 'create', 'get': 'list'}), name='attendance'),
 
-    path('failed_user', FailedUserViewSet.as_view({'get': 'list'}), name='failed_user'),
+    path('user_id_wise_no_of_attempts', UserIdWiseNoOfAttemptsViewSet.as_view({'post': 'create'}), name='user_id_wise_no_of_attempts'),
+
+    path('classroom_wise_selected_user/<int:classroom_id>', ClassRoomWiseSelectedUserViewSet.as_view({'get': 'list'}), name='user_id_wise_no_of_attempts'),
+
+    path('failed_user/<int:document_id>', FailedUserViewSet.as_view({'get': 'list'}), name='failed_user'),
 
     path('training_list', TrainingListViewSet.as_view({'get': 'list'}), name='training_list'),
     path('job_training_list', JobroleListingViewSet.as_view({'get': 'list'}), name='job_training_list'),
