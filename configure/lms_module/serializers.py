@@ -214,7 +214,12 @@ class InductionSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Induction
-        fields = ['id', 'induction_name', 'trainings', 'created_at', 'updated_at']
+        fields = ['id', 'induction_name', 'trainings', 'plant', 'department', 'document', 'pdf_document', 'created_at', 'updated_at']
+
+    def get_pdf_document(self, obj):
+        if obj.pdf_document:
+            return obj.pdf_document.url
+        return None
 
 class InductionDesignationSerializer(serializers.ModelSerializer):
     class Meta:

@@ -199,8 +199,11 @@ class QuizQuestion(models.Model):
 # Code for induction create
 class Induction(models.Model):
     plant = models.ForeignKey(Plant, on_delete=models.CASCADE,blank=True, null=True)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True, blank=True)
     induction_name = models.CharField(max_length=255)
     trainings = models.ManyToManyField(TrainingCreate, related_name='inductions')
+    document = models.FileField(upload_to='induction_documents/', null=True, blank=True)  # Upload PPT
+    pdf_document = models.FileField(upload_to='induction_documents/pdf/', null=True, blank=True)  # Converted PDF
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
