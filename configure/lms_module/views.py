@@ -975,9 +975,10 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
         try:
             user = self.request.user
             if user.groups.filter(name="DTC").exists():
-                queryset_documents = Document.objects.all()
+                queryset_documents = Document.objects.filter(document_current_status_id=6)
             else:
-                queryset_documents = Document.objects.filter(models.Q(assigned_to=user) | models.Q(visible_to_users=user))
+                job_roles = JobRole.objects.filter(job_assigns__user=user)
+                queryset_documents = Document.objects.filter(job_roles__in=job_roles).distinct()
 
             # user_group_ids = list(user.groups.values_list('id', flat=True))
             # department_id = self.request.query_params.get('department_id', None)
@@ -2084,64 +2085,38 @@ class InductionCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = InductionSerializer
     queryset = Induction.objects.all().order_by('-id')
-    parser_classes = [MultiPartParser]  # Enable file uploads
-
-    def convert_ppt_to_pdf(self, ppt_path, pdf_path):
-        """ Convert PPT to PDF (Windows method using comtypes) """
-        try:
-            powerpoint = CreateObject("PowerPoint.Application")
-            powerpoint.Visible = 1
-            presentation = powerpoint.Presentations.Open(ppt_path, WithWindow=False)
-            presentation.SaveAs(pdf_path, 32)  # 32 is the format ID for PDFs
-            presentation.Close()
-            powerpoint.Quit()
-            return pdf_path
-        except Exception as e:
-            return None
 
     def create(self, request, *args, **kwargs):
         try:
             plant = request.data.get('plant')
-            department = request.data.get('department')
             induction_name = request.data.get('induction_name')
-            trainings = request.data.getlist('trainings', [])
-            ppt_file = request.FILES.get('ppt_file')
+            trainings = request.data.get('trainings', [])
+
 
             if not induction_name:
                 return Response({'status': False, 'message': 'Induction name is required'})
 
-            # Save PPT file if provided
-            pdf_url = None
-            if ppt_file:
-                ppt_path = default_storage.save(f'temp/{ppt_file.name}', ppt_file)
-                ppt_full_path = os.path.join(settings.MEDIA_ROOT, ppt_path)
-                pdf_path = ppt_full_path.replace('.ppt', '.pdf').replace('.pptx', '.pdf')
-
-                converted_pdf = self.convert_ppt_to_pdf(ppt_full_path, pdf_path)
-                if converted_pdf:
-                    pdf_url = settings.MEDIA_URL + os.path.basename(pdf_path)
-
-            # Create Induction object
+            # Create Induction
             induction = Induction.objects.create(
                 plant_id=plant,
-                department_id=department,
-                induction_name=induction_name,
+                induction_name=induction_name
             )
 
             if trainings:
                 induction.trainings.add(*trainings)
 
             serializer = InductionSerializer(induction, context={'request': request})
-            return Response({"status": True, "message": "Induction created successfully", "data": serializer.data, "pdf_url": pdf_url})
+            return Response({"status": True, "message": "Induction created successfully", "data": serializer.data})
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
     def list(self, request):
         queryset = Induction.objects.all().order_by('-id')
+
         try:
             if queryset.exists():
-                serializer = InductionSerializer(queryset, many=True, context={'request': request})
+                serializer = InductionSerializer(queryset, many=True,context={'request': request})
                 return Response({
                     "status": True,
                     "message": "Induction fetched successfully",
@@ -2166,36 +2141,25 @@ class InductionUpdateViewSet(viewsets.ModelViewSet):
             induction = self.get_object()
             induction_name = request.data.get('induction_name')
             plant = request.data.get('plant')
-            department = request.data.get('department')
-            trainings = request.data.getlist('trainings', [])
-            ppt_file = request.FILES.get('ppt_file')
-
-            pdf_url = None
-            if ppt_file:
-                ppt_path = default_storage.save(f'temp/{ppt_file.name}', ppt_file)
-                ppt_full_path = os.path.join(settings.MEDIA_ROOT, ppt_path)
-                pdf_path = ppt_full_path.replace('.ppt', '.pdf').replace('.pptx', '.pdf')
-
-                converted_pdf = self.convert_ppt_to_pdf(ppt_full_path, pdf_path)
-                if converted_pdf:
-                    pdf_url = settings.MEDIA_URL + os.path.basename(pdf_path)
+            trainings = request.data.get('trainings', [])
 
             if induction_name:
                 induction.induction_name = induction_name
             if plant:
                 induction.plant_id = plant
-            if department:
-                induction.department_id = department
+
             induction.save()
 
             if trainings:
                 induction.trainings.set(trainings)
 
             serializer = InductionSerializer(induction, context={'request': request})
-            return Response({"status": True, "message": "Induction updated successfully", "data": serializer.data, "pdf_url": pdf_url})
+            return Response({"status": True, "message": "Induction updated successfully", "data": serializer.data})
 
         except Exception as e:
             return Response({"status": False, "message": f"Something went wrong: {str(e)}", "data": []})
+
+
     def destroy(self, request, *args, **kwargs):
         try:
             induction = self.get_object()
