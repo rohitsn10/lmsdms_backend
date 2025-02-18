@@ -2348,7 +2348,7 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
     def list(self, request):
-        queryset = ClassroomTraining.objects.filter(Trainer__is_active=True).order_by('-id')
+        queryset = ClassroomTraining.objects.all().order_by('-id')
         
         try:
             if queryset.exists():
@@ -3003,6 +3003,22 @@ class TrainingAssignViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 
+class TrainingAssignListViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = JobAssignSerializer
+    queryset = JobAssign.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.get_queryset()
+            
+            job_assign_serializer = self.serializer_class(queryset, many=True, context={'request': request})
+            
+            return Response({"status": True,"message": "Job roles assigned to the user fetched successfully","data": job_assign_serializer.data})
+        except Exception as e:
+            return Response({"status": False,"message": str(e),"data": []})
+    
+
 # class JobroleListingapiViewSet(viewsets.ModelViewSet):
 #     permission_classes = [permissions.IsAuthenticated]
 #     serializer_class = GetJobRoleSerializer
@@ -3531,11 +3547,18 @@ class TrainerViewSet(viewsets.ViewSet):
         try:
             trainer_name = request.data.get('trainer_name')
             description = request.data.get('description')
+            employee_code = request.data.get('employee_code')
+            designation = request.data.get('designation')
+            department = request.data.get('department')
 
-            if not trainer_name or not description:
-                return Response({"status": False, "message": "Trainer name and description are required."})
+            if not trainer_name or not description or not employee_code or not department or not designation:
+                return Response({"status": False, "message": "all fields are required."})
+            
+            employee_code_normalized = employee_code.lower()
+            if Trainer.objects.filter(employee_code=employee_code_normalized).exists():
+                return Response({"status": False, "message": "Trainer with this employee code already exists."})
 
-            trainer = Trainer.objects.create(user=request.user,trainer_name=trainer_name,description=description,)
+            trainer = Trainer.objects.create(user=request.user,trainer_name=trainer_name,description=description,employee_code=employee_code,designation=designation,department=department)
 
             return Response({"status": True, "message": "Trainer created successfully.", "data": TrainerSerializer(trainer).data})
 
@@ -3562,11 +3585,23 @@ class TrainerViewSet(viewsets.ViewSet):
 
             trainer_name = request.data.get('trainer_name')
             description = request.data.get('description')
+            employee_code = request.data.get('employee_code')
+            designation = request.data.get('designation')
+            department = request.data.get('department')
 
             if trainer_name:
                 trainer.trainer_name = trainer_name
             if description:
                 trainer.description = description
+            if employee_code:
+                employee_code_normalized = employee_code.lower()
+                if Trainer.objects.filter(employee_code=employee_code_normalized).exists():
+                    return Response({"status": False, "message": "Trainer with this employee code already exists."})
+                trainer.employee_code = employee_code
+            if designation:
+                trainer.designation = designation
+            if department:
+                trainer.department = department
             trainer.save()
 
             return Response({"status": True, "message": "Trainer updated successfully.", "data": TrainerSerializer(trainer).data})
@@ -4050,7 +4085,7 @@ class HODApprovalViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "You don't have permission to review job description."})
             job_description_id = kwargs.get('job_description_id')
             employee_job_description = JobDescription.objects.get(id=job_description_id)
-
+            description = request.data.get('description')
             remarks = request.data.get('remarks')
             status = request.data.get('status')
             if status not in ['approved', 'send_back']:
@@ -4061,6 +4096,9 @@ class HODApprovalViewSet(viewsets.ModelViewSet):
                 remarks=remarks,
                 status=status
             )
+            if description:
+                employee_job_description.employee_job_description = description
+                employee_job_description.save()
 
             employee_job_description.status = status
             employee_job_description.save()

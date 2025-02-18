@@ -272,7 +272,6 @@ class CreateUserViewSet(viewsets.ModelViewSet):
             first_name = request.data.get('first_name')
             last_name = request.data.get('last_name')
             phone = request.data.get('phone')
-            department_id = request.data.get('department_id')
             group_ids  = request.data.get('user_role')
 
             
@@ -284,8 +283,6 @@ class CreateUserViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, 'message': 'Username already exists', 'data': []})
             if not username:
                 return Response({"status": False, 'message': 'Username is required', 'data': []})
-            if not department_id:
-                return Response({"status": False, 'message': 'department is required', 'data': []})
             if not group_ids or not isinstance(group_ids, list):  # Check if it's a list
                 return Response({"status": False, 'message': 'User roles must be a list of group IDs', 'data': []})
             
@@ -296,11 +293,6 @@ class CreateUserViewSet(viewsets.ModelViewSet):
                     groups.append(group)
                 except Group.DoesNotExist:
                     return Response({"status": False, "message": "Invalid group ID: {group_id}", "data": []})
-            
-            try:
-                department = Department.objects.get(id=department_id)
-            except Department.DoesNotExist:
-                return Response({"status": False, "message": "Invalid department ID", "data": []})
 
             # Use the imported function to generate a random password
             password = generate_random_password()
@@ -310,8 +302,7 @@ class CreateUserViewSet(viewsets.ModelViewSet):
                 username=username,
                 first_name=first_name,
                 last_name=last_name,
-                phone=phone,
-                department = department
+                phone=phone
             )
             user.set_password(password)
             user.save()
@@ -353,7 +344,10 @@ class ListUserViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            queryset = self.filter_queryset(self.get_queryset())
+            user = request.user
+            if user.groups.filter(name__in=['DTC', 'DocAdmin', 'Admin']).exists():
+                queryset = self.get_queryset()
+            queryset = self.get_queryset().filter(user=user)
             serializer = self.serializer_class(queryset, many=True, context={'request': request})
             data = serializer.data
             return Response({"status": True, "message": "User List Successfully", "data": data})
