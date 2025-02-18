@@ -225,6 +225,7 @@ class Trainer(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     trainer_name = models.CharField(max_length=255)
     description = models.TextField()
+    is_active = models.BooleanField(default=False, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
 class ClassroomTraining(models.Model):
