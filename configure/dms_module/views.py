@@ -4430,10 +4430,15 @@ class EmployeeRecordLogView(viewsets.ViewSet):
                     department_name = "No Department"
                 datestatus = QuizSession.objects.filter(user=user).first()
                 name = TrainingCreate.objects.filter(created_by=user).first()
+                document_number = Document.objects.filter(user=user).first()
+                version = document_number.version if document_number else "No Version"
+                trainer = Trainer.objects.filter(user=user).first()
 
                 training_date = datestatus.started_at if datestatus else "Not started"
                 status = datestatus.status if datestatus else "No Status"
                 training_name = name.training_name if name else "No Training"
+                document_number = document_number.document_number if document_number else "No Document"
+                trainer_name = trainer.trainer_name if trainer else "No Trainer"
 
                 user_data  = {
                     'employee_name': user.username,
@@ -4442,6 +4447,9 @@ class EmployeeRecordLogView(viewsets.ViewSet):
                     'training_date': training_date,
                     'training_name': training_name,
                     'status': status,
+                    'document_number': document_number,
+                    'current_version': version,
+                    'trainer_name': trainer_name,
                 }
                 print(user_data)
                 all_users_data.append(user_data)
@@ -4725,3 +4733,28 @@ class DocumentEffectiveViewSet(viewsets.ModelViewSet):
         
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
+
+
+class DocumentVersionListViewSet(viewsets.ModelViewSet):
+    serializer_class = AddNewDocumentCommentsSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+    def list(self, request, *args, **kwargs):
+        document_id = self.kwargs.get('document_id')
+
+        if not Document.objects.filter(id=document_id).exists():
+            return Response({"status": False, "message": "Document not found", "data": []}, status=404)
+
+        queryset = self.get_queryset()
+
+        if not queryset.exists():
+            return Response({"status": True, "message": "No comments found for this document", "data": []})
+
+        serializer = self.get_serializer(queryset, many=True, context={'request': request})
+
+        return Response({
+            "status": True,
+            "message": "Document comments fetched successfully",
+            "data": serializer.data
+        })

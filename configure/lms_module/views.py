@@ -2348,7 +2348,7 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
     def list(self, request):
-        queryset = ClassroomTraining.objects.all().order_by('-id')
+        queryset = ClassroomTraining.objects.filter(Trainer__is_active=True).order_by('-id')
         
         try:
             if queryset.exists():
@@ -3588,8 +3588,29 @@ class TrainerViewSet(viewsets.ViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": str(e)})
+            
         
-
+class TrainerActiveDeactiveViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            trainer_id = kwargs.get('trainer_id')
+            trainer = Trainer.objects.filter(id=trainer_id).first()
+            if not trainer:
+                return Response({"status": False, "message": "Trainer not found."})
+            
+            if trainer.is_active:
+                trainer.is_active = False
+                trainer.save()
+                return Response({"status": True, "message": "Trainer deactivated successfully."})
+            else:
+                trainer.is_active = True
+                trainer.save()
+                return Response({"status": True, "message": "Trainer activated successfully."})
+        except Exception as e:
+            return Response({"status": False, "message": str(e)})
+    
 class ClassroomQuestionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ClassroomQuestionSerializer
@@ -4002,8 +4023,8 @@ class JobDescriptionUpdateViewSet(viewsets.ModelViewSet):
             job_description_id = kwargs.get('job_description_id')
 
             employee_job_obj = HODRemark.objects.get(id=job_description_id)
-            if employee_job_obj.status != 'send_back':
-                return Response({"status": False, "message": "You can only update a job description with 'send_back' status"})
+            # if employee_job_obj.status != 'send_back':
+            #     return Response({"status": False, "message": "You can only update a job description with 'send_back' status"})
             
             job_role_id = request.data.get('job_role_id')
             employee_job_description = request.data.get('employee_job_description')
