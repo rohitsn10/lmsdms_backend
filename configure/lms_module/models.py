@@ -224,6 +224,9 @@ class InductionDesignation(models.Model):
 class Trainer(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     trainer_name = models.CharField(max_length=255)
+    employee_code = models.CharField(max_length=255, blank=True, null=True)
+    designation = models.CharField(max_length=255, blank=True, null=True)
+    department = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField()
     is_active = models.BooleanField(default=False, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -265,6 +268,7 @@ class ClassroomTraining(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     trainer = models.ForeignKey(Trainer, on_delete=models.CASCADE, null=True, blank=True)
     is_all_completed = models.BooleanField(default=False, null=True, blank=True)
+    is_assessment_completed = models.BooleanField(default=False, null=True, blank=True)
 class ClassroomTrainingFile(models.Model):
     classroom_training = models.ForeignKey(ClassroomTraining, related_name='files', on_delete=models.CASCADE)
     upload_doc = models.FileField(upload_to='classroom_trainings/', null=True, blank=True)
