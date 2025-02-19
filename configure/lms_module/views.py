@@ -2080,7 +2080,8 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
 from rest_framework.parsers import MultiPartParser
-from comtypes.client import CreateObject  # Windows-only alternative         
+from comtypes.client import CreateObject  # Windows-only alternative
+         
 class InductionCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = InductionSerializer

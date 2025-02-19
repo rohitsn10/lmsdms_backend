@@ -429,9 +429,13 @@ class ArchivedSerializer(serializers.ModelSerializer):
 
 
 class AddNewDocumentCommentsSerializer(serializers.ModelSerializer):
+    user_first_name = serializers.CharField(source='user.first_name')
+    user_last_name = serializers.CharField(source='user.last_name')
+    document_name = serializers.CharField(source='document.document_title')
+    department_name = serializers.CharField(source='department.department_name')
     class Meta:
         model = NewDocumentCommentsData
-        fields = ['user', 'document_id', 'comment_data', 'version_no', 'front_file_url', 'department_id']
+        fields = ['user','user_first_name', 'user_last_name','document_id','document_name','comment_data', 'version_no', 'front_file_url', 'department_id','department_name']
 
 class DocumentEffectiveSerializer(serializers.ModelSerializer):
     class Meta:

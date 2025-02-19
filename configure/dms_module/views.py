@@ -4746,12 +4746,12 @@ class DocumentVersionListViewSet(viewsets.ModelViewSet):
         if not Document.objects.filter(id=document_id).exists():
             return Response({"status": False, "message": "Document not found", "data": []}, status=404)
 
-        queryset = self.get_queryset()
+        queryset = NewDocumentCommentsData.objects.filter(document=document_id)
 
         if not queryset.exists():
             return Response({"status": True, "message": "No comments found for this document", "data": []})
 
-        serializer = self.get_serializer(queryset, many=True, context={'request': request})
+        serializer = self.serializer_class(queryset, many=True, context={'request': request})
 
         return Response({
             "status": True,
