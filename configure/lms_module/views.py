@@ -1396,7 +1396,7 @@ class TrainingSectionWiseTrainingMaterialViewset(viewsets.ModelViewSet):
                 "section_name": section.section_name,
                 "section_description": section.section_description,
                 "section_order": section.section_order,
-                "training_name": section.training.training_name,
+                "training_name": section.document.document_title,
             }
             return Response({"status": True,"message": "Training material list fetched successfully","data": {"section": section_data,"materials": serializer.data}})
         except Exception as e:

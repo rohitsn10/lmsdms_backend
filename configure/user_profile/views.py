@@ -346,8 +346,8 @@ class ListUserViewSet(viewsets.ModelViewSet):
         try:
             user = request.user
             if user.groups.filter(name__in=['DTC', 'DocAdmin', 'Admin']).exists():
-                queryset = self.get_queryset()
-            queryset = self.get_queryset().filter(user=user)
+                queryset = CustomUser.objects.all()
+            queryset = CustomUser.objects.filter(id=user.id)
             serializer = self.serializer_class(queryset, many=True, context={'request': request})
             data = serializer.data
             return Response({"status": True, "message": "User List Successfully", "data": data})
