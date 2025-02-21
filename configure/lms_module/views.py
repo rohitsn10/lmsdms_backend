@@ -4152,10 +4152,10 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                     user.save()
                     return Response({"status": True, "message": "Quiz started successfully, new session created due to document version change"})
             
-            attempts_count = AttemptedQuiz.objects.filter(user=user, quiz=quiz).count()
+            attempts_count = QuizSession.objects.filter(user=user, quiz=quiz).first()
 
-            if attempts_count >= 3:
-                session = Session.objects.filter(quiz=quiz, user=user).first()
+            if attempts_count.attempts >= 3:
+                session = Session.objects.filter(user_ids=user).first()
                 if not session:
                     return Response({"status": False,"message": "No session found for this quiz."})
                 # Ensure the session is completed before allowing new attempt
@@ -4176,43 +4176,57 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                 is_pass=is_pass,
             )
             attempts_count = AttemptedQuiz.objects.filter(user=user, quiz=quiz).count()
-            QuizSession.objects.create(
+            quiz_session, created = QuizSession.objects.get_or_create(
                 user=user,
                 quiz=quiz,
-                attempts=attempts_count + 1,
-                document_version=assigned_document_version,
-                
+                defaults={
+                    "attempts": 1,  # First attempt should be 1, not 2
+                    "document_version": assigned_document_version,
+                }
             )
+            if not created:
+                quiz_session.attempts += 1
+                quiz_session.document_version = assigned_document_version
+                quiz_session.save()
+                if attempts_count >= 3:
+                    quiz_session.status = 'Failed'
+                    quiz_session.save()
             
             for question in questions:
                 question_id = question.get('question_id')
                 question_text = question.get('question_text')
                 user_answer = question.get('user_answer')
+                correct_answer = question.get('correct_answer')
                 attempted_question = AttemptedQuizQuestion.objects.create(
                     attempted_quiz=attempted_quiz,
                     question_id=question_id,
                     question_text=question_text,
-                    user_answer=user_answer
+                    user_answer=user_answer,
+                    correct_answer=correct_answer
                 )
             for incorrect in incorrect_questions:
                 question_id = incorrect.get('question_id')
                 question_text = incorrect.get('question_text')
                 user_answer = incorrect.get('user_answer')
+                correct_answer = incorrect.get('correct_answer')
                 attempted_question = AttemptedIncorrectAnswer.objects.create(
                     attempted_quiz=attempted_quiz,
                     question_id=question_id,
                     question_text=question_text,
-                    user_answer=user_answer
+                    user_answer=user_answer,
+                    correct_answer=correct_answer
                 )
             for correct in correct_questions:
                 question_id = correct.get('question_id')
                 question_text = correct.get('question_text')
                 user_answer = correct.get('user_answer')
+                correct_answer = correct.get('correct_answer')
                 attempted_question = AttemptedCorrectAnswer.objects.create(
                     attempted_quiz=attempted_quiz,
                     question_id=question_id,
                     question_text=question_text,
-                    user_answer=user_answer
+                    user_answer=user_answer,
+                    correct_answer=correct_answer
                 )
             user.is_tni_consent = True
             user.save()

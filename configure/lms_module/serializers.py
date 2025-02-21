@@ -420,14 +420,14 @@ class AttemptedQuizSerializer(serializers.ModelSerializer):
 class AttemptedQuizQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttemptedQuizQuestion
-        fields = ['id', 'attempted_quiz', 'question_id', 'question_text', 'user_answer']
+        fields = ['id', 'attempted_quiz', 'question_id', 'question_text', 'user_answer', 'correct_answer']
 
 class AttemptedIncorrectAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttemptedIncorrectAnswer
-        fields = ['id', 'attempted_quiz', 'question_id', 'question_text', 'user_answer']
+        fields = ['id', 'attempted_quiz', 'question_id', 'question_text', 'user_answer', 'correct_answer']
 
 class AttemptedCorrectAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttemptedCorrectAnswer
-        fields = ['id', 'attempted_quiz', 'question_id', 'question_text', 'user_answer']
+        fields = ['id', 'attempted_quiz', 'question_id', 'question_text', 'user_answer', 'correct_answer']
