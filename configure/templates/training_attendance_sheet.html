@@ -52,31 +52,23 @@
     <table>
         <tr>
             <td><strong>Training Title</strong></td>
-            <td>Procedure for Return Raw Material to Warehouse</td>
+            <td>{{ users_data.training_title }}</td>
         </tr>
         <tr>
             <td><strong>Version</strong></td>
-            <td>6.0</td>
-        </tr>
-        <tr>
-            <td><strong>Time Duration</strong></td>
-            <td>From: 09:00(hrs) - To: 09:05(hrs)</td>
-        </tr>
-        <tr>
-            <td><strong>Topic Cover</strong></td>
-            <td>Covid 19</td>
+            <td>{{ users_data.version }}</td>
         </tr>
         <tr>
             <td><strong>Training No.</strong></td>
-            <td>PRD046</td>
+            <td>{{ users_data.training_number }}</td>
         </tr>
         <tr>
             <td><strong>Date</strong></td>
-            <td>20-02-23</td>
+            <td>{{ users_data.start_time }}</td>
         </tr>
         <tr>
             <td><strong>Name of the Faculty</strong></td>
-            <td>Biswajit Das</td>
+            <td>{{ users_data.trainer }}</td>
         </tr>
     </table>
 
@@ -87,13 +79,14 @@
             <th class="serialClass">Sr. No.</th>
             <th>Name</th>
             <th>Department</th>
-        </tr>
-        <tr>
-            <td>1</td>
-            <td>Gyan Shah</td>
-            <td>Quantity Assurance</td>
-        </tr>
-    </table>
+            {% for user in users_data.users %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ user.name }}</td>
+                <td>{{ user.department }}</td>
+            </tr>
+            {% endfor %}
+        </table>
 
 
 </body>
