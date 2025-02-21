@@ -4386,13 +4386,17 @@ class EmployeeJobRoleView(viewsets.ViewSet):
         try:
             employee = CustomUser.objects.get(id=employee_id)
             department = Department.objects.filter(id=employee.department_id).first()
+            job_assign = JobAssign.objects.filter(user=employee).first()
+            job_roles = ', '.join(job_assign.job_roles.values_list('job_role', flat=True)) if job_assign else 'N/A'
             context = {
+                'employee_number': employee.employee_number,
                 'employee_name': f"{employee.first_name} {employee.last_name}",
                 'designation': employee.designation,
                 'department': department.department_name if employee.department else 'N/A',
                 'joining_date': employee.created_at.strftime('%d/%m/%Y'),
                 'company_name': 'Promount Technologies LLP',
                 'department_name': department.department_name if employee.department else 'N/A',
+                'job_role': job_roles
             }
             template = get_template('employee_job_role.html')
             html = template.render(context)

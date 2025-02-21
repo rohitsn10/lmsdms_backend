@@ -445,15 +445,18 @@ class AttemptedQuizQuestion(models.Model):
     question_id = models.CharField(max_length=500, null=True, blank=True)
     question_text = models.CharField(max_length=500, null=True, blank=True)
     user_answer = models.CharField(max_length=500, null=True, blank=True)
+    correct_answer = models.CharField(max_length=500, null=True, blank=True)
 
 class AttemptedIncorrectAnswer(models.Model):
     attempted_quiz = models.ForeignKey(AttemptedQuiz, on_delete=models.CASCADE, null=True, blank=True)
     question_id = models.CharField(max_length=500, null=True, blank=True)
     question_text = models.CharField(max_length=500, null=True, blank=True)
     user_answer = models.CharField(max_length=500, null=True, blank=True)
+    correct_answer = models.CharField(max_length=500, null=True, blank=True)
 
 class AttemptedCorrectAnswer(models.Model):
     attempted_quiz = models.ForeignKey(AttemptedQuiz, on_delete=models.CASCADE, null=True, blank=True)
     question_id = models.CharField(max_length=500, null=True, blank=True)
     question_text = models.CharField(max_length=500, null=True, blank=True)
     user_answer = models.CharField(max_length=500, null=True, blank=True)
+    correct_answer = models.CharField(max_length=500, null=True, blank=True)
