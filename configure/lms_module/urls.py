@@ -116,4 +116,7 @@ urlpatterns = [
     path('attempted_quiz_list/<int:user_id>', AttemptedQuizListViewSet.as_view({'get': 'list'}), name='attempted_quiz_list'),
 
     path('user_id_wise_result/<int:user_id>/<int:document_id>', UserIdWiseResultViewSet.as_view({'get': 'list'}), name='user_id_wise_result'),
+
+    path('training_completion_certificate/<int:user_id>', TrainingCompletionViewSet.as_view({'get': 'list'}), name='inductioncertificate'),
+    path('training_attendance_sheet/<int:document_id>', TrainingAttendanceViewSet.as_view({'get': 'list'}), name='training_attendance_sheet'),
 ]

@@ -4285,3 +4285,111 @@ class UserIdWiseResultViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+class TrainingCompletionViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user_id = self.kwargs.get('user_id')
+
+            if not user_id:
+                return Response({"status": False, "message": "user_id is required."})
+            user = CustomUser.objects.get(id=user_id)
+            username = user.username
+            print("username",username)
+            current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M")
+            job_assign = JobAssign.objects.filter(user=user).first()
+            job_role = job_assign.job_roles.all().values_list('job_role_name', flat=True)
+            if not job_assign:
+                return Response({"status": False, "message": "Job Assign not found."})
+            user_data = {
+                'username': username,
+                'job_assign': ', '.join(job_role),
+                'date_time' : current_datetime,
+                'logo': os.path.join(settings.BASE_DIR, 'static', 'training_certificate', 'logo.jpeg')
+            }
+
+            context = {'users_data': user_data}
+            template = get_template('training_completion_certificate.html') 
+            html_content = template.render(context)
+            print(html_content, 'ddd')
+            timestamp = int(time.time())
+            filename = f"training_completion_certificate{timestamp}.pdf"
+            file_path = os.path.join(settings.MEDIA_ROOT, 'training_completion_certificate', filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+            wkhtmltopdf_path = r'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe'
+            config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+
+            pdfkit.from_string(html_content, file_path, options={
+                'page-size': 'Letter',
+                'encoding': 'UTF-8',
+                'quiet': '',
+                '--enable-local-file-access': ''
+            }, configuration=config)
+
+            pdf_file_url = f"{settings.MEDIA_URL}training_completion_certificate/{filename}"
+            full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+            return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
+
+        except CustomUser.DoesNotExist:
+            return Response({"status": False, "message": "User not found", "data": ""})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": ""})
+        
+class TrainingAttendanceViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            document_id = self.kwargs.get('document_id')
+            if not document_id:
+                return Response({"status": False, "message": "training_id is required."})
+            classroom = ClassroomTraining.objects.filter(document=document_id).first()
+            session = Session.objects.filter(classroom=classroom).first()
+            user_in_session = session.user_ids.all()
+            userlist_data = []
+            for user in user_in_session:
+                userlist_data.append({
+                    'name': user.username,
+                    'department': user.department.department_name  # Assuming department is a ForeignKey
+                    })
+
+            user_data = {
+                'training_title': classroom.document.document_title,
+                'training_number': classroom.document.document_number,
+                'version': classroom.document.version,
+                'trainer' : classroom.trainer.trainer_name,
+                'start_time' : session.start_date,
+                'users' : userlist_data,
+            }
+
+            context = {'users_data': user_data}
+            template = get_template('training_attendance_sheet.html') 
+            html_content = template.render(context)
+            print(html_content, 'ddd')
+            timestamp = int(time.time())
+            filename = f"training_attendance_sheet{timestamp}.pdf"
+            file_path = os.path.join(settings.MEDIA_ROOT, 'training_attendance_sheet', filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+            wkhtmltopdf_path = r'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe'
+            config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+
+            pdfkit.from_string(html_content, file_path, options={
+                'page-size': 'Letter',
+                'encoding': 'UTF-8',
+                'quiet': '',
+                '--enable-local-file-access': ''
+            }, configuration=config)
+
+            pdf_file_url = f"{settings.MEDIA_URL}training_attendance_sheet/{filename}"
+            full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+            return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
+
+        except CustomUser.DoesNotExist:
+            return Response({"status": False, "message": "User not found", "data": ""})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": ""})
