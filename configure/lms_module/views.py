@@ -4402,3 +4402,32 @@ class TrainingAttendanceViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "User not found", "data": ""})
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": ""})
+        
+from django.shortcuts import get_object_or_404
+class DashboardDocumentViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Document.objects.all()
+    serializer_class = DocumentSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user_id = kwargs.get('user_id')
+            if not user_id:
+                return Response({"status": False, "message": "User ID is required."})
+            user = get_object_or_404(CustomUser, id=user_id)
+            if not user:
+                return Response({"status": False, "message": "User not found."})
+            job_role = JobAssign.objects.filter(user=user)
+            job_role_ids = job_role.values_list('job_roles', flat=True)
+            documents = Document.objects.filter(job_roles__id__in=job_role_ids).distinct()
+            total_assign_document = documents.count()
+            if total_assign_document == 0:
+                return Response({"status": False, "message": "No documents assigned to this user's job roles."})
+            
+            failed_users = QuizSession.objects.filter(user=user, status='Failed', quiz__status=True,quiz__document__in = documents).count()
+
+            passed_users = QuizSession.objects.filter(user=user, status='Passed', quiz__status=True,quiz__document__in = documents).count()
+            return Response({"status": True, "message": "Documents retrieved successfully", "total_assign_document": total_assign_document, "failed_document": failed_users, "passed_document": passed_users})
+        
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
