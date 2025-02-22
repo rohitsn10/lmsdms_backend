@@ -3011,7 +3011,16 @@ class TrainingAssignListViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            queryset = self.get_queryset()
+            user_id = self.kwargs.get("user_id")
+            if not user_id:
+                return Response({"status": False,"message": "user_id is missing"})
+            
+            user_instance = CustomUser.objects.filter(id=user_id).first()
+            if not user_instance:
+                return Response({"status": False,"message": "user_id not found"})
+            
+            queryset = self.queryset.filter(user=user_instance)
+            
             
             job_assign_serializer = self.serializer_class(queryset, many=True, context={'request': request})
             
