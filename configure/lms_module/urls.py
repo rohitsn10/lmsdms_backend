@@ -73,7 +73,7 @@ urlpatterns = [
     path('training_list', TrainingListViewSet.as_view({'get': 'list'}), name='training_list'),
     path('job_training_list', JobroleListingViewSet.as_view({'get': 'list'}), name='job_training_list'),
     path('jobrole_assign_training/<int:user_id>', TrainingAssignViewSet.as_view({'put': 'update'}), name='jobrole_assign_training'),
-    path('jobrole_assign_training_list', TrainingAssignListViewSet.as_view({'get': 'list'}), name='jobrole_assign_training_list'),
+    path('jobrole_assign_training_list/<int:user_id>', TrainingAssignListViewSet.as_view({'get': 'list'}), name='jobrole_assign_training_list'),
 
     path('training_matrix_assign_user_and_add_data', TrainingMatrixAssignUserViewSet.as_view({'post': 'create', 'get': 'list'}), name='training_list_mapping'),
     path('training_id_wise_training_section', TrainingIdWiseTrainingSectionViewset.as_view({'get': 'list'}), name='training_id_wise_training_section'),

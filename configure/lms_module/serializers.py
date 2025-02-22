@@ -400,9 +400,13 @@ class ClassroomQuizSessionSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'quiz', 'current_question_index', 'started_at', 'completed_at', 'score', 'status']
 
 class JobAssignSerializer(serializers.ModelSerializer):
+    job_roles = serializers.SerializerMethodField()
     class Meta:
         model = JobAssign
         fields = ['id', 'user', 'job_roles']
+
+    def get_job_roles(self, obj):
+        return [{"id": job_role.id, "name": job_role.job_role_name} for job_role in obj.job_roles.all()]
 
 class JobDescriptionSerializer(serializers.ModelSerializer):
     class Meta:

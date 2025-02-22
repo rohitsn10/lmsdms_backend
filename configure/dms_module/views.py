@@ -1311,12 +1311,15 @@ class DocumentDeleteViewSet(viewsets.ModelViewSet):
             return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
         
 from docx import Document as D
+
 class DocumentTemplateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DocumentdataSerializer
     queryset = Document.objects.all()
     lookup_field = 'document_id'
+
     def replace_text_in_paragraphs(self, paragraphs, replacements):
+        """Replace placeholders inside normal text paragraphs."""
         for para in paragraphs:
             for run in para.runs:
                 for key, value in replacements.items():
@@ -1325,10 +1328,33 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
                         run.text = run.text.replace(placeholder, value)
 
     def replace_text_in_tables(self, tables, replacements):
+        """Replace placeholders inside table cells."""
         for table in tables:
             for row in table.rows:
                 for cell in row.cells:
                     self.replace_text_in_paragraphs(cell.paragraphs, replacements)
+
+    def replace_text_in_headers_and_footers(self, doc, replacements):
+        """Replace placeholders inside document headers and footers."""
+        for section in doc.sections:
+            # Replace in headers
+            for para in section.header.paragraphs:
+                for run in para.runs:
+                    for key, value in replacements.items():
+                        placeholder = f"{{{{{key}}}}}"
+                        if placeholder in run.text:
+                            print(f"FOUND HEADER PLACEHOLDER: {placeholder} -> {value}")
+                            run.text = run.text.replace(placeholder, value)
+
+            # Replace in footers (if needed)
+            for para in section.footer.paragraphs:
+                for run in para.runs:
+                    for key, value in replacements.items():
+                        placeholder = f"{{{{{key}}}}}"
+                        if placeholder in run.text:
+                            print(f"FOUND FOOTER PLACEHOLDER: {placeholder} -> {value}")
+                            run.text = run.text.replace(placeholder, value)
+
     def list(self, request, *args, **kwargs):
         document_id = self.kwargs.get('document_id')
 
@@ -1339,47 +1365,97 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             document = Document.objects.get(id=document_id)
             serializer = self.get_serializer(document, context={'request': request})
             template_url = serializer.data.get('template_url')
+
+            # Ensure the template URL exists
+            if not template_url:
+                return Response({"status": False, "message": "Template URL not found in document data."})
+
+            # Fetch document details for placeholder replacement
             data = {
                 'document_title': document.document_title,
                 'document_number': document.document_number,
                 'version': document.version,
                 'department': document.user.department.department_name if document.user.department else 'UnknownDepartment',
             }
+
+            # Define paths
             template_path = os.path.join(settings.MEDIA_ROOT, 'templates', f'template_{document_id}.docx')
             output_dir = os.path.join(settings.MEDIA_ROOT, 'generated_docs')
             os.makedirs(os.path.dirname(template_path), exist_ok=True)
             os.makedirs(output_dir, exist_ok=True)
 
+            # Download template file
             print(f"Downloading template from: {template_url}")
             response = requests.get(template_url)
+
             if response.status_code != 200:
                 return Response({"status": False, "message": "Failed to download template from URL"})
 
             with open(template_path, 'wb') as f:
                 f.write(response.content)
             print(f"Template successfully downloaded to {template_path}")
+
+            # Open the Word document
             doc = D(template_path)
 
+            # Placeholder replacements
             replacements = {
                 "document_title": data['document_title'],
                 "document_number": data['document_number'],
                 "version": data['version'],
                 "department": data['department']
-}
-            print("\n===== BEFORE REPLACEMENT =====")
-            for para in doc.paragraphs[:10]:  # Print first 10 paragraphs
-                print(para.text)
+            }
+
+            # Debugging: Print headers, footers, paragraphs, and tables before replacement
+            print("\n===== HEADERS & FOOTERS BEFORE REPLACEMENT =====")
+            for section in doc.sections:
+                for para in section.header.paragraphs:
+                    print(f"HEADER: {para.text}")
+                for para in section.footer.paragraphs:
+                    print(f"FOOTER: {para.text}")
+
+            print("\n===== DOCUMENT PARAGRAPHS BEFORE REPLACEMENT =====")
+            for para in doc.paragraphs:
+                print(f"PARA: {para.text}")
+
+            print("\n===== TABLE CONTENT BEFORE REPLACEMENT =====")
+            for table in doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        for para in cell.paragraphs:
+                            print(f"TABLE CELL: {para.text}")
+
+            # Replace placeholders in headers, footers, paragraphs, and tables
+            self.replace_text_in_headers_and_footers(doc, replacements)
             self.replace_text_in_paragraphs(doc.paragraphs, replacements)
             self.replace_text_in_tables(doc.tables, replacements)
-            print("\n===== AFTER REPLACEMENT =====")
-            for para in doc.paragraphs[:10]:  # Print first 10 paragraphs
-                print(para.text)
+
+            # Debugging: Print text after replacement
+            print("\n===== HEADERS & FOOTERS AFTER REPLACEMENT =====")
+            for section in doc.sections:
+                for para in section.header.paragraphs:
+                    print(f"HEADER: {para.text}")
+                for para in section.footer.paragraphs:
+                    print(f"FOOTER: {para.text}")
+
+            print("\n===== DOCUMENT PARAGRAPHS AFTER REPLACEMENT =====")
+            for para in doc.paragraphs:
+                print(f"PARA: {para.text}")
+
+            print("\n===== TABLE CONTENT AFTER REPLACEMENT =====")
+            for table in doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        for para in cell.paragraphs:
+                            print(f"TABLE CELL: {para.text}")
+
+            # Save the modified document
             timestamp = int(time.time())
             output_filename = f"training_document_{timestamp}.docx"
             output_path = os.path.join(output_dir, output_filename)
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
             doc.save(output_path)
 
+            # Generate download URL
             file_url = f"{settings.MEDIA_URL}generated_docs/{output_filename}"
             full_file_url = f"{request.scheme}://{request.get_host()}{file_url}"
 
@@ -1394,6 +1470,7 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": str(e)})
+
 
 class TemplateCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
