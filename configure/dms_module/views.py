@@ -1312,6 +1312,10 @@ class DocumentDeleteViewSet(viewsets.ModelViewSet):
         
 from docx import Document as D
 
+# Assuming you have your Document model and DocumentdataSerializer defined elsewhere
+# from your_app.models import Document
+# from your_app.serializers import DocumentdataSerializer
+
 class DocumentTemplateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DocumentdataSerializer
@@ -1338,22 +1342,28 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
         """Replace placeholders inside document headers and footers."""
         for section in doc.sections:
             # Replace in headers
-            for para in section.header.paragraphs:
-                for run in para.runs:
-                    for key, value in replacements.items():
-                        placeholder = f"{{{{{key}}}}}"
-                        if placeholder in run.text:
-                            print(f"FOUND HEADER PLACEHOLDER: {placeholder} -> {value}")
-                            run.text = run.text.replace(placeholder, value)
+            headers = [section.header, section.even_page_header, section.first_page_header]
+            for header in headers:
+                if header is not None:
+                    for para in header.paragraphs:
+                        for run in para.runs:
+                            for key, value in replacements.items():
+                                placeholder = f"{{{{{key}}}}}"
+                                if placeholder in run.text:
+                                    print(f"FOUND HEADER PLACEHOLDER: {placeholder} -> {value}")
+                                    run.text = run.text.replace(placeholder, value)
 
             # Replace in footers (if needed)
-            for para in section.footer.paragraphs:
-                for run in para.runs:
-                    for key, value in replacements.items():
-                        placeholder = f"{{{{{key}}}}}"
-                        if placeholder in run.text:
-                            print(f"FOUND FOOTER PLACEHOLDER: {placeholder} -> {value}")
-                            run.text = run.text.replace(placeholder, value)
+            footers = [section.footer, section.even_page_footer, section.first_page_footer]
+            for footer in footers:
+                if footer is not None:
+                    for para in footer.paragraphs:
+                        for run in para.runs:
+                            for key, value in replacements.items():
+                                placeholder = f"{{{{{key}}}}}"
+                                if placeholder in run.text:
+                                    print(f"FOUND FOOTER PLACEHOLDER: {placeholder} -> {value}")
+                                    run.text = run.text.replace(placeholder, value)
 
     def list(self, request, *args, **kwargs):
         document_id = self.kwargs.get('document_id')
@@ -1377,7 +1387,7 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
                 'version': document.version,
                 'department': document.user.department.department_name if document.user.department else 'UnknownDepartment',
             }
-
+            print(f"Document data: {data}")
             # Define paths
             template_path = os.path.join(settings.MEDIA_ROOT, 'templates', f'template_{document_id}.docx')
             output_dir = os.path.join(settings.MEDIA_ROOT, 'generated_docs')
@@ -1405,7 +1415,7 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
                 "version": data['version'],
                 "department": data['department']
             }
-
+            print(replacements)
             # Debugging: Print headers, footers, paragraphs, and tables before replacement
             print("\n===== HEADERS & FOOTERS BEFORE REPLACEMENT =====")
             for section in doc.sections:
@@ -1448,26 +1458,21 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
                     for cell in row.cells:
                         for para in cell.paragraphs:
                             print(f"TABLE CELL: {para.text}")
-
             # Save the modified document
             timestamp = int(time.time())
             output_filename = f"training_document_{timestamp}.docx"
             output_path = os.path.join(output_dir, output_filename)
             doc.save(output_path)
-
             # Generate download URL
             file_url = f"{settings.MEDIA_URL}generated_docs/{output_filename}"
             full_file_url = f"{request.scheme}://{request.get_host()}{file_url}"
-
             return Response({
                 "status": True,
                 "message": "Template processed successfully",
                 "data": full_file_url
             })
-
         except Document.DoesNotExist:
             return Response({"status": False, "message": "Document not found"})
-
         except Exception as e:
             return Response({"status": False, "message": str(e)})
 
@@ -4522,7 +4527,7 @@ class EmployeeJobRoleView(viewsets.ViewSet):
             employee = CustomUser.objects.get(id=employee_id)
             department = Department.objects.filter(id=employee.department_id).first()
             job_assign = JobAssign.objects.filter(user=employee).first()
-            job_roles = ', '.join(job_assign.job_roles.values_list('job_role', flat=True)) if job_assign else 'N/A'
+            job_roles = ', '.join(job_assign.job_roles.values_list('job_role_name', flat=True)) if job_assign else 'N/A'
             context = {
                 'employee_number': employee.employee_number,
                 'employee_name': f"{employee.first_name} {employee.last_name}",
