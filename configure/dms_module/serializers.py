@@ -107,14 +107,16 @@ class TemplateDocumentSerializer(serializers.ModelSerializer):
     #     return None
     
     def get_document_url(self, obj):
-        request = self.context.get('request')
-        if obj.template_doc:
-            # Replace the host part with 'host.docker.internal'
-            document_url = request.build_absolute_uri(obj.template_doc.url)
-            # document_url = document_url.replace("127.0.0.1", "host.docker.internal")
-            # document_url = document_url.replace("43.204.122.158:8080", "host.docker.internal:8000")
-            return document_url
-        return None
+        request = self.context.get('request')  # Get request context for building absolute URL
+        if not request or not obj.generatefile:  # Ensure we have a stored filename
+            return None  
+
+    # Construct file path from stored filename
+        file_url = f"{settings.MEDIA_URL}generated_docs/{obj.generated_filename}"
+        full_file_url = f"{request.scheme}://{request.get_host()}{file_url}"
+
+    # Replace "127.0.0.1" with "host.docker.internal" for Docker compatibility
+        return full_file_url.replace("127.0.0.1", "host.docker.internal")
     
 
 

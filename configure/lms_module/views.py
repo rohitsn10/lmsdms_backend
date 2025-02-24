@@ -2089,22 +2089,28 @@ class InductionCreateViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            plant = request.data.get('plant')
             induction_name = request.data.get('induction_name')
-            trainings = request.data.get('trainings', [])
+            department = request.data.get('department')
+            document = request.FILES.get('document')
 
+            department_instance = Department.objects.filter(id=department).first()
+            if not department_instance:
+                return Response({'status': False,'message': 'Invalid department'})
 
             if not induction_name:
                 return Response({'status': False, 'message': 'Induction name is required'})
+            if not department:
+                return Response({'status': False,'message': 'Department is required'})
+            if not document:
+                return Response({'status': False,'message': 'Document is required'})
+            
 
             # Create Induction
             induction = Induction.objects.create(
-                plant_id=plant,
-                induction_name=induction_name
+                department=department_instance,
+                induction_name=induction_name,
+                document=document,
             )
-
-            if trainings:
-                induction.trainings.add(*trainings)
 
             serializer = InductionSerializer(induction, context={'request': request})
             return Response({"status": True, "message": "Induction created successfully", "data": serializer.data})
