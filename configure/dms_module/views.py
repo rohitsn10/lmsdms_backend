@@ -1079,8 +1079,9 @@ class DocumentExcelGenerateViewSet(viewsets.ModelViewSet):
 
             # Define the headers for the Excel file
             headers = [
-                'Document Title', 'Document Number', 'Document Type', 'Document Description', 
-                'Revision Date', 'Status','Assigned User FirstName','Assign User LastName','Created At', 'Effective Date', 'Version','Request User Groups'
+                'Document Title', 'Document Number', 'Document Type', 'Document Description', 'Parent Document No.',
+                'Revision Date', 'Status','Assigned User FirstName','Assign User LastName','Created At', 'Effective Date', 'Version','Request User Groups',
+                'Author Name', 'Approver Name','Doc Admin Name'
             ]
             # Add headers to the Excel sheet
             for col_num, header in enumerate(headers, 1):
@@ -1092,7 +1093,7 @@ class DocumentExcelGenerateViewSet(viewsets.ModelViewSet):
                 ws[f'A{row_num}'] = document.document_title
                 ws[f'B{row_num}'] = document.document_number
                 ws[f'C{row_num}'] = document.document_type.document_name if document.document_type else "-"
-                ws[f'D{row_num}'] = document.document_description
+                ws[f'D{row_num}'] = document.parent_document.id if document.parent_document else "-"
                 ws[f'E{row_num}'] = document.revision_date.strftime('%d-%m-%Y') if document.revision_date else "-"
                 ws[f'F{row_num}'] = document.document_current_status.status if document.document_current_status else "-"
                 ws[f'G{row_num}'] = document.assigned_to.first_name if document.assigned_to else "-"
@@ -1100,6 +1101,9 @@ class DocumentExcelGenerateViewSet(viewsets.ModelViewSet):
                 ws[f'I{row_num}'] = document.created_at.strftime('%d-%m-%Y')
                 ws[f'J{row_num}'] = document.effective_date.strftime('%d-%m-%Y') if document.effective_date else "-"
                 ws[f'K{row_num}'] = document.version
+                ws[f'M{row_num}'] = document.author.username if document.author else "-"
+                ws[f'O{row_num}'] = document.approver.username if document.approver else "-"
+                ws[f'P{row_num}'] = document.doc_admin.username if document.doc_admin else "-"
 
                 user_groups = document.user.groups.all()
                 group_names = ', '.join([group.name for group in user_groups]) if user_groups else '-'
@@ -1193,10 +1197,15 @@ class DocumentPDFGenerateViewSet(viewsets.ModelViewSet):
                 'document_type', 
                 'document_current_status', 
                 'select_template', 
-                'assigned_to'
+                'assigned_to',
+                'author',
+                'approver',
+                'doc_admin',
+                'parent_document',
             ).values(
                 'document_title', 
                 'document_number', 
+                'parent_document__id',
                 'document_type__document_name',  
                 'document_current_status__status',
                 'select_template__template_name',
@@ -1205,7 +1214,10 @@ class DocumentPDFGenerateViewSet(viewsets.ModelViewSet):
                 'version', 
                 'created_at', 
                 'revision_date', 
-                'effective_date'
+                'effective_date',
+                'author__username',
+                'approver__username',
+                'doc_admin__username',
             )
             max_lengths = {
             'document_title': max(len(doc['document_title'] or "") for doc in documents_data),
@@ -1214,7 +1226,12 @@ class DocumentPDFGenerateViewSet(viewsets.ModelViewSet):
             'assigned_to': max(len(f"{doc['assigned_to__first_name']} {doc['assigned_to__last_name']}" or "") for doc in documents_data),
             'version': max(len(doc['version'] or "") for doc in documents_data),
             'created_at': max(len(str(localtime(doc['created_at']))) for doc in documents_data),
-            
+            'revision_date': max(len(str(doc['revision_date'])) for doc in documents_data),
+            'effective_date': max(len(str(doc['effective_date'])) for doc in documents_data),
+            'author': max(len(doc['author__username'] or "") for doc in documents_data),
+            'approver': max(len(doc['approver__username'] or "") for doc in documents_data),
+            'doc_admin': max(len(doc['doc_admin__username'] or "") for doc in documents_data),
+            'parent_document__id': max(len(str(doc['parent_document__id'])) for doc in documents_data)
             }
 
             # Context for rendering HTML template
@@ -1431,9 +1448,13 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             output_path = os.path.join(output_dir, output_filename)
             doc.save(output_path)
 
+            document.generatefile = output_filename
+            document.save()
+
             file_url = f"{settings.MEDIA_URL}generated_docs/{output_filename}"
             full_file_url = f"{request.scheme}://{request.get_host()}{file_url}"
             
+
             return Response({
                 "status": True,
                 "message": "Template processed successfully",
