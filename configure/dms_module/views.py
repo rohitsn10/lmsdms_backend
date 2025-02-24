@@ -542,6 +542,8 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
         try:
             user = self.request.user
             parent_document = request.data.get('parent_document',None)
+            equipment_id = request.data.get('equipment_id','')
+            product_code = request.data.get('product_code','')
             document_title = request.data.get('document_title')
             document_type_id = request.data.get('document_type')
             document_description = request.data.get('document_description', '')
@@ -628,13 +630,15 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 document_number=document_number,
                 document_type_id=document_type.id,
                 document_description=document_description,
+                product_code=product_code,
+                equipment_id=equipment_id,
                 # revision_date=revision_date,
                 revision_month = revision_month,
                 document_operation=document_operation,
                 select_template_id=select_template,
                 workflow_id=workflow,
                 document_current_status=default_status,
-                version="1.0",
+                version="0.0",
                 # approver=approver_user,
                 # doc_admin=docadmin_user,
                 training_required=training_required,
@@ -697,6 +701,8 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
             workflow_id = request.data.get('workflow')
             training_required = request.data.get('training_required')
             select_template = request.FILES.get('select_template')
+            equipment_id = request.data.get('equipment_id','')
+            product_code = request.data.get('product_code','')
             # visible_to_users = request.data.get('visible_to_users', [])
             # approver = request.data.get('approver')
             # doc_admin = request.data.get('doc_admin')
@@ -775,6 +781,10 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
                 document.document_operation = document_operation
             if workflow != '':
                 document.workflow = workflow
+            if equipment_id != '':
+                document.equipment_id = equipment_id
+            if product_code != '':
+                document.product_code = product_code        
             if training_required != '':
                 if isinstance(training_required, str):
                     training_required = training_required.lower() in ['true',1]

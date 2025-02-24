@@ -84,6 +84,8 @@ class Document(models.Model):
     author = models.ForeignKey(CustomUser,related_name="author_documents",on_delete=models.SET_NULL,blank=True,null=True)
     job_roles = models.ManyToManyField('lms_module.JobRole', related_name='documents')
     generatefile = models.CharField(max_length=255,blank=True, null=True) 
+    equipment_id = models.CharField(max_length=255,blank=True, null=True)
+    product_code = models.CharField(max_length=255,blank=True, null=True)
 
 class UploadedDocument(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE)  
