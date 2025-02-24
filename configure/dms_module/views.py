@@ -4758,7 +4758,7 @@ class AddNewDocumentCommentsdataViewSet(viewsets.ModelViewSet):
             # Save the file with a unique name using uuid4
             document.front_file_url.save(f"{uuid4()}.docx", ContentFile(response.content))
             try:
-                document_data = Document.objects.get(id=document_id)
+                document_data = Document.objects.filter(id=document_id).first()
             except Document.DoesNotExist:
                 return Response({"status": False, "message": "Document not found", "data": []})
             
@@ -4780,7 +4780,7 @@ class AddNewDocumentCommentsdataViewSet(viewsets.ModelViewSet):
                 comment_data=comment_data,
                 version_no=version_no,
                 front_file_url=document.front_file_url.name,
-                department_id=department_data
+                department_id=department_data.id
             )
 
             # Serialize the created data

@@ -169,10 +169,15 @@ class DocumentviewSerializer(serializers.ModelSerializer):
     request_user_groups = serializers.SerializerMethodField()
     user_department_id = serializers.SerializerMethodField()
     user_department = serializers.SerializerMethodField()
+    front_file_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Document
-        fields = ['id', 'document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at','document_type','document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url','request_user_groups','user_department_id','user_department','workflow','document_description', 'effective_date', 'revision_date','product_code','equipment_id']
+        fields = ['id', 'document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at','document_type','document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url','request_user_groups','user_department_id','user_department','workflow','document_description', 'effective_date', 'revision_date','product_code','equipment_id', 'front_file_url']
+
+    def get_front_file_url(self, obj):
+        latest_comment = NewDocumentCommentsData.objects.filter(document=obj).order_by('-created_at').first()
+        return latest_comment.front_file_url.url if latest_comment and latest_comment.front_file_url else None
 
     def get_document_type_name(self, obj):
         return obj.document_type.document_name if obj.document_type else None
