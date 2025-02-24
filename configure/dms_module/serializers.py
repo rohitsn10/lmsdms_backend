@@ -117,6 +117,7 @@ class TemplateDocumentSerializer(serializers.ModelSerializer):
 
     # Replace "127.0.0.1" with "host.docker.internal" for Docker compatibility
         return full_file_url.replace("127.0.0.1", "host.docker.internal")
+        # return full_file_url.replace("43.204.122.158:8080", "host.docker.internal:8000")
     
 
 

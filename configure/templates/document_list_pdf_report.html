@@ -120,16 +120,10 @@
                     <tr>
                         <th style="width: {{ max_lengths.document_title|add:120 }}px;">Document Title</th>
                         <th style="width: {{ max_lengths.document_number|add:220 }}px;">Document Number</th>
-                        <th style="width: {{ max_lengths.parent_document__id|add:220 }}px;">Parent Document Number</th>
                         <th style="width: {{ max_lengths.document_type|add:100 }}px;">Document Type</th>
                         <th style="width: {{ max_lengths.assigned_to|add:120 }}px;">Assigned To</th>
                         <th style="width: {{ max_lengths.version|add:60 }}px;">Version</th>
                         <th style="width: {{ max_lengths.created_at|add:60 }}px;">Created At</th>
-                        <th style="width: {{ max_lengths.revision_date|add:60 }}px;">Revision Date</th>
-                        <th style="width: {{ max_lengths.effective_date|add:60 }}px;">Effective Date</th>
-                        <th style="width: {{ max_lengths.author|add:60 }}px;">Author</th>
-                        <th style="width: {{ max_lengths.approver|add:60 }}px;">Approver</th>
-                        <th style="width: {{ max_lengths.doc_admin|add:60 }}px;">Doc Admin</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -137,16 +131,10 @@
                     <tr>
                         <td>{{ document.document_title|default:"-" }}</td>
                         <td>{{ document.document_number|default:"-" }}</td>
-                        <td>{{ document.parent_document__id|default:"-" }}</td>
                         <td>{{ document.document_type__document_name|default:"-" }}</td>
                         <td>{{ document.assigned_to__first_name|default:"-" }} {{ document.assigned_to__last_name|default:"-" }}</td>
                         <td>{{ document.version|default:"-" }}</td>
                         <td>{{ document.created_at|date:"d-m-Y"|default:"-" }}</td>
-                        <td>{{ document.revision_date|date:"d-m-Y"|default:"-" }}</td>
-                        <td>{{ document.effective_date|date:"d-m-Y"|default:"-" }}</td>
-                        <td>{{ document.author__username|default:"-" }}</td>
-                        <td>{{ document.approver__username|default:"-" }}</td>
-                        <td>{{ document.doc_admin__username|default:"-" }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

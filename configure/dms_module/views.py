@@ -1198,10 +1198,6 @@ class DocumentPDFGenerateViewSet(viewsets.ModelViewSet):
                 'document_current_status', 
                 'select_template', 
                 'assigned_to',
-                'author',
-                'approver',
-                'doc_admin',
-                'parent_document',
             ).values(
                 'document_title', 
                 'document_number', 
@@ -1212,12 +1208,7 @@ class DocumentPDFGenerateViewSet(viewsets.ModelViewSet):
                 'assigned_to__first_name',
                 'assigned_to__last_name',
                 'version', 
-                'created_at', 
-                'revision_date', 
-                'effective_date',
-                'author__username',
-                'approver__username',
-                'doc_admin__username',
+                'created_at',
             )
             max_lengths = {
             'document_title': max(len(doc['document_title'] or "") for doc in documents_data),
@@ -1226,12 +1217,6 @@ class DocumentPDFGenerateViewSet(viewsets.ModelViewSet):
             'assigned_to': max(len(f"{doc['assigned_to__first_name']} {doc['assigned_to__last_name']}" or "") for doc in documents_data),
             'version': max(len(doc['version'] or "") for doc in documents_data),
             'created_at': max(len(str(localtime(doc['created_at']))) for doc in documents_data),
-            'revision_date': max(len(str(doc['revision_date'])) for doc in documents_data),
-            'effective_date': max(len(str(doc['effective_date'])) for doc in documents_data),
-            'author': max(len(doc['author__username'] or "") for doc in documents_data),
-            'approver': max(len(doc['approver__username'] or "") for doc in documents_data),
-            'doc_admin': max(len(doc['doc_admin__username'] or "") for doc in documents_data),
-            'parent_document__id': max(len(str(doc['parent_document__id'])) for doc in documents_data)
             }
 
             # Context for rendering HTML template
@@ -1402,46 +1387,23 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
                 "version": document.version,
                 "department": document.user.department.department_name if document.user.department else 'UnknownDepartment',
             }
-            print(f"Document Data: {replacements}")
 
             template_path = os.path.join(settings.MEDIA_ROOT, 'templates', f'template_{document_id}.docx')
             output_dir = os.path.join(settings.MEDIA_ROOT, 'generated_docs')
             os.makedirs(os.path.dirname(template_path), exist_ok=True)
             os.makedirs(output_dir, exist_ok=True)
 
-            print(f"Downloading template from: {template_url}")
             response = requests.get(template_url)
             if response.status_code != 200:
                 return Response({"status": False, "message": "Failed to download template from URL"})
 
             with open(template_path, 'wb') as f:
                 f.write(response.content)
-            print(f"Template successfully downloaded to {template_path}")
 
             doc = D(template_path)
 
-            print("\n===== DOCUMENT PARAGRAPHS BEFORE REPLACEMENT =====")
-            for para in doc.paragraphs:
-                print(f"PARA: {para.text}")
-
-            print("\n===== TABLE CONTENT BEFORE REPLACEMENT =====")
-            for table in doc.tables:
-                for row in table.rows:
-                    for cell in row.cells:
-                        print(f"TABLE CELL: {cell.text}")
-
             self.replace_text_in_paragraphs(doc.paragraphs, replacements)
             self.replace_text_in_tables(doc.tables, replacements)
-
-            print("\n===== DOCUMENT PARAGRAPHS AFTER REPLACEMENT =====")
-            for para in doc.paragraphs:
-                print(f"PARA: {para.text}")
-
-            print("\n===== TABLE CONTENT AFTER REPLACEMENT =====")
-            for table in doc.tables:
-                for row in table.rows:
-                    for cell in row.cells:
-                        print(f"TABLE CELL: {cell.text}")
 
             timestamp = int(time.time())
             output_filename = f"training_document_{timestamp}.docx"
@@ -4444,30 +4406,33 @@ from django.shortcuts import redirect
 
 def get_editor_config(request):
     # Get template_id from the request parameters
-    template_id = request.GET.get('template_id')  # You can also use request.POST or other ways to get the parameter
+    template_id = request.GET.get('template_id')
 
     if not template_id:
         return JsonResponse({"status": False, "message": "template_id parameter is required"})
 
     try:
-        # Fetch the template object by its ID
-        template = TemplateModel.objects.get(id=template_id)
+        # Fetch the latest document associated with the template_id
+        document = Document.objects.filter(select_template_id=template_id).order_by('-created_at').first()
 
-        # Serialize the template object to get the document URL
-        serializer = TemplateDocumentSerializer(template, context={'request': request})
-        document_url = serializer.data.get('document_url')
+        if not document:
+            return JsonResponse({"status": False, "message": "No document found for the selected template"})
 
-        if not document_url:
-            return JsonResponse({"status": False, "message": "Document URL not available for the selected template"})
+        # Get the document file URL
+        if not document.generatefile:
+            return JsonResponse({"status": False, "message": "Document file not available for the selected template"})
+        BASE_URL = "http://host.docker.internal:8000"
+        # Construct full document URL (assuming media files are served under MEDIA_URL)
+        document_url = f"{BASE_URL}{settings.MEDIA_URL}/generated_docs/{document.generatefile}"  # Ensure MEDIA_URL is properly configured
 
         # Generate the unique key for the document URL
         unique_key = hashlib.sha256(document_url.encode()).hexdigest()
-
+        print(document_url)
         # Document data
         document_data = {
             "fileType": "docx",  # Assuming the document is of type 'docx'
             "key": unique_key,
-            "title": template.template_name,  # Use the template name as the title
+            "title": document.document_title or "Untitled Document",  # Use the document title
             "url": document_url,  # Direct link to the document
         }
 
@@ -4476,21 +4441,21 @@ def get_editor_config(request):
             "document": document_data,
             "editorConfig": {
                 # Replace with your actual callback URL for the editor
-                # "callbackUrl": "http://host.docker.internal:8000/dms_module/onlyoffice_callback",
-                "callbackUrl": "http://43.204.122.158:8080/dms_module/onlyoffice_callback",
+                "callbackUrl": "http://host.docker.internal:8080/dms_module/onlyoffice_callback",
+                # "callbackUrl": "http://43.204.122.158:8080/dms_module/onlyoffice_callback",
                 "mode": "edit",
                 "user": {"id": "1", "name": "Rohit Sharma"},
             },
         }
-        
 
         # Secret for encoding the JWT token
         secret = "45540a6bfecc97ab6d06c436a74c333b1b54447c4de5fd41b8ad0b8361a395c6"
         token = jwt.encode(editor_config, secret, algorithm="HS256")
+
         return JsonResponse({"token": token, **editor_config})
 
-    except TemplateModel.DoesNotExist:
-        return JsonResponse({"status": False, "message": "Template not found"})
+    except Exception as e:
+        return JsonResponse({"status": False, "message": str(e)})
 @csrf_exempt
 def onlyoffice_callback(request):
     print(f"Received request: {request.method} {request.body}")
@@ -4850,7 +4815,7 @@ class DocumentEffectiveViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "document_id and effective_date are required", "data": []})
         
             try:
-                document_data = Document.objects.get(id=document_id)
+                document_data = Document.objects.filter(id=document_id).first()
             except Document.DoesNotExist:
                 return Response({"status": False, "message": "Document not found", "data": []})
             try:
@@ -4861,7 +4826,7 @@ class DocumentEffectiveViewSet(viewsets.ModelViewSet):
             created = Document.objects.create(
                 user=user,
                 id=document_data,
-                document_current_status=status_data
+                document_current_status=status_data.id
             )
             return Response({"status": True,"message": "Document effective date created successfully"})
         
