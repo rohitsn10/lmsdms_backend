@@ -1426,8 +1426,7 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             template_url = serializer.data.get('template_url')
             latest_comment = NewDocumentCommentsData.objects.filter(document=document).order_by('-created_at').first()
             front_file_url = latest_comment.front_file_url.url if latest_comment and latest_comment.front_file_url else None
-            if not front_file_url:
-                return Response({"status": False, "message": "Front file URL not found in latest comment."})
+           
             if not template_url:
                 return Response({"status": False, "message": "Template URL not found in document data."})
 
@@ -1470,7 +1469,7 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             return Response({
                 "status": True,
                 "message": "Template processed successfully",
-                "data": front_file_url
+                "data": front_file_url if front_file_url else template_url,
             })
 
         except Document.DoesNotExist:
@@ -4476,16 +4475,16 @@ def get_editor_config(request):
         document_url = f"{BASE_URL}{settings.MEDIA_URL}/generated_docs/{document.generatefile}"  # Ensure MEDIA_URL is properly configured
         latest_comment = NewDocumentCommentsData.objects.filter(document=document).order_by('-created_at').first()
         front_file_url_ = latest_comment.front_file_url.url if latest_comment and latest_comment.front_file_url else None
-        # Generate the unique key for the document URL
         front_file_url = f"{BASE_URL}{front_file_url_}"
+        print(front_file_url,"front_file_url")
         unique_key = hashlib.sha256(document_url.encode()).hexdigest()
-        print(document_url)
+        print(document_url, "document_url")
         # Document data
         document_data = {
             "fileType": "docx",  # Assuming the document is of type 'docx'
             "key": unique_key,
             "title": document.document_title or "Untitled Document",  # Use the document title
-            "url": front_file_url,  # Direct link to the document
+            "url": document_url if front_file_url == 'http://host.docker.internal:8000None' else front_file_url,  # Direct link to the document
         }
 
         # Editor configuration data
