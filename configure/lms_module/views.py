@@ -2276,7 +2276,7 @@ class InductionDesignationUpdateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})       
 
 
-
+import ipdb
 
 class ClassroomCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -2317,11 +2317,10 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
             trainer = Trainer.objects.filter(id=trainer_id).first()
             if not trainer:
                 return Response({'status': False, 'message': 'Invalid trainer selected.'})
-            
             document = None
+            users = CustomUser.objects.filter(id__in=select_users)
             if document_id is None:
                 
-                users = CustomUser.objects.filter(id__in=select_users)
                 if not users.exists():
                     return Response({'status': False, 'message': 'Invalid users selected.'})
             else:
