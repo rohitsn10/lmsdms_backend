@@ -120,5 +120,7 @@ urlpatterns = [
     path('training_completion_certificate/<int:user_id>', TrainingCompletionViewSet.as_view({'get': 'list'}), name='inductioncertificate'),
     path('training_attendance_sheet/<int:document_id>', TrainingAttendanceViewSet.as_view({'get': 'list'}), name='training_attendance_sheet'),
 
+    path('user_complete_view_document', UserCompleteViewDocumentView.as_view({'post': 'create'}), name='user_complete_view_document'),
+
     path('dashboard_document/<int:user_id>', DashboardDocumentViewSet.as_view({'get': 'list'}), name='dashboard_document'),
 ]

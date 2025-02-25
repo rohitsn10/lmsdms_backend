@@ -460,3 +460,8 @@ class AttemptedCorrectAnswer(models.Model):
     question_text = models.CharField(max_length=500, null=True, blank=True)
     user_answer = models.CharField(max_length=500, null=True, blank=True)
     correct_answer = models.CharField(max_length=500, null=True, blank=True)
+
+
+class UserCompleteViewDocument(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)

@@ -157,7 +157,8 @@ class CustomUserGroupSerializer(serializers.Serializer):
         group_name = obj['group_name']
         return f"{first_name}({group_name})"
 
-
+from lms_module.serializers import UserCompleteViewDocumentSerializer
+from lms_module.models import UserCompleteViewDocument
 class DocumentviewSerializer(serializers.ModelSerializer):
     document_type_name = serializers.SerializerMethodField()
     # formatted_created_at = serializers.SerializerMethodField()
@@ -170,11 +171,17 @@ class DocumentviewSerializer(serializers.ModelSerializer):
     user_department_id = serializers.SerializerMethodField()
     user_department = serializers.SerializerMethodField()
     front_file_url = serializers.SerializerMethodField()
+    user_view = serializers.SerializerMethodField()
 
     class Meta:
         model = Document
-        fields = ['id', 'document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at','document_type','document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url','request_user_groups','user_department_id','user_department','workflow','document_description', 'effective_date', 'revision_date','product_code','equipment_id', 'front_file_url']
+        fields = ['id', 'document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at','document_type','document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url','request_user_groups','user_department_id','user_department','workflow','document_description', 'effective_date', 'revision_date','product_code','equipment_id', 'front_file_url', 'user_view']
 
+    def get_user_view(self, obj):
+        user_views = UserCompleteViewDocument.objects.filter(document=obj)
+        
+        serializer = UserCompleteViewDocumentSerializer(user_views, many=True)
+        return serializer.data
     def get_front_file_url(self, obj):
         latest_comment = NewDocumentCommentsData.objects.filter(document=obj).order_by('-created_at').first()
         return latest_comment.front_file_url.url if latest_comment and latest_comment.front_file_url else None

@@ -4408,6 +4408,29 @@ class TrainingAttendanceViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": ""})
         
+class UserCompleteViewDocumentView(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset =UserCompleteViewDocument.objects.all()
+    serializer_class = UserCompleteViewDocumentSerializer
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user_id = request.data.get('user_id')
+            document_id = request.data.get('document_id')
+            if not user_id or not document_id:
+                return Response({"status": False, "message": "User ID and document ID are required."})
+            user = CustomUser.objects.get(id=user_id)
+            if not user:
+                return Response({"status": False, "message": "User not found."})
+            document = Document.objects.get(id=document_id)
+            if not document:
+                return Response({"status": False, "message": "Document not found."})
+            UserCompleteViewDocument.objects.create(user=user, document=document)
+            return Response({"status": True, "message": "User completed the document successfully."})
+        except Exception as e:
+            return Response({"status": False, "message": str(e)})
+
+
 from django.shortcuts import get_object_or_404
 class DashboardDocumentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
