@@ -18,6 +18,7 @@ urlpatterns = [
    path('update_delete_workflow/<int:workflow_id>',WorkFlowUpdateSet.as_view({'put': 'update','delete':'destroy'}),name='update_delete_workflow'),
 
    path('print_request', PrintRequestViewSet.as_view({'post': 'create'}), name='print_request'),
+   path('print_convert_pdf/<int:sop_document_id>', PrintRequestDocxConvertPDFViewSet.as_view({'put': 'update'}), name='print_convert_pdf'),
    path('get_print_request', PrintRequestViewSet.as_view({'get':'list'}), name='get_print_request'),
    path('print_approvals', PrintApprovalViewSet.as_view({'post': 'create'}), name='print_approvals'),
    path('update_print_request/<int:print_request_id>', PrintRequestUpdateViewSet.as_view({'put': 'update'}), name='update_print_request'),

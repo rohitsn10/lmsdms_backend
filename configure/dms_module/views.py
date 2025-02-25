@@ -255,6 +255,53 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
 
+from docx2pdf import convert
+class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = PrintRequest.objects.all().order_by('-created_at')
+    serializer_class = PrintRequestSerializer
+
+    def update(self, request, *args, **kwargs):
+        try:
+            sop_document_id = self.kwargs.get('sop_document_id')
+            sop_document_instance = PrintRequest.objects.get(sop_document_id=sop_document_id)
+            sop_document_file = sop_document_instance.sop_document_id
+            sop_document = sop_document_file.generatefile
+            print(sop_document, "sop_document")
+            # Ensure the document exists and is in the correct format (e.g., .docx)
+            if not sop_document.endswith('.docx'):
+                return Response({'status': False, 'message': 'Invalid document type. Only .docx files are supported.'})
+            
+            base_directory = settings.BASE_DIR / 'media' / 'generated_docs'
+            print(base_directory, "base_directory")
+            docx_file_path = os.path.join(base_directory, sop_document)
+            print(f"Document file path: {docx_file_path}")
+            if not os.path.exists(docx_file_path):
+                return Response({'status': False, 'message': f"Document file not found at {docx_file_path}."})
+            try:
+                # Log message before conversion attempt
+                print(f"Attempting to convert {docx_file_path} to PDF.")
+                pdf_output_path = docx_file_path.replace('.docx', '.pdf')
+                convert(docx_file_path)
+            except Exception as e:
+                # Log the exception here for debugging
+                print(f"Error during conversion: {str(e)}")
+                return Response({'status': False, 'message': 'Error during conversion.', 'error': str(e)})
+
+            with open(pdf_output_path, 'rb') as pdf_file:
+                pdf_output = BytesIO(pdf_file.read())
+
+            response = FileResponse(pdf_output, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename={os.path.basename(pdf_output_path)}'
+            return response
+        
+        except PrintRequest.DoesNotExist:
+            return Response({'status': False, 'message': 'Print request not found.'})
+        except Document.DoesNotExist:
+            return Response({'status': False, 'message': 'Document associated with the print request not found.'})
+        except Exception as e:
+            return Response({'status': False, 'message': 'An error occurred while processing the document.'})
+
 
 
 
@@ -1377,7 +1424,10 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             document = Document.objects.get(id=document_id)
             serializer = self.get_serializer(document, context={'request': request})
             template_url = serializer.data.get('template_url')
-
+            latest_comment = NewDocumentCommentsData.objects.filter(document=document).order_by('-created_at').first()
+            front_file_url = latest_comment.front_file_url.url if latest_comment and latest_comment.front_file_url else None
+            if not front_file_url:
+                return Response({"status": False, "message": "Front file URL not found in latest comment."})
             if not template_url:
                 return Response({"status": False, "message": "Template URL not found in document data."})
 
@@ -1420,7 +1470,7 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             return Response({
                 "status": True,
                 "message": "Template processed successfully",
-                "data": full_file_url
+                "data": front_file_url
             })
 
         except Document.DoesNotExist:
@@ -4414,7 +4464,7 @@ def get_editor_config(request):
     try:
         # Fetch the latest document associated with the template_id
         document = Document.objects.filter(select_template_id=template_id).order_by('-created_at').first()
-
+        print(document,"===========")
         if not document:
             return JsonResponse({"status": False, "message": "No document found for the selected template"})
 
@@ -4424,8 +4474,10 @@ def get_editor_config(request):
         BASE_URL = "http://host.docker.internal:8000"
         # Construct full document URL (assuming media files are served under MEDIA_URL)
         document_url = f"{BASE_URL}{settings.MEDIA_URL}/generated_docs/{document.generatefile}"  # Ensure MEDIA_URL is properly configured
-
+        latest_comment = NewDocumentCommentsData.objects.filter(document=document).order_by('-created_at').first()
+        front_file_url_ = latest_comment.front_file_url.url if latest_comment and latest_comment.front_file_url else None
         # Generate the unique key for the document URL
+        front_file_url = f"{BASE_URL}{front_file_url_}"
         unique_key = hashlib.sha256(document_url.encode()).hexdigest()
         print(document_url)
         # Document data
@@ -4433,7 +4485,7 @@ def get_editor_config(request):
             "fileType": "docx",  # Assuming the document is of type 'docx'
             "key": unique_key,
             "title": document.document_title or "Untitled Document",  # Use the document title
-            "url": document_url,  # Direct link to the document
+            "url": front_file_url,  # Direct link to the document
         }
 
         # Editor configuration data
