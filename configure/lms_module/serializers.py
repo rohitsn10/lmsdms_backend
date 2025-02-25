@@ -435,3 +435,9 @@ class AttemptedCorrectAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttemptedCorrectAnswer
         fields = ['id', 'attempted_quiz', 'question_id', 'question_text', 'user_answer', 'correct_answer']
+
+class UserCompleteViewDocumentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = UserCompleteViewDocument
+        fields = ['id', 'user', 'document']
