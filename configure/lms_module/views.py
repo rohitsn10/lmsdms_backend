@@ -2285,8 +2285,6 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             user = request.user
-            # if not user.groups.filter(name="DTC").exists():
-            #     return Response({"status": False, "message": "You do not have permission to create these documents."})
             classroom_name = request.data.get('classroom_name')
             document_id = request.data.get('document_id')
             is_assesment = request.data.get('is_assesment')
@@ -2296,46 +2294,57 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
             online_offline_status = request.data.get('online_offline_status')
             status = request.data.get('status')
             select_users = request.data.get('select_users', [])
+
+            # Validate required fields
             if not classroom_name:
-                return Response({'status': False,'message': 'Classroom name is required.'})
-            # if not document_id:
-            #     return Response({'status': False,'message': 'Document ID is required.'})
+                return Response({'status': False, 'message': 'Classroom name is required.'})
             if not is_assesment:
-                return Response({'status': False,'message': 'Is assessment is required.'})
+                return Response({'status': False, 'message': 'Is assessment is required.'})
             if not description:
-                return Response({'status': False,'message': 'Description is required.'})
+                return Response({'status': False, 'message': 'Description is required.'})
             if not trainer_id:
-                return Response({'status': False,'message': 'Trainer ID is required.'})
+                return Response({'status': False, 'message': 'Trainer ID is required.'})
             if not online_offline_status:
-                return Response({'status': False,'message': 'Online/offline status is required.'})
-            if online_offline_status == 'offline':
-                if not upload_doc:
-                    return Response({'status': False,'message': 'Please upload document for offline training.'})
+                return Response({'status': False, 'message': 'Online/offline status is required.'})
+            if online_offline_status == 'offline' and not upload_doc:
+                return Response({'status': False, 'message': 'Please upload document for offline training.'})
             if not select_users:
                 return Response({'status': False, 'message': 'Please select users for No document training.'})
-            print(select_users, 'Please select users for No document')
-            print(type(select_users), select_users, "Debugging select_users")
+
+            # Convert select_users if it's a string
             if isinstance(select_users, str):
                 try:
-                    select_users = json.loads(select_users)  # Convert from string to actual list
+                    select_users = json.loads(select_users)
                 except json.JSONDecodeError:
                     return Response({'status': False, 'message': 'Invalid format for select_users. Expected a list of user IDs.'})
+
+            # Validate trainer
             trainer = Trainer.objects.filter(id=trainer_id).first()
             if not trainer:
                 return Response({'status': False, 'message': 'Invalid trainer selected.'})
-            document = None
-            users = CustomUser.objects.filter(id__in=select_users)
-            print(users, 'Please selectdddd users for No document')
-            if document_id is None:
-                
-                if not users.exists():
-                    return Response({'status': False, 'message': 'Invalid users selected.'})
+
+            # Handle document_id correctly
+            if document_id in [None, "", "None"]:
+                document_id = None
             else:
+                try:
+                    document_id = int(document_id)
+                except ValueError:
+                    return Response({'status': False, 'message': 'Invalid document ID format. Expected an integer or None.'})
+
+            # Fetch document if document_id is provided
+            document = None
+            if document_id is not None:
                 document = Document.objects.filter(id=document_id).first()
                 if not document:
                     return Response({'status': False, 'message': 'Invalid document selected.'})
-            
-            
+
+            # Fetch users
+            users = CustomUser.objects.filter(id__in=select_users)
+            if document_id is None and not users.exists():
+                return Response({'status': False, 'message': 'Invalid users selected.'})
+
+            # Create ClassroomTraining instance
             classroom_training = ClassroomTraining.objects.create(
                 classroom_name=classroom_name,
                 is_assesment=is_assesment,
@@ -2344,34 +2353,21 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
                 trainer=trainer,
                 document=document,
                 online_offline_status=online_offline_status,
-                
-                
             )
+
+            # Assign users to classroom
             if select_users:
                 classroom_training.user.set(users)
 
+            # Save uploaded documents
             for file in upload_doc:
                 ClassroomTrainingFile.objects.create(classroom_training=classroom_training, upload_doc=file)
 
-
             serializer = ClassroomTrainingSerializer(classroom_training, context={'request': request})
-            return Response({"status": True,"message": "Classroom training created successfully","data": serializer.data})
+            return Response({"status": True, "message": "Classroom training created successfully", "data": serializer.data})
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
-        
-    def list(self, request):
-        queryset = ClassroomTraining.objects.all().order_by('-id')
-        
-        try:
-            if queryset.exists():
-                serializer = ClassroomTrainingSerializer(queryset, many=True)
-                return Response({"status": True,"message": "Classroom training fetched successfully","data": serializer.data})
-            else:
-                return Response({"status": True,"message": "No classroom training found","data": []})
-            
-        except Exception as e:
-            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
         
 class ClassroomUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -3441,23 +3437,29 @@ class UserIdWiseNoOfAttemptsViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'status': False,'message': 'Something went wrong', 'error': str(e)})
         
+from user_profile.serializers import *
 class ClassRoomWiseSelectedUserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'classroom_id'
-    
+
     def list(self, request, *args, **kwargs):
         try:
             classroom_id = kwargs.get('classroom_id')
+
+            # Fetch classroom instance
             classroom = ClassroomTraining.objects.get(id=classroom_id)
-            users = ClassroomTraining.objects.filter(user__in=users)
-            return Response({'status': True, 'message': 'Selected users fetched successfully', 'data': users.data})
+
+            # Get users associated with the classroom
+            users = classroom.user.all()  # Assuming a ManyToMany relationship with users
+
+            # Serialize users
+            serialized_users = CustomUserSerializer(users, many=True).data
+
+            return Response({'status': True, 'message': 'Selected users fetched successfully', 'data': serialized_users})
         except ClassroomTraining.DoesNotExist:
-            return Response({
-                'status': False,
-                'message': 'Classroom not found'
-            })
+            return Response({'status': False, 'message': 'Classroom not found'})
         except Exception as e:
-            return Response({'status': False,'message': 'Something went wrong', 'error': str(e)})
+            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
 
 class FailedUserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
