@@ -256,6 +256,7 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": str(e), "data": []})
 
 from docx2pdf import convert
+
 class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = PrintRequest.objects.all().order_by('-created_at')
@@ -267,40 +268,39 @@ class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
             sop_document_instance = PrintRequest.objects.get(sop_document_id=sop_document_id)
             sop_document_file = sop_document_instance.sop_document_id
             sop_document = sop_document_file.generatefile
-            print(sop_document, "sop_document")
-            # Ensure the document exists and is in the correct format (e.g., .docx)
+            
             if not sop_document.endswith('.docx'):
                 return Response({'status': False, 'message': 'Invalid document type. Only .docx files are supported.'})
-            
-            base_directory = settings.BASE_DIR / 'media' / 'generated_docs'
-            print(base_directory, "base_directory")
+
+            base_directory = os.path.join(settings.MEDIA_ROOT, 'generated_docs')
             docx_file_path = os.path.join(base_directory, sop_document)
-            print(f"Document file path: {docx_file_path}")
+
             if not os.path.exists(docx_file_path):
                 return Response({'status': False, 'message': f"Document file not found at {docx_file_path}."})
+
             try:
-                # Log message before conversion attempt
-                print(f"Attempting to convert {docx_file_path} to PDF.")
                 pdf_output_path = docx_file_path.replace('.docx', '.pdf')
-                convert(docx_file_path)
+                convert(docx_file_path)  # Convert docx to pdf
+
+                # Ensure the PDF file is saved in the media directory
+                pdf_relative_path = os.path.relpath(pdf_output_path, settings.MEDIA_ROOT)
+                pdf_url = f"{settings.MEDIA_URL}{pdf_relative_path}"
+
             except Exception as e:
-                # Log the exception here for debugging
-                print(f"Error during conversion: {str(e)}")
                 return Response({'status': False, 'message': 'Error during conversion.', 'error': str(e)})
 
-            with open(pdf_output_path, 'rb') as pdf_file:
-                pdf_output = BytesIO(pdf_file.read())
+            # Return the downloadable link
+            return Response({
+                'status': True,
+                'message': 'Document successfully converted to PDF.',
+                'pdf_link': request.build_absolute_uri(pdf_url)  # Generate absolute URL
+            })
 
-            response = FileResponse(pdf_output, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename={os.path.basename(pdf_output_path)}'
-            return response
-        
         except PrintRequest.DoesNotExist:
             return Response({'status': False, 'message': 'Print request not found.'})
-        except Document.DoesNotExist:
-            return Response({'status': False, 'message': 'Document associated with the print request not found.'})
         except Exception as e:
-            return Response({'status': False, 'message': 'An error occurred while processing the document.'})
+            return Response({'status': False, 'message': 'An error occurred while processing the document.', 'error': str(e)})
+
 
 
 
