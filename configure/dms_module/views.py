@@ -1424,7 +1424,7 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             document = Document.objects.get(id=document_id)
             serializer = self.get_serializer(document, context={'request': request})
             template_url = serializer.data.get('template_url')
-            latest_comment = NewDocumentCommentsData.objects.filter(document=document).order_by('-created_at').first()
+            latest_comment = NewDocumentCommentsData.objects.filter(document=document).first()
             front_file_url = latest_comment.front_file_url.url if latest_comment and latest_comment.front_file_url else None
            
             if not template_url:
@@ -4455,12 +4455,17 @@ from django.shortcuts import redirect
 
 def get_editor_config(request):
     # Get template_id from the request parameters
+    document_id = request.GET.get('document_id')
     template_id = request.GET.get('template_id')
 
+    if not document_id:
+        return JsonResponse({"status": False, "message": "document_id parameter is required"})
     if not template_id:
         return JsonResponse({"status": False, "message": "template_id parameter is required"})
 
     try:
+        doc = Document.objects.filter(id=document_id).first()
+
         # Fetch the latest document associated with the template_id
         document = Document.objects.filter(select_template_id=template_id).order_by('-created_at').first()
         print(document,"===========")
@@ -4473,12 +4478,15 @@ def get_editor_config(request):
         BASE_URL = "http://host.docker.internal:8000"
         # Construct full document URL (assuming media files are served under MEDIA_URL)
         document_url = f"{BASE_URL}{settings.MEDIA_URL}/generated_docs/{document.generatefile}"  # Ensure MEDIA_URL is properly configured
-        latest_comment = NewDocumentCommentsData.objects.filter(document=document).order_by('-created_at').first()
+        latest_comment = NewDocumentCommentsData.objects.filter(document=doc).first()
         front_file_url_ = latest_comment.front_file_url.url if latest_comment and latest_comment.front_file_url else None
         front_file_url = f"{BASE_URL}{front_file_url_}"
-        print(front_file_url,"front_file_url")
-        unique_key = hashlib.sha256(document_url.encode()).hexdigest()
-        print(document_url, "document_url")
+        print("front_file_url",front_file_url)
+        if front_file_url == 'http://host.docker.internal:8000None':
+            unique_key = hashlib.sha256(document_url.encode()).hexdigest()
+        else:
+            unique_key = hashlib.sha256(front_file_url.encode()).hexdigest()
+        print( "document_url",document_url)
         # Document data
         document_data = {
             "fileType": "docx",  # Assuming the document is of type 'docx'

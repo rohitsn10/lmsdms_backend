@@ -2313,12 +2313,19 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
                     return Response({'status': False,'message': 'Please upload document for offline training.'})
             if not select_users:
                 return Response({'status': False, 'message': 'Please select users for No document training.'})
-            
+            print(select_users, 'Please select users for No document')
+            print(type(select_users), select_users, "Debugging select_users")
+            if isinstance(select_users, str):
+                try:
+                    select_users = json.loads(select_users)  # Convert from string to actual list
+                except json.JSONDecodeError:
+                    return Response({'status': False, 'message': 'Invalid format for select_users. Expected a list of user IDs.'})
             trainer = Trainer.objects.filter(id=trainer_id).first()
             if not trainer:
                 return Response({'status': False, 'message': 'Invalid trainer selected.'})
             document = None
             users = CustomUser.objects.filter(id__in=select_users)
+            print(users, 'Please selectdddd users for No document')
             if document_id is None:
                 
                 if not users.exists():
