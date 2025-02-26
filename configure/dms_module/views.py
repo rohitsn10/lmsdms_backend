@@ -4478,10 +4478,9 @@ def get_editor_config(request):
         BASE_URL = "http://host.docker.internal:8000"
         # Construct full document URL (assuming media files are served under MEDIA_URL)
         document_url = f"{BASE_URL}{settings.MEDIA_URL}/generated_docs/{document.generatefile}"  # Ensure MEDIA_URL is properly configured
-        latest_comment = NewDocumentCommentsData.objects.filter(document=doc).first()
+        latest_comment = NewDocumentCommentsData.objects.filter(document=doc).order_by("-created_at").first()
         front_file_url_ = latest_comment.front_file_url.url if latest_comment and latest_comment.front_file_url else None
         front_file_url = f"{BASE_URL}{front_file_url_}"
-        print("front_file_url",front_file_url)
         if front_file_url == 'http://host.docker.internal:8000None':
             unique_key = hashlib.sha256(document_url.encode()).hexdigest()
         else:
