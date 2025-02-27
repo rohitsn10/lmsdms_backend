@@ -3951,8 +3951,51 @@ class ClassroomQuizViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
         
 
+class ClassroomQuizUpdateViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = ClassroomQuiz.objects.all()
+    serializer_class = ClassroomQuizSerializer
+    lookup_field = 'quiz_id'
+
+    def update(self, request, *args, **kwargs):
+        try:
+            quiz_id = kwargs.get('quiz_id')
+            quiz = ClassroomQuiz.objects.get(id=quiz_id)
+
+            # Extracting data from the request
+            quiz_name = request.data.get('name', quiz.quiz_name)
+            pass_criteria = request.data.get('pass_criteria', quiz.pass_criteria)
+            quiz_time = request.data.get('quiz_time', quiz.quiz_time)
+            total_marks = request.data.get('total_marks', quiz.total_marks)
+            # Validate required fields
+            if not all([quiz_name, pass_criteria, quiz_time, total_marks]):
+                return Response({"status": False, "message": "Missing required fields", "data": []})
+            
+            # Validate pass criteria
+            pass_criteria = int(pass_criteria) if pass_criteria else 0
+            if pass_criteria > total_marks:
+                return Response({"status": False, "message": "Pass criteria cannot be greater than total marks", "data": []})
+            
+
+            # Create the new quiz
+            quiz.quiz_name = quiz_name
+            quiz.pass_criteria = pass_criteria
+            quiz.quiz_time = quiz_time
+            quiz.total_marks = total_marks
+            quiz.save()
+            
+            serializer = ClassroomQuestionSerializer(quiz, context={'request': request})
+            return Response({"status": True, "message": "Quiz updated successfully", "data": serializer.data})
+        except ClassroomQuiz.DoesNotExist:
+            return Response({"status": False, "message": "Quiz not found"})
+        except IntegrityError as e:
+            return Response({"status": False, "message": "Database Integrity Error", "error": str(e), "data": []})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+
 
 class ClassroomExamViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
     queryset = ClassroomQuizSession.objects.all()
     serializer_class = ClassroomQuizSessionSerializer
 
