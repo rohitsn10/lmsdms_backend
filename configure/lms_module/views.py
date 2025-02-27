@@ -1924,7 +1924,7 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Quiz is not active", "data": []})
 
             # training_id = request.data.get('training_id', quiz.training.id)
-            document_id = request.data.get('document_id', quiz.document.id)
+            # document_id = request.data.get('document_id', quiz.document.id)
             quiz_name = request.data.get('name', quiz.quiz_name)
             pass_criteria = request.data.get('pass_criteria', quiz.pass_criteria)
             quiz_time = request.data.get('quiz_time', quiz.quiz_time)
@@ -1934,19 +1934,19 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
             selected_questions = request.data.get('selected_questions', [])
             status = request.data.get('status',quiz.status)
 
-            if not all([document_id, quiz_name, pass_criteria, quiz_time, quiz_type, total_marks]):
+            if not all([quiz_name, pass_criteria, quiz_time, quiz_type, total_marks]):
                 return Response({"status": False, "message": "Missing required fields", "data": []})
 
-            try:
+            # try:
                 # training = TrainingCreate.objects.get(id=training_id)
-                document = Document.objects.get(id=document_id)
+                # document = Document.objects.get(id=document_id)
             # except TrainingCreate.DoesNotExist:
             #     return Response({"status": False, "message": "Training not found", "data": []})
-            except Document.DoesNotExist:
-                return Response({"status": False, "message": "Document not found", "data": []})
+            # except Document.DoesNotExist:
+            #     return Response({"status": False, "message": "Document not found", "data": []})
 
             # quiz.training = training
-            quiz.document = document
+            # quiz.document = document
             quiz.quiz_name = quiz_name
             quiz.pass_criteria = pass_criteria
             quiz.quiz_time = quiz_time
@@ -1978,7 +1978,7 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
 
                         questions = TrainingQuestions.objects.filter(
                             # training=training,  
-                            document=document,  
+                            # document=document,  
                             marks=marks,       
                             status=True         
                         )
@@ -2012,7 +2012,7 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
                     questions = TrainingQuestions.objects.filter(
                         id__in=selected_questions,  
                         # training=training,  
-                        document=document,  
+                        # document=document,  
                         status=True
                     )
 
@@ -2718,6 +2718,7 @@ class AttendanceCreateViewSet(viewsets.ModelViewSet):
             
             for user in users:
                 attendance, created = Attendance.objects.get_or_create(user=user, session=session)
+                quiz_attempts, created = QuizSession.objects.get_or_create(user=user, quiz=quiz)
                 attendance.status = status
                 attendance.save()
 
@@ -4189,12 +4190,13 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                     user.save()
                     return Response({"status": True, "message": "Quiz started successfully, new session created due to document version change"})
             
+            attempts_count_instance = QuizSession.objects.get_or_create(user=user, quiz=quiz, defaults={"attempts": 0})
             attempts_count = QuizSession.objects.filter(user=user, quiz=quiz).first()
 
-            if attempts_count.attempts >= 3:
+            if attempts_count and attempts_count.attempts >= 3:
                 session = Session.objects.filter(user_ids=user).first()
                 if not session:
-                    return Response({"status": False,"message": "No session found for this quiz."})
+                    return Response({"status": False,"message": "Please attend the classroom session before attempting the quiz."})
                 # Ensure the session is completed before allowing new attempt
                 session_complete = SessionComplete.objects.filter(session=session, user=user, is_completed=True).first()
                 if not session_complete:
