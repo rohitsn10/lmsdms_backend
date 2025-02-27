@@ -3967,7 +3967,7 @@ class ClassroomQuizUpdateViewSet(viewsets.ModelViewSet):
             pass_criteria = request.data.get('pass_criteria', quiz.pass_criteria)
             quiz_time = request.data.get('quiz_time', quiz.quiz_time)
             total_marks = request.data.get('total_marks', quiz.total_marks)
-            selected_questions = request.data.get('selected_questions', quiz.selected_questions)  # For manual quizzes only
+            selected_questions = request.data.get('selected_questions')  # For manual quizzes only
             # Validate required fields
             if not all([quiz_name, pass_criteria, quiz_time, total_marks]):
                 return Response({"status": False, "message": "Missing required fields", "data": []})
