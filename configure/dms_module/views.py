@@ -2176,6 +2176,33 @@ class DocumentDocAdminActionCreateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
+class DocumentIdwiseAuthorReviewerApproverDocAdminViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Document.objects.all()
+    
+    def list(self, request,*args, **kwargs):
+        try:
+            document_id = self.kwargs.get('document_id')
+            if not document_id:
+                return Response({"status": False, "message": "Document ID is required"})
+            try:
+                document_instance = Document.objects.get(id=document_id)
+                author = document_instance.author
+                reviewer = document_instance.visible_to_users
+                doc_admin = document_instance.doc_admin
+                approver = document_instance.approver
+                data = {
+                    "author": author.username,
+                    "reviewer": reviewer.values_list('username', flat=True),
+                    "doc_admin": doc_admin.username,
+                    "approver": approver.username
+                }
+                return Response({"status": True, "message": "Document ID wise author, reviewer, doc admin, approver fetched successfully", "data": data})
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Invalid Document ID", "data": []})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+            
 
 class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
