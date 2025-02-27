@@ -3967,6 +3967,7 @@ class ClassroomQuizUpdateViewSet(viewsets.ModelViewSet):
             pass_criteria = request.data.get('pass_criteria', quiz.pass_criteria)
             quiz_time = request.data.get('quiz_time', quiz.quiz_time)
             total_marks = request.data.get('total_marks', quiz.total_marks)
+            selected_questions = request.data.get('selected_questions', quiz.selected_questions)  # For manual quizzes only
             # Validate required fields
             if not all([quiz_name, pass_criteria, quiz_time, total_marks]):
                 return Response({"status": False, "message": "Missing required fields", "data": []})
@@ -3976,12 +3977,57 @@ class ClassroomQuizUpdateViewSet(viewsets.ModelViewSet):
             if pass_criteria > total_marks:
                 return Response({"status": False, "message": "Pass criteria cannot be greater than total marks", "data": []})
             
+            # Handle manual-type quizzes
+            if not selected_questions or not isinstance(selected_questions, list):
+                return Response({
+                    "status": False,
+                    "message": "You must provide a list of selected questions for manual quiz creation.",
+                    "data": []
+                })
+            if isinstance(selected_questions, str) and selected_questions.strip() == "":
+                selected_questions = []  # Handle the case where it's an empty string
+            if not isinstance(selected_questions, list):
+                return Response({
+                    "status": False,
+                    "message": "selected_questions must be a list.",
+                    "data": []
+                })
+            # Validate that each item in selected_questions is an integer (question ID)
+            if any(not isinstance(q, int) for q in selected_questions):
+                return Response({
+                    "status": False,
+                    "message": "Each element in selected_questions must be an integer (question ID).",
+                    "data": []
+                })
+            # Remove all existing QuizQuestion objects
+            quiz.questions.all().delete()
+            # Create QuizQuestion for each selected question
+            total_marks_accumulated = 0
+            for question in ClassroomQuestion.objects.filter(id__in=selected_questions, classroom=quiz.classroom, status=True):
+                if total_marks_accumulated + question.marks > total_marks:
+                    return Response({
+                        "status": False,
+                        "message": f"Adding this question would exceed the total marks. Current total: {total_marks_accumulated}, question marks: {question.marks}",
+                        "data": []
+                    })
+                ClassroomquizQuestion.objects.create(quiz=quiz, question=question, marks=question.marks)
+                total_marks_accumulated += question.marks
+            # Check for total marks mismatch
+            if total_marks_accumulated != total_marks:
+                return Response({
+                    "status": False,
+                    "message": f"Total marks mismatch. The accumulated marks are {total_marks_accumulated}, but the input total_marks was {total_marks}. Please adjust.",
+                    "data": []
+                })
+            # Save the quiz with final total marks and total questions
 
             # Create the new quiz
             quiz.quiz_name = quiz_name
             quiz.pass_criteria = pass_criteria
             quiz.quiz_time = quiz_time
-            quiz.total_marks = total_marks
+            # Update the total_questions and total_marks fields
+            quiz.total_questions = len(selected_questions)
+            quiz.total_marks = total_marks_accumulated  # Update total marks to the accumulated marks of selected questions
             quiz.save()
             
             serializer = ClassroomQuestionSerializer(quiz, context={'request': request})
