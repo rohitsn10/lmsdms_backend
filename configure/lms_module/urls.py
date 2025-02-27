@@ -86,6 +86,7 @@ urlpatterns = [
 
     path('classroom_questions', ClassroomQuestionViewSet.as_view({'post': 'create', 'get': 'list'}), name='classroom_questions'),
     path('classroom_quiz', ClassroomQuizViewSet.as_view({'post': 'create', 'get': 'list'}), name='classroom_quiz'),
+    path('classroom_quiz_update/<int:quiz_id>', ClassroomQuizUpdateViewSet.as_view({'put': 'update'}), name='classroom_quiz_update'),
     path('classroom_exam', ClassroomExamViewSet.as_view({'post': 'create'}), name='classroom_exam'),
     path('classroom_get_next_question', ClassroomGetNextQuestionViewSet.as_view({'get': 'list'}), name='classroom_get_next_question'),
     path('classroom_get_next_question_update', ClassroomUpdateGetNextQuestionViewSet.as_view({'put': 'update'}), name='classroom_get_next_question_update'),

@@ -368,6 +368,7 @@ class ClassroomQuiz(models.Model):
         ('manual', 'Manual'),
     )
     classroom = models.ForeignKey(ClassroomTraining, on_delete=models.CASCADE, null=True, blank=True)
+    question = models.ForeignKey(ClassroomQuestion, on_delete=models.CASCADE, null=True, blank=True)
     quiz_name = models.CharField(max_length=255)
     pass_criteria = models.DecimalField(max_digits=5, decimal_places=2)  # For example, pass if >= 50%
     quiz_time = models.PositiveIntegerField(null=True, blank=True)  # Time in minutes
