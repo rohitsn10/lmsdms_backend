@@ -1986,8 +1986,9 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
                         if len(questions) < count:
                             return Response({"status": False, "message": f"Not enough questions with {marks} marks. Found {len(questions)} questions.", "data": []})
 
-                        # Select random questions based on count
-                        selected_questions = random.sample(questions, count)
+                        questions_list = list(questions)
+                        print(questions_list, "jjj")
+                        selected_questions = random.sample(questions_list, count)
 
                         potential_marks = total_marks_accumulated + (marks * count)
                         if potential_marks > total_marks:
@@ -2044,12 +2045,6 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
                         if quiz_question.question.id not in selected_questions:
                             quiz_question.delete()
 
-            if total_marks_accumulated != total_marks:
-                return Response({
-                    "status": False,
-                    "message": f"Total marks mismatch. The accumulated marks are {total_marks_accumulated}, but the input total_marks was {total_marks}. Please adjust.",
-                    "data": []
-                })
 
             quiz.total_marks = total_marks_accumulated
             quiz.total_questions = total_questions
