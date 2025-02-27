@@ -2369,6 +2369,19 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
+    def list(self, request):
+        queryset = ClassroomTraining.objects.all().order_by('-id')
+        
+        try:
+            if queryset.exists():
+                serializer = ClassroomTrainingSerializer(queryset, many=True)
+                return Response({"status": True,"message": "Classroom training fetched successfully","data": serializer.data})
+            else:
+                return Response({"status": True,"message": "No classroom training found","data": []})
+            
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
+        
 class ClassroomUpdateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ClassroomTrainingSerializer
@@ -2985,12 +2998,12 @@ class TrainingAssignViewSet(viewsets.ModelViewSet):
             job_assign_instance, created = JobAssign.objects.get_or_create(user=user_instance)
             
             job_role_ids = request.data.get('job_role_ids', [])
-            remove_job_role_ids = request.data.get('remove_job_role_ids', [])
+            # remove_job_role_ids = request.data.get('remove_job_role_ids', [])
             if not isinstance(job_role_ids, list):
                 return Response({"status": False, "message": "Job role IDs should be a list"})
 
             valid_job_roles = JobRole.objects.filter(id__in=job_role_ids)
-            remove_job_role_ids = JobRole.objects.filter(id__in=remove_job_role_ids)
+            # remove_job_role_ids = JobRole.objects.filter(id__in=remove_job_role_ids)
 
             if len(valid_job_roles) != len(job_role_ids):
                 return Response({
@@ -2998,8 +3011,9 @@ class TrainingAssignViewSet(viewsets.ModelViewSet):
                     "message": "Some Job Role IDs are invalid"
                 })
 
+            job_assign_instance.job_roles.clear()
             job_assign_instance.job_roles.add(*valid_job_roles)
-            job_assign_instance.job_roles.remove(*remove_job_role_ids)
+            # job_assign_instance.job_roles.remove(*remove_job_role_ids)
             user_instance.is_jr_assign = True
             user_instance.save()
             job_assign_instance.save()
