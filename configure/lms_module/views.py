@@ -4214,6 +4214,14 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                 total_taken_time=total_taken_time,
                 is_pass=is_pass,
             )
+            if is_pass:
+                quiz_session = QuizSession.objects.get(user=user, quiz=quiz)
+                quiz_session.status = 'passed'
+                quiz_session.save()
+            if obtain_marks:
+                quiz_session = QuizSession.objects.get(user=user, quiz=quiz)
+                quiz_session.score = obtain_marks
+                quiz_session.save()
             attempts_count = AttemptedQuiz.objects.filter(user=user, quiz=quiz).count()
             quiz_session, created = QuizSession.objects.get_or_create(
                 user=user,
@@ -4223,7 +4231,7 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                     "document_version": assigned_document_version,
                 }
             )
-            if not created:
+            if not created and not is_pass:
                 quiz_session.attempts += 1
                 quiz_session.document_version = assigned_document_version
                 quiz_session.save()
