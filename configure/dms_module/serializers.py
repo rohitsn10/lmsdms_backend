@@ -158,7 +158,7 @@ class CustomUserGroupSerializer(serializers.Serializer):
         return f"{first_name}({group_name})"
 
 from lms_module.serializers import UserCompleteViewDocumentSerializer
-from lms_module.models import UserCompleteViewDocument
+from lms_module.models import *
 class DocumentviewSerializer(serializers.ModelSerializer):
     document_type_name = serializers.SerializerMethodField()
     # formatted_created_at = serializers.SerializerMethodField()
@@ -172,11 +172,13 @@ class DocumentviewSerializer(serializers.ModelSerializer):
     user_department = serializers.SerializerMethodField()
     front_file_url = serializers.SerializerMethodField()
     user_view = serializers.SerializerMethodField()
-
+    training_quiz_ids = serializers.SerializerMethodField()
     class Meta:
         model = Document
-        fields = ['id', 'document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at','document_type','document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url','request_user_groups','user_department_id','user_department','workflow','document_description', 'effective_date', 'revision_date','product_code','equipment_id', 'front_file_url', 'user_view']
+        fields = ['id', 'document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at','document_type','document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url','request_user_groups','user_department_id','user_department','workflow','document_description', 'effective_date', 'revision_date','product_code','equipment_id', 'front_file_url', 'user_view', 'training_quiz_ids']
 
+    def get_training_quiz_ids(self, obj):
+        return list(TrainingQuiz.objects.filter(document=obj).values_list('id', flat=True))
     def get_user_view(self, obj):
         user_views = UserCompleteViewDocument.objects.filter(document=obj)
         

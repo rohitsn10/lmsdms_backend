@@ -340,9 +340,10 @@ class TrainingSerializer(serializers.ModelSerializer):
 class QuizSessionSerializer(serializers.ModelSerializer):
     user_first_name = serializers.CharField(source='user.first_name', read_only=True)
     user_last_name = serializers.CharField(source='user.last_name', read_only=True)
+    training = serializers.CharField(source='training.id', read_only=True)
     class Meta:
         model = QuizSession
-        fields = ['id', 'user', 'user_first_name', 'user_last_name', 'quiz', 'current_question_index', 'started_at', 'completed_at', 'score', 'status']
+        fields = ['id','training', 'user', 'user_first_name', 'user_last_name', 'quiz', 'current_question_index', 'started_at', 'completed_at', 'score', 'status']
 
 class TrainingQuestionSerializer(serializers.ModelSerializer):
     class Meta:

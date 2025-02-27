@@ -322,7 +322,7 @@ class QuizSession(models.Model):
         ('passed', 'Passed'),
         ('failed', 'Failed'),
     )
-
+    training = models.ForeignKey(TrainingCreate, on_delete=models.CASCADE, null=True, blank=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     quiz = models.ForeignKey(TrainingQuiz, on_delete=models.CASCADE)
     current_question_index = models.IntegerField(default=0)
