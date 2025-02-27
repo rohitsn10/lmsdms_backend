@@ -2080,7 +2080,7 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
 from rest_framework.parsers import MultiPartParser
-from comtypes.client import CreateObject  # Windows-only alternative
+# from comtypes.client import CreateObject  # Windows-only alternative
          
 class InductionCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -3974,7 +3974,7 @@ class ClassroomQuizUpdateViewSet(viewsets.ModelViewSet):
             
             # Validate pass criteria
             pass_criteria = int(pass_criteria) if pass_criteria else 0
-            if pass_criteria > total_marks:
+            if pass_criteria > int(total_marks):
                 return Response({"status": False, "message": "Pass criteria cannot be greater than total marks", "data": []})
             
             # Handle manual-type quizzes
@@ -4004,7 +4004,7 @@ class ClassroomQuizUpdateViewSet(viewsets.ModelViewSet):
             # Create QuizQuestion for each selected question
             total_marks_accumulated = 0
             for question in ClassroomQuestion.objects.filter(id__in=selected_questions, classroom=quiz.classroom, status=True):
-                if total_marks_accumulated + question.marks > total_marks:
+                if total_marks_accumulated + question.marks > int(total_marks):
                     return Response({
                         "status": False,
                         "message": f"Adding this question would exceed the total marks. Current total: {total_marks_accumulated}, question marks: {question.marks}",
@@ -4012,13 +4012,6 @@ class ClassroomQuizUpdateViewSet(viewsets.ModelViewSet):
                     })
                 ClassroomquizQuestion.objects.create(quiz=quiz, question=question, marks=question.marks)
                 total_marks_accumulated += question.marks
-            # Check for total marks mismatch
-            if total_marks_accumulated != total_marks:
-                return Response({
-                    "status": False,
-                    "message": f"Total marks mismatch. The accumulated marks are {total_marks_accumulated}, but the input total_marks was {total_marks}. Please adjust.",
-                    "data": []
-                })
             # Save the quiz with final total marks and total questions
 
             # Create the new quiz
@@ -4030,7 +4023,7 @@ class ClassroomQuizUpdateViewSet(viewsets.ModelViewSet):
             quiz.total_marks = total_marks_accumulated  # Update total marks to the accumulated marks of selected questions
             quiz.save()
             
-            serializer = ClassroomQuestionSerializer(quiz, context={'request': request})
+            serializer = ClassroomQuestionSerializer(ClassroomQuestion.objects.filter(classroom=quiz.classroom), many=True, context={'request': request})
             return Response({"status": True, "message": "Quiz updated successfully", "data": serializer.data})
         except ClassroomQuiz.DoesNotExist:
             return Response({"status": False, "message": "Quiz not found"})
