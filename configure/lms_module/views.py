@@ -4307,6 +4307,8 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                 quiz_session = QuizSession.objects.get(user=user, quiz=quiz)
                 quiz_session.status = 'passed'
                 quiz_session.save()
+                user.is_qualification = True
+                user.save()
             if obtain_marks:
                 quiz_session = QuizSession.objects.get(user=user, quiz=quiz)
                 quiz_session.score = obtain_marks
@@ -4548,6 +4550,8 @@ class UserCompleteViewDocumentView(viewsets.ModelViewSet):
             if not document:
                 return Response({"status": False, "message": "Document not found."})
             UserCompleteViewDocument.objects.create(user=user, document=document)
+            user.is_tni_generate = True
+            user.save()
             return Response({"status": True, "message": "User completed the document successfully."})
         except Exception as e:
             return Response({"status": False, "message": str(e)})
