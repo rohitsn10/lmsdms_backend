@@ -145,4 +145,6 @@ urlpatterns = [
    path('document_effective', DocumentEffectiveViewSet.as_view({'post':'create'}),name='document_effective'),
 
    path('document_version_list/<int:document_id>', DocumentVersionListViewSet.as_view({'get':'list'}),name='document_version_list'),
+
+   path('convert_docx_pdf/<int:document_id>', DocxConvertPDFViewSet.as_view({'put': 'update'}), name='convert_docx_pdf'),
 ]

@@ -4890,10 +4890,10 @@ class DocumentEffectiveViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DocumentEffectiveSerializer
 
-    def craete(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         try:
             user = request.user
-            document_id = request.data.get('document_id')
+            document_id = request.data.get('document')
             status = request.data.get('status')
 
             if not document_id or not status:
@@ -4908,11 +4908,9 @@ class DocumentEffectiveViewSet(viewsets.ModelViewSet):
             except DynamicStatus.DoesNotExist:
                 return Response({"status": False, "message": "Status not found", "data": []})
             
-            created = Document.objects.create(
-                user=user,
-                id=document_data,
-                document_current_status=status_data.id
-            )
+            document_data.document_current_status = status_data
+            document_data.effective_date = datetime.now()
+            document_data.save()
             return Response({"status": True,"message": "Document effective date created successfully"})
         
         except Exception as e:
@@ -4942,3 +4940,45 @@ class DocumentVersionListViewSet(viewsets.ModelViewSet):
             "message": "Document comments fetched successfully",
             "data": serializer.data
         })
+
+
+class DocxConvertPDFViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            document_id = self.kwargs.get('document_id')
+            document_instance = Document.objects.get(id=document_id)
+            latest_comment = NewDocumentCommentsData.objects.filter(document=document_instance).order_by('-created_at').first()
+            url = latest_comment.front_file_url
+            
+            if not url.endswith('.docx'):
+                return Response({'status': False, 'message': 'Invalid document type. Only .docx files are supported.'})
+
+            base_directory = os.path.join(settings.MEDIA_ROOT, 'generated_docs')
+            docx_file_path = os.path.join(base_directory, url)
+
+            if not os.path.exists(docx_file_path):
+                return Response({'status': False, 'message': f"Document file not found at {docx_file_path}."})
+
+            try:
+                pdf_output_path = docx_file_path.replace('.docx', '.pdf')
+                convert(docx_file_path)
+
+                pdf_relative_path = os.path.relpath(pdf_output_path, settings.MEDIA_ROOT)
+                pdf_url = f"{settings.MEDIA_URL}{pdf_relative_path}"
+
+            except Exception as e:
+                return Response({'status': False, 'message': 'Error during conversion.', 'error': str(e)})
+
+            return Response({
+                'status': True,
+                'message': 'Document successfully converted to PDF.',
+                'pdf_link': request.build_absolute_uri(pdf_url)
+            })
+
+        except PrintRequest.DoesNotExist:
+            return Response({'status': False, 'message': 'Print request not found.'})
+        except Exception as e:
+            return Response({'status': False, 'message': 'An error occurred while processing the document.', 'error': str(e)})
