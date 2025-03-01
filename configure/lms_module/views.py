@@ -979,39 +979,38 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
             else:
                 job_roles = JobRole.objects.filter(job_assigns__user=user)
                 queryset_documents = Document.objects.filter(job_roles__in=job_roles).distinct()
-
-            # user_group_ids = list(user.groups.values_list('id', flat=True))
-            # department_id = self.request.query_params.get('department_id', None)
-            # start_date = request.query_params.get('start_date', None)
-            # end_date = request.query_params.get('end_date', None)
-
-            # start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
-            # if error:
-            #     return Response({"status": False, "message": error, "data": [], "user_group_ids": list(user_group_ids)})
-
-            # if start_date_obj:
-            #     start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
-            # if end_date_obj:
-            #     end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
-
-            # queryset_documents = Document.objects.filter(document_current_status="1").order_by('-id')
-
-            # if start_date_obj and end_date_obj:
-            #     queryset_documents = queryset_documents.filter(created_at__range=[start_date_obj, end_date_obj])
     
             queryset_documents = self.filter_queryset(queryset_documents)
             document_serializer = DocumentviewSerializer(queryset_documents, many=True, context={'request': request})
             document_data = document_serializer.data
-
+    
             quiz_sessions = QuizSession.objects.filter(user=user)
             quiz_session_serializer = QuizSessionSerializer(quiz_sessions, many=True, context={'request': request})
             quiz_session_data = quiz_session_serializer.data
-            
+    
+            # Mapping quiz session data by quiz ID for quick lookup
+            quiz_sessions_dict = {}
+            for quiz in quiz_session_data:
+                quiz_id = quiz["quiz"]
+                if quiz_id not in quiz_sessions_dict:
+                    quiz_sessions_dict[quiz_id] = []
+                quiz_sessions_dict[quiz_id].append(quiz)
+    
+            # Merging quiz session data into document data
+            for document in document_data:
+                training_quiz_ids = document.get("training_quiz_ids", [])
+                document["quiz_sessions"] = []
+    
+                for quiz_id in training_quiz_ids:
+                    if quiz_id in quiz_sessions_dict:
+                        document["quiz_sessions"].extend(quiz_sessions_dict[quiz_id])
+    
             response_data = {
-            "documents": document_data,
-            "quiz_sessions": quiz_session_data
+                "documents": document_data,
             }
-            return Response({"status": True,"message": "Document list fetched successfully","document_data": response_data})
+    
+            return Response({"status": True, "message": "Document list fetched successfully", "document_data": response_data})
+        
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
@@ -1918,7 +1917,6 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
             user = self.request.user
             training_quiz_id = self.kwargs.get('training_quiz_id')
             quiz = TrainingQuiz.objects.get(id=training_quiz_id)
-
             # Check if the quiz status is False user can not update
             if not quiz.status:
                 return Response({"status": False, "message": "Quiz is not active", "data": []})
@@ -1972,6 +1970,9 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
                     # Clear existing questions if it's an "auto" quiz
                     old_questions = QuizQuestion.objects.filter(quiz=quiz)
 
+                    for q in old_questions:
+                        q.delete()
+
                     for marks, count in marks_breakdown.items():
                         marks = int(marks)  
                         count = int(count)  
@@ -1980,7 +1981,8 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
                             # training=training,  
                             # document=document,  
                             marks=marks,       
-                            status=True         
+                            status=True,
+                            document=quiz.document,
                         )
 
                         if len(questions) < count:

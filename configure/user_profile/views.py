@@ -351,6 +351,8 @@ class ListUserViewSet(viewsets.ModelViewSet):
                 queryset = CustomUser.objects.all()
             elif user.groups.filter(name='Doc Admin').exists():
                 queryset = CustomUser.objects.all()
+            elif user.groups.filter(name='HR').exists():
+                queryset = CustomUser.objects.all()
             else:
                 queryset = CustomUser.objects.filter(id=user.id)
             serializer = self.serializer_class(queryset, many=True, context={'request': request})
