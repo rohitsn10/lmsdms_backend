@@ -4502,13 +4502,15 @@ def get_editor_config(request):
         # Get the document file URL
         if not document.generatefile:
             return JsonResponse({"status": False, "message": "Document file not available for the selected template"})
-        BASE_URL = "http://host.docker.internal:8000"
+        # BASE_URL = "http://host.docker.internal:8000"
+        BASE_URL ="http://13.232.63.196:8080"
         # Construct full document URL (assuming media files are served under MEDIA_URL)
         document_url = f"{BASE_URL}{settings.MEDIA_URL}/generated_docs/{document.generatefile}"  # Ensure MEDIA_URL is properly configured
         latest_comment = NewDocumentCommentsData.objects.filter(document=doc).order_by("-created_at").first()
         front_file_url_ = latest_comment.front_file_url.url if latest_comment and latest_comment.front_file_url else None
         front_file_url = f"{BASE_URL}{front_file_url_}"
-        if front_file_url == 'http://host.docker.internal:8000None':
+        # if front_file_url == 'http://host.docker.internal:8000None':
+        if front_file_url == 'http://13.232.63.196:8080None':
             unique_key = hashlib.sha256(document_url.encode()).hexdigest()
         else:
             unique_key = hashlib.sha256(front_file_url.encode()).hexdigest()
@@ -4518,7 +4520,8 @@ def get_editor_config(request):
             "fileType": "docx",  # Assuming the document is of type 'docx'
             "key": unique_key,
             "title": document.document_title or "Untitled Document",  # Use the document title
-            "url": document_url if front_file_url == 'http://host.docker.internal:8000None' else front_file_url,  # Direct link to the document
+            # "url": document_url if front_file_url == 'http://host.docker.internal:8000None' else front_file_url,  # Direct link to the document
+            "url": document_url if front_file_url == 'http://13.232.63.196:8080None' else front_file_url,
         }
 
         # Editor configuration data
