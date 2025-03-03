@@ -4526,8 +4526,8 @@ def get_editor_config(request):
             "document": document_data,
             "editorConfig": {
                 # Replace with your actual callback URL for the editor
-                "callbackUrl": "http://host.docker.internal:8080/dms_module/onlyoffice_callback",
-                # "callbackUrl": "http://43.204.122.158:8080/dms_module/onlyoffice_callback",
+                # "callbackUrl": "http://host.docker.internal:8080/dms_module/onlyoffice_callback",
+                "callbackUrl": "http://13.232.63.196:8080/dms_module/onlyoffice_callback",
                 "mode": "edit",
                 "user": {"id": "1", "name": "Rohit Sharma"},
             },
