@@ -256,7 +256,7 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": str(e), "data": []})
 
 from docx2pdf import convert
-import pythoncom
+#import pythoncom
 class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = PrintRequest.objects.all().order_by('-created_at')
@@ -279,7 +279,6 @@ class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
                 return Response({'status': False, 'message': f"Document file not found at {docx_file_path}."})
 
             try:
-                pythoncom.CoInitialize()
                 pdf_output_path = docx_file_path.replace('.docx', '.pdf')
                 convert(docx_file_path)  # Convert docx to pdf
 
@@ -290,7 +289,7 @@ class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 return Response({'status': False, 'message': 'Error during conversion.', 'error': str(e)})
             finally:
-                pythoncom.CoUninitialize()
+                #pythoncom.CoUninitialize()
             # Return the downloadable link
             return Response({
                 'status': True,
