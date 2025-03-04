@@ -346,13 +346,15 @@ class ListUserViewSet(viewsets.ModelViewSet):
         try:
             user = request.user
             if user.groups.filter(name='DTC').exists():
-                queryset = CustomUser.objects.all()
+                queryset = CustomUser.objects.all().exclude(is_superuser = True)
             elif user.groups.filter(name='Admin').exists():
-                queryset = CustomUser.objects.all()
+                queryset = CustomUser.objects.all().exclude(is_superuser = True)
             elif user.groups.filter(name='Doc Admin').exists():
-                queryset = CustomUser.objects.all()
+                queryset = CustomUser.objects.all().exclude(is_superuser = True)
             elif user.groups.filter(name='HR').exists():
-                queryset = CustomUser.objects.all()
+                queryset = CustomUser.objects.all().exclude(is_superuser = True)
+            elif user.groups.filter(name='HOD').exists():
+                queryset = CustomUser.objects.all().exclude(is_superuser = True)
             else:
                 queryset = CustomUser.objects.filter(id=user.id)
             serializer = self.serializer_class(queryset, many=True, context={'request': request})

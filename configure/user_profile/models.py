@@ -71,6 +71,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_tni_consent = models.BooleanField(default=False, null=True, blank=True)
     is_qualification = models.BooleanField(default=False, null=True, blank=True)
     is_jr_transfer = models.BooleanField(default=False, null=True, blank=True)
+    quiz_attemted = models.BooleanField(default=False, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
