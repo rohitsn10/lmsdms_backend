@@ -2715,7 +2715,7 @@ class AttendanceCreateViewSet(viewsets.ModelViewSet):
             
             for user in users:
                 attendance, created = Attendance.objects.get_or_create(user=user, session=session)
-                quiz_attempts, created = QuizSession.objects.get_or_create(user=user, quiz=quiz)
+                # quiz_attempts, created = QuizSession.objects.get_or_create(user=user, quiz=quiz)
                 attendance.status = status
                 attendance.save()
 
@@ -4267,6 +4267,7 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                 if previous_major_version != current_major_version:
                     user.is_tni_consent = True
                     user.save()
+                    user.quiz_attemted = True
                     return Response({"status": True, "message": "Quiz started successfully, new session created due to document version change"})
             
             attempts_count_instance = QuizSession.objects.get_or_create(user=user, quiz=quiz, defaults={"attempts": 0})
@@ -4283,7 +4284,8 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                         "status": False,
                         "message": "You must complete the session before starting the exam again."
                     })
-
+                
+            user.quiz_attemted = True
             attempted_quiz = AttemptedQuiz.objects.create(
                 user=user,
                 document=document,
@@ -4357,6 +4359,7 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                     correct_answer=correct_answer
                 )
             user.is_tni_consent = True
+            user.quiz_attemted = True
             user.save()
             return Response({"status": True, "message": "Attempted quiz created successfully"})
         except Exception as e:

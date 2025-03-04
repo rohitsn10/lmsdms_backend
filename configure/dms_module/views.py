@@ -256,7 +256,7 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": str(e), "data": []})
 
 from docx2pdf import convert
-
+import pythoncom
 class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = PrintRequest.objects.all().order_by('-created_at')
@@ -279,6 +279,7 @@ class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
                 return Response({'status': False, 'message': f"Document file not found at {docx_file_path}."})
 
             try:
+                pythoncom.CoInitialize()
                 pdf_output_path = docx_file_path.replace('.docx', '.pdf')
                 convert(docx_file_path)  # Convert docx to pdf
 
@@ -288,7 +289,8 @@ class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
 
             except Exception as e:
                 return Response({'status': False, 'message': 'Error during conversion.', 'error': str(e)})
-
+            finally:
+                pythoncom.CoUninitialize()
             # Return the downloadable link
             return Response({
                 'status': True,
@@ -994,7 +996,7 @@ class DocumentUpdateViewSet(viewsets.ModelViewSet):
 class DocumentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DocumentviewSerializer
-    queryset = Document.objects.all().order_by('-id')
+    queryset = Document.objects.all().order_by('-created_at')
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['document_title', 'document_number', 'document_description', 'document_type__name']
     ordering_fields = ['document_title', 'created_at']
@@ -4671,8 +4673,8 @@ class EmployeeTrainingNeedIdentyView(viewsets.ViewSet):
             employee = CustomUser.objects.get(id=employee_id)
 
             failed_quiz_sessions = QuizSession.objects.filter(user=employee, status='failed')
-            if not failed_quiz_sessions.exists():
-                return Response({"status": True, "message": "User has passed all quizzes"})
+            # if not failed_quiz_sessions.exists():
+            #     return Response({"status": True, "message": "User has passed all quizzes"})
 
             users = CustomUser.objects.filter(id__in=failed_quiz_sessions.values_list('user_id', flat=True))
 
