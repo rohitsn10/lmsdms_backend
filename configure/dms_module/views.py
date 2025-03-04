@@ -288,7 +288,7 @@ class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
 
             except Exception as e:
                 return Response({'status': False, 'message': 'Error during conversion.', 'error': str(e)})
-            finally:
+            # finally:
                 #pythoncom.CoUninitialize()
             # Return the downloadable link
             return Response({
