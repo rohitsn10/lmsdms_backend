@@ -3532,7 +3532,7 @@ class HrAcknowledgementViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
 
-
+import shutil
 class InductionCertificateViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated] 
 
@@ -3555,7 +3555,7 @@ class InductionCertificateViewSet(viewsets.ViewSet):
             file_path = os.path.join(settings.MEDIA_ROOT, 'induction_certificate', filename)
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            wkhtmltopdf_path = r'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe'
+            wkhtmltopdf_path = shutil.which("wkhtmltopdf")
             config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
             pdfkit.from_string(html_content, file_path, options={

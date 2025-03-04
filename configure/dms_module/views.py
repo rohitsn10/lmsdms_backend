@@ -2074,7 +2074,7 @@ class DocumentApproverActionCreateViewSet(viewsets.ModelViewSet):
             document.document_current_status = status
             document.assigned_to = None
             version_number = document.version  # Get the current version
-            new_version = increment_version(version_number)
+            new_version = get_new_version(version_number)
             document.version = new_version
             document.save()
             
