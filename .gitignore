@@ -16,6 +16,7 @@ static/admin/
 static/rest_framework/
 static_root
 staticfiles/
+*.static
 # static/csv/
 celerybeat-schedule.bak
 celerybeat-schedule.dat
