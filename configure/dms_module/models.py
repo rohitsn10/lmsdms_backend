@@ -247,3 +247,7 @@ class DocumentEffective(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE, blank=True, null=True)
     status = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE, blank=True, null=True)
 
+class SendBackofUser(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, blank=True, null=True)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, blank=True, null=True)
+    is_send_back = models.BooleanField(default=False)

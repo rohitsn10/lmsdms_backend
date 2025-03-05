@@ -468,3 +468,9 @@ class DocumentEffectiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentEffective
         fields = ['document', 'status']
+
+class SendBackofUserSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username')
+    class Meta:
+        model = SendBackofUser
+        fields = ['document_id', 'user_id', 'username', 'is_send_back']

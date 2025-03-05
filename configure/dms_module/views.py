@@ -1880,6 +1880,11 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
             except DynamicStatus.DoesNotExist:
                 return Response({"status": False, "message": "Invalid status ID"})
             
+            send_back_entry = SendBackofUser.objects.filter(document=document).first()
+            if send_back_entry:
+                send_back_entry.is_send_back = False
+                send_back_entry.save()
+
             # Update visible_to_users
             if isinstance(visible_to_users, str):
                 import json
@@ -1988,6 +1993,18 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
             # Fetch the status
             try:
                 status = DynamicStatus.objects.get(id=status_id)
+                if status.id == 8:
+                    send_back, created = SendBackofUser.objects.get_or_create(
+                    user=user, 
+                    document=document,
+                    defaults={"is_send_back": True} 
+                    )
+
+                    if not created: 
+                        send_back.is_send_back = True
+                        send_back.save()
+
+                    return Response({"status": True, "message": "Send back request created successfully"})
             except DynamicStatus.DoesNotExist:
                 return Response({"status": False, "message": "Invalid Status ID"})
 
@@ -2063,6 +2080,25 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
+class GetSendBackActionViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = SendBackofUser.objects.all()
+    
+    def list(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            document_id = request.query_params.get('document_id')
+            if not document_id:
+                return Response({"status": False, "message": "Document ID is required"})
+            send_back_requests = SendBackofUser.objects.filter(user=user, document_id=document_id)
+            serialized_data = SendBackofUserSerializer(send_back_requests, many=True)
+            return Response({
+                "status": True,
+                "message": "Send back requests retrieved successfully",
+                "send_back_requests": serialized_data.data
+            })
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
 class DocumentApproverActionCreateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
