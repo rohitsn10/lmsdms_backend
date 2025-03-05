@@ -61,6 +61,7 @@ urlpatterns = [
    path('document_review_status', DocumentReviewerActionCreateViewSet.as_view({'post': 'create'}),name='document_review_status'),
    path('document_approver_status', DocumentApproverActionCreateViewSet.as_view({'post': 'create'}),name='document_approver_status'),
    path('document_docadmin_status', DocumentDocAdminActionCreateViewSet.as_view({'post': 'create'}),name='document_docadmin_status'),
+   path('get_sendbackdata', GetSendBackActionViewSet.as_view({'get': 'list'}),name='get_sendbackdata'),
 
    path('document_id_wise_author_reviewer_approver_doc_admin/<int:document_id>', DocumentIdwiseAuthorReviewerApproverDocAdminViewSet.as_view({'get': 'list'}),name='document_id_wise_author_reviewer_approver_doc_admin'),
 
