@@ -396,49 +396,58 @@ class AllDocumentSerializer(serializers.ModelSerializer):
         fields = ['id', 'document_title']
 
 class DocumentAuthorApproveActionSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='user.username')
     class Meta:
         model = DocumentAuthorApproveAction
-        fields = ['user','status_approve','remarks_author','created_at']
+        fields = ['user', 'name', 'status_approve','remarks_author','created_at']
 
 class DocumentReviewerActionSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='user.username')
     class Meta:
         model = DocumentReviewerAction
-        fields = ['user','status_approve','remarks_reviewer','created_at']
+        fields = ['user', 'name','status_approve','remarks_reviewer','created_at']
 
 class DocumentApproverActionSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='user.username')
     class Meta:
         model = DocumentApproverAction
-        fields = ['user','status_approve','remarks_approver','created_at']
+        fields = ['user', 'name','status_approve','remarks_approver','created_at']
 
 class DocumentDocAdminActionSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='user.username')
     class Meta:
         model = DocumentDocAdminAction
-        fields = ['user','status_approve','created_at']
+        fields = ['user', 'name','status_approve','created_at']
 
 class DocumentSendBackActionSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='user.username')
     class Meta:
         model = DocumentSendBackAction
-        fields = ['user','status_sendback','remarks_sendback','created_at']
+        fields = ['user', 'name','status_sendback','remarks_sendback','created_at']
 
 class DocumentReleaseActionSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='user.username')
     class Meta:
         model = DocumentReleaseAction
-        fields = ['user','status_release','created_at']
+        fields = ['user', 'name','status_release','created_at']
 
 class DocumentEffectivenewActionSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='user.username')
     class Meta:
         model = DocumentEffectiveAction
-        fields = ['user','status_effective']
+        fields = ['user', 'name','status_effective']
 
 class DocumentRevisionActionSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='user.username')
     class Meta:
         model = DocumentRevisionAction
-        fields = ['user','status_revision','remarks_revision','created_at']
+        fields = ['user', 'name','status_revision','remarks_revision','created_at']
 
 class DocumentRevisionRequestActionSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='user.username')
     class Meta:
         model = DocumentRevisionRequestAction
-        fields = ['user','status','created_at']
+        fields = ['user', 'name','status','created_at']
         
 class ArchivedSerializer(serializers.ModelSerializer):
     class Meta:

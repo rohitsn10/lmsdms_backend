@@ -3533,6 +3533,8 @@ class HrAcknowledgementViewSet(viewsets.ModelViewSet):
             return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
 
 import shutil
+import time
+import datetime
 class InductionCertificateViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated] 
 
@@ -3542,22 +3544,37 @@ class InductionCertificateViewSet(viewsets.ViewSet):
             user = CustomUser.objects.get(id=user_id)
             username = user.username
 
+            today_date = datetime.date.today().strftime("%Y-%m-%d")  # Format: YYYY-MM-DD
+
+            # 🔹 Define filename based on user & date (to check if already exists)
+            filename = f"induction_certificate_{user_id}_{today_date}.pdf"
+            file_path = os.path.join(settings.MEDIA_ROOT, 'induction_certificate', filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+            # ✅ If the PDF already exists, return the existing file
+            if os.path.exists(file_path):
+                pdf_file_url = f"{settings.MEDIA_URL}induction_certificate/{filename}"
+                full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+                return Response({"status": True, "message": "Certificate already generated.", "data": full_pdf_file_url})
+
+            # 🔹 Prepare user data for the template
             user_data = {
                 'username': username,
+                'date': today_date
             }
-
             context = {'users_data': user_data}
             template = get_template('index.html') 
             html_content = template.render(context)
 
-            timestamp = int(time.time())
-            filename = f"induction_certificate{timestamp}.pdf"
-            file_path = os.path.join(settings.MEDIA_ROOT, 'induction_certificate', filename)
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
+            # 🔹 Find wkhtmltopdf path
             wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+            if not wkhtmltopdf_path:
+                wkhtmltopdf_path = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"  # Windows
+                # wkhtmltopdf_path = "/usr/bin/wkhtmltopdf"  # Linux
+
             config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
+            # 🔹 Generate PDF
             pdfkit.from_string(html_content, file_path, options={
                 'page-size': 'Letter',
                 'encoding': 'UTF-8',
@@ -3565,10 +3582,13 @@ class InductionCertificateViewSet(viewsets.ViewSet):
                 '--enable-local-file-access': ''
             }, configuration=config)
 
+            # ✅ Return the PDF URL
             pdf_file_url = f"{settings.MEDIA_URL}induction_certificate/{filename}"
             full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+
             user.is_induction_certificate = True
             user.save()
+
             return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
 
         except CustomUser.DoesNotExist:

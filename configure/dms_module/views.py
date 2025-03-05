@@ -255,8 +255,18 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
 
-from docx2pdf import convert
-#import pythoncom
+import os
+import subprocess
+from io import BytesIO
+from django.conf import settings
+from rest_framework import viewsets, permissions
+from rest_framework.response import Response
+from PyPDF2 import PdfReader, PdfWriter
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from dms_module.models import PrintRequest
+from dms_module.serializers import PrintRequestSerializer
+
 class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = PrintRequest.objects.all().order_by('-created_at')
@@ -265,46 +275,78 @@ class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         try:
             sop_document_id = self.kwargs.get('sop_document_id')
-            sop_document_instance = PrintRequest.objects.get(sop_document_id=sop_document_id)
+            sop_document_instance = PrintRequest.objects.filter(sop_document_id=sop_document_id).first()
+
+            if not sop_document_instance:
+                return Response({'status': False, 'message': 'Print request not found.'})
+
             sop_document_file = sop_document_instance.sop_document_id
             sop_document = sop_document_file.generatefile
-            
+            print('Sop document:', sop_document)
+
             if not sop_document.endswith('.docx'):
                 return Response({'status': False, 'message': 'Invalid document type. Only .docx files are supported.'})
 
             base_directory = os.path.join(settings.MEDIA_ROOT, 'generated_docs')
             docx_file_path = os.path.join(base_directory, sop_document)
+            pdf_output_path = docx_file_path.replace('.docx', '.pdf')
+
+            if os.path.exists(pdf_output_path):
+                pdf_relative_path = os.path.relpath(pdf_output_path, settings.MEDIA_ROOT)
+                pdf_url = f"{settings.MEDIA_URL}{pdf_relative_path}"
+                return Response({'status': True, 'message': 'Document was already converted.', 'pdf_link': request.build_absolute_uri(pdf_url)})
 
             if not os.path.exists(docx_file_path):
                 return Response({'status': False, 'message': f"Document file not found at {docx_file_path}."})
 
             try:
-                pdf_output_path = docx_file_path.replace('.docx', '.pdf')
-                convert(docx_file_path)  # Convert docx to pdf
+                libreoffice_path = "libreoffice" 
+                if os.name == "nt": 
+                    libreoffice_path = r"C:\Program Files\LibreOffice\program\soffice.exe"
 
-                # Ensure the PDF file is saved in the media directory
-                pdf_relative_path = os.path.relpath(pdf_output_path, settings.MEDIA_ROOT)
-                pdf_url = f"{settings.MEDIA_URL}{pdf_relative_path}"
-
-            except Exception as e:
+                command = [libreoffice_path, "--headless", "--convert-to", "pdf", "--outdir", os.path.dirname(pdf_output_path), docx_file_path]
+                subprocess.run(command, check=True)
+            except subprocess.CalledProcessError as e:
                 return Response({'status': False, 'message': 'Error during conversion.', 'error': str(e)})
-            # finally:
-                #pythoncom.CoUninitialize()
-            # Return the downloadable link
-            return Response({
-                'status': True,
-                'message': 'Document successfully converted to PDF.',
-                'pdf_link': request.build_absolute_uri(pdf_url)  # Generate absolute URL
-            })
 
-        except PrintRequest.DoesNotExist:
-            return Response({'status': False, 'message': 'Print request not found.'})
+            # 🔹 Apply Watermark
+            watermarked_pdf_path = pdf_output_path
+            add_watermark(pdf_output_path, watermarked_pdf_path, "CONFIDENTIAL")
+
+            pdf_relative_path = os.path.relpath(watermarked_pdf_path, settings.MEDIA_ROOT)
+            pdf_url = f"{settings.MEDIA_URL}{pdf_relative_path}"
+
+            return Response({'status': True, 'message': 'Document successfully converted with watermark.', 'pdf_link': request.build_absolute_uri(pdf_url)})
+
         except Exception as e:
             return Response({'status': False, 'message': 'An error occurred while processing the document.', 'error': str(e)})
 
+def add_watermark(input_pdf_path, output_pdf_path, watermark_text="CONFIDENTIAL"):
+    """ Adds a watermark to a PDF file """
+    packet = BytesIO()
+    can = canvas.Canvas(packet, pagesize=letter)
 
+    # 🔹 Set watermark properties
+    can.setFont("Helvetica-Bold", 50)
+    can.setFillColorRGB(0.8, 0.1, 0.1, alpha=0.3)  # Red and semi-transparent
+    can.translate(180, 400)
+    can.rotate(45)
+    can.drawString(0, 0, watermark_text)
+    can.save()
 
+    packet.seek(0)
+    watermark_pdf = PdfReader(packet)
 
+    existing_pdf = PdfReader(open(input_pdf_path, "rb"))
+    output = PdfWriter()
+
+    for i in range(len(existing_pdf.pages)):
+        page = existing_pdf.pages[i]
+        page.merge_page(watermark_pdf.pages[0])  # Overlay watermark
+        output.add_page(page)
+
+    with open(output_pdf_path, "wb") as outputStream:
+        output.write(outputStream)
 
 
 
@@ -4496,6 +4538,7 @@ def get_editor_config(request):
 
         # Fetch the latest document associated with the template_id
         document = Document.objects.filter(select_template_id=template_id).order_by('-created_at').first()
+        document_name = Document.objects.filter(id=document_id).filter()
         print(document,"===========")
         if not document:
             return JsonResponse({"status": False, "message": "No document found for the selected template"})
@@ -4520,7 +4563,7 @@ def get_editor_config(request):
         document_data = {
             "fileType": "docx",  # Assuming the document is of type 'docx'
             "key": unique_key,
-            "title": document.document_title or "Untitled Document",  # Use the document title
+            "title": document_name.document_title or "Untitled Document",  # Use the document title
             # "url": document_url if front_file_url == 'http://host.docker.internal:8000None' else front_file_url,  # Direct link to the document
             "url": document_url if front_file_url == 'http://13.232.63.196:8080None' else front_file_url,
         }
