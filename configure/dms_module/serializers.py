@@ -9,6 +9,7 @@ class WorkFlowSerializer(serializers.ModelSerializer):
 class PrintRequestSerializer(serializers.ModelSerializer):
     first_name = serializers.SerializerMethodField()  # Include user's first name directly
     document_title = serializers.CharField(source='sop_document_id.document_title', read_only=True)
+    document_status = serializers.CharField(source='sop_document_id.document_current_status.status', read_only=True)
     status = serializers.CharField(source='print_request_status.status', read_only=True)
     no_of_request_by_admin = serializers.SerializerMethodField()  # Include no_of_request_by_admin
     approved_date = serializers.SerializerMethodField()  # Rename created_at to approved_date
@@ -18,7 +19,7 @@ class PrintRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrintRequest
         fields = [
-            'id', 'user', 'first_name', 'sop_document_id', 'document_title',
+            'id', 'user', 'first_name', 'sop_document_id', 'document_title', 'document_status', 
             'no_of_print', 'issue_type', 'reason_for_print',
             'created_at', 'status',
             'no_of_request_by_admin', 'approved_date', 'printer_name',
