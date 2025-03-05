@@ -1993,18 +1993,6 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
             # Fetch the status
             try:
                 status = DynamicStatus.objects.get(id=status_id)
-                if status.id == 8:
-                    send_back, created = SendBackofUser.objects.get_or_create(
-                    user=user, 
-                    document=document,
-                    defaults={"is_send_back": True} 
-                    )
-
-                    if not created: 
-                        send_back.is_send_back = True
-                        send_back.save()
-
-                    return Response({"status": True, "message": "Send back request created successfully"})
             except DynamicStatus.DoesNotExist:
                 return Response({"status": False, "message": "Invalid Status ID"})
 
@@ -2322,6 +2310,18 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
             # Fetch the status
             try:
                 status = DynamicStatus.objects.get(id=status_id)
+                if status.id == 8:
+                    send_back, created = SendBackofUser.objects.get_or_create(
+                    user=user, 
+                    document=document,
+                    defaults={"is_send_back": True} 
+                    )
+
+                    if not created: 
+                        send_back.is_send_back = True
+                        send_back.save()
+
+                    return Response({"status": True, "message": "Send back request created successfully"})
             except DynamicStatus.DoesNotExist:
                 return Response({"status": False, "message": "Invalid Status ID"})
 
