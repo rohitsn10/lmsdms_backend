@@ -3067,7 +3067,6 @@ class DocumentReviseRequestViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = DocumentRevisionRequestAction.objects.all()
 
-
     def create(self, request, *args, **kwargs):
         try:
             user = self.request.user
@@ -3081,11 +3080,19 @@ class DocumentReviseRequestViewSet(viewsets.ModelViewSet):
 
             document = Document.objects.get(id=document_id)
 
-            revise_request = DocumentRevisionRequestAction.objects.create(
+            revise_request, created = DocumentRevisionRequestAction.objects.get_or_create(
                 user=user,
                 document=document,
-                revise_description=revise_description
+                defaults={
+                    "revise_description": revise_description,
+                    "is_revise": True  # ✅ Setting is_revise = True
+                }
             )
+
+            if not created:  # If already exists, update description & set is_revise = True
+                revise_request.revise_description = revise_description
+                revise_request.is_revise = True
+                revise_request.save()
 
             return Response({
                 "status": True,
@@ -3107,13 +3114,19 @@ class DocumentReviseRequestGetViewSet(viewsets.ModelViewSet):
         return Document.objects.filter(document_current_status_id=7)
 
     def list(self, request, *args, **kwargs):
-        # Use the filtered queryset
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
 
         # Get the group ID of the requested user
         user_groups = request.user.groups.values_list('id', flat=True)  # Get all group IDs
         group_id = user_groups[0] if user_groups else None  # Take the first group if available
+
+        # Add is_revise field for each document
+        for doc in serializer.data:
+            is_revise = DocumentRevisionRequestAction.objects.filter(
+                user=request.user, document_id=doc['document_id'], is_revise=True
+            ).exists()
+            doc['is_revise'] = is_revise  # Append is_revise to response
 
         return Response({
             "status": True,
