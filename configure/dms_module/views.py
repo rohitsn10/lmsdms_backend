@@ -4602,10 +4602,10 @@ def get_editor_config(request):
 
     try:
         doc = Document.objects.filter(id=document_id).first()
-
+        
         # Fetch the latest document associated with the template_id
         document = Document.objects.filter(select_template_id=template_id).order_by('-created_at').first()
-        document_name = Document.objects.filter(id=document_id).filter()
+        document_name = Document.objects.filter(id=document_id).first()
         print(document,"===========")
         if not document:
             return JsonResponse({"status": False, "message": "No document found for the selected template"})
