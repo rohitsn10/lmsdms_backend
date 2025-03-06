@@ -3590,7 +3590,8 @@ class GetDocumentCertificateDataListViewSet(viewsets.ViewSet):
         return roles
 
 
-
+from PyPDF2 import PdfMerger
+from docx2pdf import convert
 class DocumentCertificatePdfExportView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'document_id'
@@ -3603,11 +3604,16 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             
             # Fetch all actions for the document
             all_actions = self.get_document_actions(document)
-            
+
+            # Fetch latest document comment for front_file_url
+            latest_comment = NewDocumentCommentsData.objects.filter(document=document).order_by("-created_at").first()
+            front_file_url = latest_comment.front_file_url.path if latest_comment and latest_comment.front_file_url else None
+
             # Define the context for the template
             context = {
                 'document': document,
                 'all_actions': all_actions,
+                'front_file_url': request.build_absolute_uri(latest_comment.front_file_url.url) if front_file_url else None,
                 'logo': os.path.join(settings.BASE_DIR, 'static', 'certificate_logo_image', 'logo.png')
             }
             
@@ -3616,16 +3622,35 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             html = template.render(context)
 
             timestamp = int(time.time())  # Timestamp in seconds
-            filename = f"document_certificate_cover{timestamp}.pdf"
-            file_path = os.path.join(settings.MEDIA_ROOT, 'document_cover', filename)
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            with open(file_path, 'wb') as output_file:
+            base_filename = f"document_certificate_cover{timestamp}"
+            pdf_filename = f"{base_filename}.pdf"
+            pdf_path = os.path.join(settings.MEDIA_ROOT, 'document_cover', pdf_filename)
+            os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
+
+            # Generate PDF from HTML
+            with open(pdf_path, 'wb') as output_file:
                 pisa_status = pisa.CreatePDF(html, dest=output_file)
 
             if pisa_status.err:
                 return Response({"status": False, "message": "Error occurred while generating PDF", "data": ""})
-            
-            pdf_file_url = f"{settings.MEDIA_URL}document_cover/{filename}"
+
+            # Convert DOCX to PDF if the document exists
+            if front_file_url and front_file_url.endswith('.docx'):
+                docx_pdf_path = pdf_path.replace(".pdf", "_converted.pdf")
+                convert(front_file_url, docx_pdf_path)
+
+                # Merge PDFs
+                merged_pdf_path = pdf_path.replace(".pdf", "_final.pdf")
+                merger = PdfMerger()
+                merger.append(pdf_path)  # Main certificate PDF
+                merger.append(docx_pdf_path)  # Converted DOCX PDF
+                merger.write(merged_pdf_path)
+                merger.close()
+
+                pdf_path = merged_pdf_path  # Use merged PDF as final file
+
+            # Return the final PDF URL
+            pdf_file_url = f"{settings.MEDIA_URL}document_cover/{os.path.basename(pdf_path)}"
             full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
             return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
 
@@ -3648,7 +3673,9 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
         ]
         
         for model in action_models:
-            actions.extend(model.objects.filter(document=document).order_by('created_at'))
+            latest_action = model.objects.filter(document=document).order_by('-created_at').first()
+            if latest_action:
+                actions.append(latest_action)
         
         return actions
 

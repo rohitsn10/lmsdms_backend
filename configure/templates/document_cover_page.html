@@ -120,7 +120,7 @@
                 <td contenteditable="true">{{document.revision_date|date:"d-m-Y"}}</td>
             </tr>
         </table>
-
+        
         <div class="spacer"></div>
 
         <table id="myTable">
@@ -145,7 +145,7 @@
                 <td>{{ action.user.department.department_name|default:"-" }}</td>
                 <td>{{ action.user.designation|default:"-" }}</td>
                 <td>{{ action.user.first_name }} {{ action.user.last_name }}</td>
-                <td>{{ action.created_at|date:"d-m-Y" }}</td>
+                <td>{{ action.created_at|date:"d-m-Y H:i:s" }}</td>
             </tr>
             {% endfor %}
         </table>
