@@ -26,6 +26,7 @@ class PrintRequest(models.Model):
     printer = models.ForeignKey("PrinterMachinesModel", on_delete=models.CASCADE,blank=True, null=True)  # Updated
     reminder_sent = models.BooleanField(default=False)
     reminder_sent_times = models.JSONField(default=list)
+    print_count = models.IntegerField(default=0)
     
 class PrintRequestApproval(models.Model):
 
