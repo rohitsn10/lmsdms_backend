@@ -1915,10 +1915,8 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
             except DynamicStatus.DoesNotExist:
                 return Response({"status": False, "message": "Invalid status ID"})
             
-            send_back_entry = SendBackofUser.objects.filter(document=document).first()
-            if send_back_entry:
-                send_back_entry.is_send_back = False
-                send_back_entry.save()
+            SendBackofUser.objects.filter(document=document).update(is_send_back=False)
+
 
             # Update visible_to_users
             if isinstance(visible_to_users, str):
