@@ -196,6 +196,7 @@ class DocumentRevisionRequestAction(models.Model):
     revise_description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, default="Pending")
     created_at = models.DateTimeField(auto_now_add=True)
+    is_revise = models.BooleanField(default=False)
 
 class DynamicInventory(models.Model):
     inventory_name = models.CharField(max_length=100)
@@ -252,3 +253,8 @@ class SendBackofUser(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, blank=True, null=True)
     document = models.ForeignKey(Document, on_delete=models.CASCADE, blank=True, null=True)
     is_send_back = models.BooleanField(default=False)
+
+class UserWiseSendBackView(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, blank=True, null=True)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, blank=True, null=True)
+    is_done = models.BooleanField(default=False)
