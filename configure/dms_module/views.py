@@ -325,7 +325,7 @@ class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
             pdf_relative_path = os.path.relpath(watermarked_pdf_path, settings.MEDIA_ROOT)
             pdf_url = f"{settings.MEDIA_URL}{pdf_relative_path}"
 
-            return Response({'status': True, 'message': 'Document successfully converted with watermark.', 'pdf_link': request.build_absolute_uri(pdf_url), 'count': print_count})
+            return Response({'status': True, 'message': 'Document successfully converted with watermark.', 'pdf_link': request.build_absolute_uri(pdf_url)})
 
         except Exception as e:
             return Response({'status': False, 'message': 'An error occurred while processing the document.', 'error': str(e)})
@@ -2345,20 +2345,18 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
             # Fetch the status
             try:
                 status = DynamicStatus.objects.get(id=status_id)
-                if status.id == 8:
-                    send_back, created = SendBackofUser.objects.get_or_create(
-                    user=user, 
-                    document=document,
-                    defaults={"is_send_back": True} 
-                    )
-
-                    if not created: 
-                        send_back.is_send_back = True
-                        send_back.save()
-
-                    return Response({"status": True, "message": "Send back request created successfully"})
             except DynamicStatus.DoesNotExist:
                 return Response({"status": False, "message": "Invalid Status ID"})
+            
+            if status.id == 8:
+                send_back, created = SendBackofUser.objects.get_or_create(
+                user=user, 
+                document=document,
+                defaults={"is_send_back": True} 
+                )
+                if not created: 
+                    send_back.is_send_back = True
+                    send_back.save()
 
             # Log the send-back action
             send_back_action = DocumentSendBackAction.objects.create(
