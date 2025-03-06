@@ -3592,6 +3592,7 @@ class GetDocumentCertificateDataListViewSet(viewsets.ViewSet):
 
 from PyPDF2 import PdfMerger
 from docx2pdf import convert
+import platform
 class DocumentCertificatePdfExportView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'document_id'
@@ -3634,23 +3635,29 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             if pisa_status.err:
                 return Response({"status": False, "message": "Error occurred while generating PDF", "data": ""})
 
+            final_pdf_path = pdf_path  # Default to cover page PDF
+
             # Convert DOCX to PDF if the document exists
             if front_file_url and front_file_url.endswith('.docx'):
                 docx_pdf_path = pdf_path.replace(".pdf", "_converted.pdf")
-                convert(front_file_url, docx_pdf_path)
+                self.convert_docx_to_pdf(front_file_url, docx_pdf_path)
 
-                # Merge PDFs
-                merged_pdf_path = pdf_path.replace(".pdf", "_final.pdf")
-                merger = PdfMerger()
-                merger.append(pdf_path)  # Main certificate PDF
-                merger.append(docx_pdf_path)  # Converted DOCX PDF
-                merger.write(merged_pdf_path)
-                merger.close()
+                # Check if conversion was successful
+                if os.path.exists(docx_pdf_path) and os.path.getsize(docx_pdf_path) > 0:
+                    # Merge PDFs
+                    merged_pdf_path = pdf_path.replace(".pdf", "_final.pdf")
+                    merger = PdfMerger()
+                    
+                    merger.append(pdf_path)  # Main certificate PDF
+                    merger.append(docx_pdf_path)  # Converted DOCX PDF
+                    
+                    merger.write(merged_pdf_path)
+                    merger.close()
 
-                pdf_path = merged_pdf_path  # Use merged PDF as final file
+                    final_pdf_path = merged_pdf_path  # Use merged PDF as final file
 
-            # Return the final PDF URL
-            pdf_file_url = f"{settings.MEDIA_URL}document_cover/{os.path.basename(pdf_path)}"
+            # Return the final merged PDF URL
+            pdf_file_url = f"{settings.MEDIA_URL}document_cover/{os.path.basename(final_pdf_path)}"
             full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
             return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
 
@@ -3658,6 +3665,17 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             return Response({"status": False, "message": "Document not found", "data": ""})
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": ""})
+
+    def convert_docx_to_pdf(self, docx_path, pdf_path):
+        """Convert DOCX to PDF based on OS"""
+        if platform.system() == "Windows":
+            convert(docx_path, pdf_path)  # Use docx2pdf for Windows
+        else:
+            # Use LibreOffice for Linux
+            try:
+                subprocess.run(["soffice", "--headless", "--convert-to", "pdf", "--outdir", os.path.dirname(pdf_path), docx_path], check=True)
+            except Exception as e:
+                print(f"LibreOffice conversion failed: {e}")
 
     def get_document_actions(self, document):
         actions = []
@@ -3678,6 +3696,7 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
                 actions.append(latest_action)
         
         return actions
+
 
 
 
