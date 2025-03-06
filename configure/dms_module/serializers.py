@@ -24,7 +24,7 @@ class PrintRequestSerializer(serializers.ModelSerializer):
             'created_at', 'status',
             'no_of_request_by_admin', 'approved_date', 'printer_name',
             'approval_numbers',  # Add approval_numbers to the response
-            'request_user_groups',
+            'request_user_groups', 'print_count'
         ]
 
     def get_first_name(self, obj):
