@@ -363,7 +363,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     def get_user(self, obj):
         action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
-        return action.user.id if action else None
+        return action.user.username if action else None
 
     def get_revise_description(self, obj):
         action = DocumentRevisionRequestAction.objects.filter(document=obj).first()

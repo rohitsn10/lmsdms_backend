@@ -130,6 +130,7 @@ urlpatterns = [
 
 
    path('get_editor_config', get_editor_config, name='get_editor_config'),
+   path('get_editor_config_for_obsolete_doc', get_editor_config_for_obsolete_doc, name='get_editor_config_for_obsolete_doc'),
    path('onlyoffice_callback', onlyoffice_callback, name='onlyoffice_callback'),
    
    path('download_and_save_docx', download_and_save_docx, name='download_and_save_docx'),
