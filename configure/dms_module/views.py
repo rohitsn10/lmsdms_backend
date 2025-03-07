@@ -2548,7 +2548,7 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
             status_id = request.data.get('status_id',None)
             request_action_id = request.data.get('request_action_id',None)
             action_status = request.data.get('action_status',None)
-
+            print(status_id, "status_id")
             if not document_id:
                 return Response({"status": False, "message": "Document ID is required"})
             if not status_id:
@@ -2563,24 +2563,62 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
             revision_request = DocumentRevisionRequestAction.objects.get(id=request_action_id)
             revision_request.status = action_status
             revision_request.save()
-            revise_action = DocumentRevisionAction.objects.create(
+            # revise_action = DocumentRevisionAction.objects.create(
+            #     user=user,
+            #     document=document,
+            #     status_revision=status_revision
+            # )
+            # revise_action.save()
+
+            # version_number = document.version
+            # new_version = get_new_version(version_number)
+            document.is_revised = True
+            # document.version = new_version
+            # document.document_current_status = status_revision
+            document.save()
+
+            if status_id == 10:  # If approved, create a duplicate document entry
+                new_version = increment_version(document.version)
+                new_document = Document.objects.create(
+                    user=user,
+                    document_title=document.document_title,
+                    workflow = document.workflow,
+                    document_operation = document.document_operation,
+                    revision_month=document.revision_month,
+                    # assigned_to=document.assigned_to,
+                    select_template=document.select_template,
+                    document_number=document.document_number,
+                    document_type=document.document_type,
+                    form_status=document.form_status,
+                    document_current_status=status_revision,  # Set status to 10 (revise)
+                    version=new_version,
+                    # is_revised=True,
+                    training_required=document.training_required,
+                    document_description=document.document_description,
+                    # effective_date=document.effective_date,
+                    # revision_date=document.revision_date,
+                    product_code=document.product_code,
+                    equipment_id=document.equipment_id,
+                    generatefile=document.generatefile,
+                    # author=user
+                )
+                message = "Revision request successfully approved, and a new document version is created."
+            elif status_id == 11:  # If rejected, just update the document status
+                document.document_current_status = status_revision  # Set status to 11 (rejected)
+                document.save()
+                message = "Revision request successfully rejected."
+
+            DocumentRevisionAction.objects.create(
                 user=user,
                 document=document,
                 status_revision=status_revision
             )
-            revise_action.save()
-            version_number = document.version
-            new_version = get_new_version(version_number)
-            document.is_revised = True
-            document.version = new_version
-            document.document_current_status = 10
-            document.save()
 
                 # return Response({
                 #     "status": True,
                 #     "message": "Revise action created successfully",
                 # })
-            message = "Revision request successfully " + ("approved" if action_status == "approved" else "rejected")
+            # message = "Revision request successfully " + ("approved" if action_status == "approved" else "rejected")
             return Response({
                 "status": True,
                 "message": message,
