@@ -1104,12 +1104,12 @@ class DocumentViewSet(viewsets.ModelViewSet):
                     queryset = Document.objects.filter(
                         user__department_id=department_id,
                         user__groups__name="Author"
-                    ).order_by('-id')
+                    ).order_by('-id') | Document.objects.filter(document_current_status=10)
                 else:
                     queryset = Document.objects.filter(
                         user__department_id=user.department_id,
                         user__groups__name="Author"
-                    ).order_by('-id')
+                    ).order_by('-id') | Document.objects.filter(document_current_status=10)
             else:
                 # Other roles: View documents assigned to them
                 queryset = Document.objects.filter(
