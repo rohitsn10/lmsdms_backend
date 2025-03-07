@@ -10,23 +10,29 @@ class PrintRequestSerializer(serializers.ModelSerializer):
     first_name = serializers.SerializerMethodField()  # Include user's first name directly
     document_title = serializers.CharField(source='sop_document_id.document_title', read_only=True)
     document_status = serializers.CharField(source='sop_document_id.document_current_status.status', read_only=True)
+    version = serializers.CharField(source='sop_document_id.version', read_only=True)
     status = serializers.CharField(source='print_request_status.status', read_only=True)
     no_of_request_by_admin = serializers.SerializerMethodField()  # Include no_of_request_by_admin
     approved_date = serializers.SerializerMethodField()  # Rename created_at to approved_date
     printer_name = serializers.SerializerMethodField()
     approval_numbers = serializers.SerializerMethodField()  # Include many-to-many approval numbers
     request_user_groups = serializers.SerializerMethodField()
+    no_of_retrival = serializers.SerializerMethodField()
     class Meta:
         model = PrintRequest
         fields = [
-            'id', 'user', 'first_name', 'sop_document_id', 'document_title', 'document_status', 
+            'id', 'user', 'first_name', 'sop_document_id', 'document_title', 'document_status', 'version',
             'no_of_print', 'issue_type', 'reason_for_print',
             'created_at', 'status',
             'no_of_request_by_admin', 'approved_date', 'printer_name',
             'approval_numbers',  # Add approval_numbers to the response
-            'request_user_groups', 'print_count'
+            'request_user_groups', 'print_count', 'no_of_retrival'
         ]
 
+    def get_no_of_retrival(self, obj):
+        approvals = PrintRequestApproval.objects.filter(print_request=obj)
+        total_retrievals = sum(approval.retrival_numbers.count() for approval in approvals)
+        return total_retrievals
     def get_first_name(self, obj):
         return obj.user.first_name if obj.user else None
 

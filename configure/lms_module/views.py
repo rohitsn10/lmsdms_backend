@@ -4437,7 +4437,7 @@ class UserIdWiseResultViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
-
+from datetime import datetime
 class TrainingCompletionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
