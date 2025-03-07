@@ -1974,7 +1974,7 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
                 document=document,
                 version=version_number
             )
-
+            UserWiseSendBackView.objects.filter(document=document).update(is_done=False)
             
             document_title = document.document_title
             reviewer_group = Group.objects.get(name='Reviewer')
@@ -2364,11 +2364,19 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
                 group = group_id,
                 remarks_sendback = remark
             )
+            send_for_user, created = UserWiseSendBackView.objects.get_or_create(
+                user=user,
+                document=document,
+                defaults={"is_done": True}
+            )
+            if not created:
+                send_for_user.is_done = True
+                send_for_user.save()
 
             # Update the document's assigned user and reason
             document.assigned_to = assigned_to
             document.assigned_to_group = group_id
-            document.document_current_status = status
+            # document.document_current_status = status
             document.save()
             document_title = document.document_title
             send_document_sendback_email(assigned_to, document_title)

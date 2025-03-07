@@ -175,10 +175,18 @@ class DocumentviewSerializer(serializers.ModelSerializer):
     front_file_url = serializers.SerializerMethodField()
     user_view = serializers.SerializerMethodField()
     training_quiz_ids = serializers.SerializerMethodField()
+    is_done = serializers.SerializerMethodField()
     class Meta:
         model = Document
-        fields = ['id', 'document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at','document_type','document_type_name','form_status','document_current_status','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url','request_user_groups','user_department_id','user_department','workflow','document_description', 'effective_date', 'revision_date','product_code','equipment_id', 'front_file_url', 'user_view', 'training_quiz_ids']
+        fields = ['id', 'document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at','document_type','document_type_name','form_status','document_current_status', 'is_done','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url','request_user_groups','user_department_id','user_department','workflow','document_description', 'effective_date', 'revision_date','product_code','equipment_id', 'front_file_url', 'user_view', 'training_quiz_ids']
 
+    def get_is_done(self, obj):
+        user = self.context.get('request').user
+        try:
+            user_send_back = UserWiseSendBackView.objects.get(user=user, document=obj)
+            return user_send_back.is_done  # Return the is_done value
+        except UserWiseSendBackView.DoesNotExist:
+            return None
     def get_training_quiz_ids(self, obj):
         return list(TrainingQuiz.objects.filter(document=obj).values_list('id', flat=True))
     def get_user_view(self, obj):
