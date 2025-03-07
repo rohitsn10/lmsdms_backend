@@ -233,8 +233,7 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
             user = self.request.user
 
             if user.groups.filter(name='QA').exists() or user.groups.filter(name='Doc Admin').exists():
-                queryset = PrintRequest.objects.filter(print_request_status__id=12).order_by('-created_at')
-
+                queryset = PrintRequest.objects.filter(print_request_status__id=13).order_by('-created_at')
             elif status_id == 'all':
                 # If status_id is "all", fetch all data for the current user
                 queryset = PrintRequest.objects.filter(user=user).order_by('-created_at')
@@ -2574,6 +2573,7 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
             new_version = get_new_version(version_number)
             document.is_revised = True
             document.version = new_version
+            document.document_current_status = 10
             document.save()
 
                 # return Response({
