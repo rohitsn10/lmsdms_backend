@@ -975,7 +975,8 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
         try:
             user = self.request.user
             if user.groups.filter(name="DTC").exists():
-                queryset_documents = Document.objects.filter(document_current_status_id=6)
+                queryset_documents = Document.objects.filter(Q(document_current_status_id=6) | Q(document_current_status_id=7, training_required=True))
+
             else:
                 job_roles = JobRole.objects.filter(job_assigns__user=user)
                 queryset_documents = Document.objects.filter(job_roles__in=job_roles).distinct()
@@ -4179,7 +4180,7 @@ class JobDescriptionList(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             user_id = self.kwargs.get('user_id')
-            job_description_objects = JobDescription.objects.filter(user=user_id)
+            job_description_objects = JobDescription.objects.filter(user=user_id).order_by('-created_at')
             serializer = JobDescriptionSerializer(job_description_objects, many=True)
             return Response({"status": True, "message": "Job descriptions retrieved successfully", "data": serializer.data})
         except Exception as e:
@@ -4221,10 +4222,12 @@ class HODApprovalViewSet(viewsets.ModelViewSet):
         try:
             if not request.user.groups.filter(name='HOD').exists():
                 return Response({"status": False, "message": "You don't have permission to review job description."})
+            user_id = request.data.get('user_id')
+            user = CustomUser.objects.get(id=user_id)
             job_description_id = kwargs.get('job_description_id')
             employee_job_description = JobDescription.objects.get(id=job_description_id)
             description = request.data.get('description')
-            remarks = request.data.get('remarks')
+            remarks = request.data.get('remark')
             status = request.data.get('status')
             if status not in ['approved', 'send_back']:
                 return Response({"status": False, "message": "Invalid status"})
@@ -4232,7 +4235,8 @@ class HODApprovalViewSet(viewsets.ModelViewSet):
             hod_remark = HODRemark.objects.create(
                 employee_job_description=employee_job_description,
                 remarks=remarks,
-                status=status
+                status=status,
+                user=user
             )
             if description:
                 employee_job_description.employee_job_description = description
