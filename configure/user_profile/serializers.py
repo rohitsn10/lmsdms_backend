@@ -34,17 +34,22 @@ class PermissionSerializer(serializers.ModelSerializer):
         model = Permission
         fields = ['id','name','content_type','codename',]
 
-
+from lms_module.models import *
 class CustomUserdataSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     groups_list = serializers.SerializerMethodField()
+    job_role = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
         fields = ['id','email','full_name','first_name','last_name','phone','username','created_at','groups_list',
                    'is_user_created', 'is_department_assigned', 'is_induction_complete', 'is_induction_certificate',
                    'is_description', 'is_jr_assign', 'is_jr_approve', 'is_tni_generate', 'is_tni_consent', 
-                   'is_qualification', 'quiz_attemted']
+                   'is_qualification', 'quiz_attemted', 'job_role']
+        
+    def get_job_role(self, obj):
+        job_assign = JobAssign.objects.filter(user=obj).first()
+        return [role.job_role_name for role in job_assign.job_roles.all()] if job_assign else ['N/A']
     
     def get_full_name(self, obj):
         return f"{obj.first_name} {obj.last_name}".strip()

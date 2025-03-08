@@ -4321,6 +4321,9 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                 quiz_session.save()
                 user.is_qualification = True
                 user.save()
+            else:
+                user.is_tni_generate = False 
+                user.save()
             if obtain_marks:
                 quiz_session = QuizSession.objects.get(user=user, quiz=quiz)
                 quiz_session.score = obtain_marks
