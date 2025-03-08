@@ -52,7 +52,7 @@ class CustomUserdataSerializer(serializers.ModelSerializer):
         remark = HODRemark.objects.filter(user= obj).order_by('-created_at').first()
         return remark.remarks if remark and remark.remarks else None
     def get_depratment(self, obj):
-        return obj.department.department_name if obj.department else "N/A"
+        return obj.department.id if obj.department else "N/A"
     def get_job_role(self, obj):
         job_assign = JobAssign.objects.filter(user=obj).first()
         return [role.job_role_name for role in job_assign.job_roles.all()] if job_assign else ['N/A']
