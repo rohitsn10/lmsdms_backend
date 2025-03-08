@@ -4171,6 +4171,35 @@ class JobDescriptionCreateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
 
+class SaveJobDescriptionViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            if not request.user.groups.filter(name='DTC').exists():
+                return Response({"status": False, "message": "You don't have permission to create job description."})
+            user_id = request.data.get('user_id')
+            # job_role_id = request.data.get('job_role_id')
+            employee_job_description = request.data.get('employee_job_description')
+
+            # job_role = JobRole.objects.get(id=job_role_id)
+
+            job_description, created = JobDescription.objects.update_or_create(
+                user_id=user_id,
+                # job_role=job_role,
+                defaults={
+                    'employee_job_description': employee_job_description,
+                    'status': 'draft'
+                }
+            )
+            # job_description.user.is_description = True
+            # job_description.user.save()
+            
+            return Response({"status": True, "message": "Job description saved successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
 class JobDescriptionList(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = JobDescription.objects.all()
@@ -4612,5 +4641,148 @@ class DashboardDocumentViewSet(viewsets.ModelViewSet):
             passed_users = QuizSession.objects.filter(user=user, status='Passed', quiz__status=True,quiz__document__in = documents).count()
             return Response({"status": True, "message": "Documents retrieved successfully", "total_assign_document": total_assign_document, "failed_document": failed_users, "passed_document": passed_users})
         
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
+
+
+
+
+
+class AttemptedQuizViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = AttemptedQuiz.objects.all()
+    serializer_class = AttemptedQuizSerializer
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user_id = request.data.get('user_id')
+            # document_id = request.data.get('document_id')
+            classroom_id = request.data.get('classroom_id')
+            quiz_id = request.data.get('quiz_id')
+            questions = request.data.get('questions')
+            obtain_marks = request.data.get('obtain_marks')
+            total_marks = request.data.get('total_marks')
+            total_taken_time = request.data.get('total_taken_time')
+            is_pass = request.data.get('is_pass')
+            incorrect_questions = request.data.get('incorrect_questions')
+            correct_questions = request.data.get('correct_questions')
+
+            user = CustomUser.objects.get(id=user_id)
+            # document = Document.objects.get(id=document_id)
+            classroom = ClassroomTraining.objects.get(id=classroom_id)
+            quiz = ClassroomQuiz.objects.get(id=quiz_id)
+
+            # previous_session = QuizSession.objects.filter(user=user, quiz=quiz).order_by('-id').first()
+            # assigned_document_version = document.version
+
+            # if previous_session:
+            #     previous_major_version = previous_session.document_version.split('.')[0]
+            #     current_major_version = assigned_document_version.split('.')[0]
+
+                # Major version check
+                # if previous_major_version != current_major_version:
+                #     user.is_tni_consent = True
+                #     user.save()
+                #     user.quiz_attemted = True
+                #     return Response({"status": True, "message": "Quiz started successfully, new session created due to document version change"})
+            
+            # attempts_count_instance = QuizSession.objects.get_or_create(user=user, quiz=quiz, defaults={"attempts": 0})
+            # attempts_count = QuizSession.objects.filter(user=user, quiz=quiz).first()
+
+            # if attempts_count and attempts_count.attempts >= 3:
+            #     session = Session.objects.filter(user_ids=user).first()
+            #     if not session:
+            #         return Response({"status": False,"message": "Please attend the classroom session before attempting the quiz."})
+            #     # Ensure the session is completed before allowing new attempt
+            #     session_complete = SessionComplete.objects.filter(session=session, user=user, is_completed=True).first()
+            #     if not session_complete:
+            #         return Response({
+            #             "status": False,
+            #             "message": "You must complete the session before starting the exam again."
+            #         })
+                
+            # user.quiz_attemted = True
+            attempted_quiz = ClassroomAttemptedQuiz.objects.create(
+                user=user,
+                # document=document,
+                classroom=classroom,
+                quiz=quiz,
+                obtain_marks=obtain_marks,
+                total_marks=total_marks,
+                total_taken_time=total_taken_time,
+                is_pass=is_pass,
+            )
+            # if is_pass:
+            #     quiz_session = QuizSession.objects.get(user=user, quiz=quiz)
+            #     quiz_session.status = 'passed'
+            #     quiz_session.save()
+            #     user.is_qualification = True
+            #     user.save()
+            # else:
+            #     user.is_tni_generate = False 
+            #     user.save()
+            # if obtain_marks:
+            #     quiz_session = QuizSession.objects.get(user=user, quiz=quiz)
+            #     quiz_session.score = obtain_marks
+            #     quiz_session.save()
+            # attempts_count = AttemptedQuiz.objects.filter(user=user, quiz=quiz).count()
+            # quiz_session, created = QuizSession.objects.get_or_create(
+            #     user=user,
+            #     quiz=quiz,
+            #     defaults={
+            #         "attempts": 1,  # First attempt should be 1, not 2
+            #         "document_version": assigned_document_version,
+            #     }
+            # )
+            # if not created and not is_pass:
+            #     quiz_session.attempts += 1
+            #     quiz_session.document_version = assigned_document_version
+            #     quiz_session.save()
+            #     if attempts_count >= 3:
+            #         quiz_session.status = 'Failed'
+            #         quiz_session.save()
+            
+            for question in questions:
+                question_id = question.get('question_id')
+                question_text = question.get('question_text')
+                user_answer = question.get('user_answer')
+                correct_answer = question.get('correct_answer')
+                attempted_question = ClassroomAttemptedQuizQuestion.objects.create(
+                    attempted_quiz=attempted_quiz,
+                    question_id=question_id,
+                    question_text=question_text,
+                    user_answer=user_answer,
+                    correct_answer=correct_answer
+                )
+            for incorrect in incorrect_questions:
+                question_id = incorrect.get('question_id')
+                question_text = incorrect.get('question_text')
+                user_answer = incorrect.get('user_answer')
+                correct_answer = incorrect.get('correct_answer')
+                attempted_question = ClassroomAttemptedIncorrectAnswer.objects.create(
+                    attempted_quiz=attempted_quiz,
+                    question_id=question_id,
+                    question_text=question_text,
+                    user_answer=user_answer,
+                    correct_answer=correct_answer
+                )
+            for correct in correct_questions:
+                question_id = correct.get('question_id')
+                question_text = correct.get('question_text')
+                user_answer = correct.get('user_answer')
+                correct_answer = correct.get('correct_answer')
+                attempted_question = ClassroomAttemptedCorrectAnswer.objects.create(
+                    attempted_quiz=attempted_quiz,
+                    question_id=question_id,
+                    question_text=question_text,
+                    user_answer=user_answer,
+                    correct_answer=correct_answer
+                )
+            # user.is_tni_consent = True
+            # user.quiz_attemted = True
+            user.classroom_assesment_done = True
+            user.save()
+            return Response({"status": True, "message": "Attempted quiz created successfully"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
