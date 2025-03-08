@@ -4500,6 +4500,8 @@ class TrainingAttendanceViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "training_id is required."})
             classroom = ClassroomTraining.objects.filter(document=document_id).first()
             session = Session.objects.filter(classroom=classroom).first()
+            if not session:
+                return Response({"status": False, "message": "Session not found."})
             user_in_session = session.user_ids.all()
             userlist_data = []
             for user in user_in_session:

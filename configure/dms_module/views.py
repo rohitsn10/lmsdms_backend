@@ -1104,12 +1104,12 @@ class DocumentViewSet(viewsets.ModelViewSet):
                     queryset = Document.objects.filter(
                         user__department_id=department_id,
                         user__groups__name="Author"
-                    ).order_by('-id') | Document.objects.filter(document_current_status=10)
+                    ).order_by('-id') | Document.objects.filter(document_current_status=10) | Document.objects.filter(author=user).order_by('-id')
                 else:
                     queryset = Document.objects.filter(
                         user__department_id=user.department_id,
                         user__groups__name="Author"
-                    ).order_by('-id') | Document.objects.filter(document_current_status=10)
+                    ).order_by('-id') | Document.objects.filter(document_current_status=10) | Document.objects.filter(author=user).order_by('-id')
             else:
                 # Other roles: View documents assigned to them
                 queryset = Document.objects.filter(
@@ -2179,6 +2179,17 @@ class DocumentApproverActionCreateViewSet(viewsets.ModelViewSet):
                 document=document,
                 version=version_number
             )
+            if new_version.endswith(".0"):  
+                previous_major_version = str(int(new_version.split(".")[0]) - 1) + ".0"
+
+                old_doc = Document.objects.filter(
+                    document_number=document.document_number,
+                    version=previous_major_version
+                ).first()
+
+                if old_doc:
+                    old_doc.document_current_status = DynamicStatus.objects.get(id=15)
+                    old_doc.save()
             
             # Send approval notification to approvers and department users
             document_title = document.document_title
@@ -2602,7 +2613,7 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
                     generatefile=document.generatefile,
                     # author=user
                 )
-                message = "Revision request successfully approved, and a new document version is created."
+
             elif status_id == 11:  # If rejected, just update the document status
                 document.document_current_status = status_revision  # Set status to 11 (rejected)
                 document.save()
@@ -2613,7 +2624,6 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
                 document=document,
                 status_revision=status_revision
             )
-
                 # return Response({
                 #     "status": True,
                 #     "message": "Revise action created successfully",
@@ -4083,7 +4093,8 @@ class DocumentDataOfStatusIdThree(viewsets.ModelViewSet):
             if not status_obj:
                 return Response({"status": False, "message": "Status not found", "data": []})
 
-            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
+            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id') | Document.objects.filter(visible_to_users=user).order_by('-id')
+
 
             if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
                 if department_id:
