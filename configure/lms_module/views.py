@@ -4649,7 +4649,7 @@ class DashboardDocumentViewSet(viewsets.ModelViewSet):
 
 
 
-class AttemptedQuizViewSet(viewsets.ModelViewSet):
+class ClassroomAttemptedQuizViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = AttemptedQuiz.objects.all()
     serializer_class = AttemptedQuizSerializer
