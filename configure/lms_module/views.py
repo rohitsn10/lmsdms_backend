@@ -4441,6 +4441,7 @@ class UserIdWiseResultViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
 from datetime import datetime
+import platform
 class TrainingCompletionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -4474,7 +4475,10 @@ class TrainingCompletionViewSet(viewsets.ModelViewSet):
             file_path = os.path.join(settings.MEDIA_ROOT, 'training_completion_certificate', filename)
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+            if platform.system() == "Windows":
+                wkhtmltopdf_path = "C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe"
+            else:
+                wkhtmltopdf_path = shutil.which("wkhtmltopdf") or "/usr/bin/wkhtmltopdf"
             config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
             pdfkit.from_string(html_content, file_path, options={
@@ -4531,7 +4535,10 @@ class TrainingAttendanceViewSet(viewsets.ModelViewSet):
             file_path = os.path.join(settings.MEDIA_ROOT, 'training_attendance_sheet', filename)
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+            if platform.system() == "Windows":
+                wkhtmltopdf_path = "C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe"
+            else:
+                wkhtmltopdf_path = shutil.which("wkhtmltopdf") or "/usr/bin/wkhtmltopdf"
             config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
             pdfkit.from_string(html_content, file_path, options={
