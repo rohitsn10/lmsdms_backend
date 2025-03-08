@@ -466,3 +466,38 @@ class AttemptedCorrectAnswer(models.Model):
 class UserCompleteViewDocument(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
     document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
+
+
+
+class ClassroomAttemptedQuiz(models.Model):
+    # quiz_session = models.ForeignKey(QuizSession, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    # document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
+    classroom = models.ForeignKey(ClassroomTraining, on_delete=models.CASCADE, null=True, blank=True)
+    quiz = models.ForeignKey(ClassroomQuiz, on_delete=models.CASCADE, null=True, blank=True)
+    obtain_marks = models.CharField(max_length=500, null=True, blank=True)
+    total_marks = models.CharField(max_length=500, null=True, blank=True)
+    total_taken_time = models.CharField(max_length=500, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    is_pass = models.BooleanField(default=False, blank=True, null=True)
+
+class ClassroomAttemptedQuizQuestion(models.Model):
+    attempted_quiz = models.ForeignKey(ClassroomAttemptedQuiz, on_delete=models.CASCADE, null=True, blank=True)
+    question_id = models.CharField(max_length=500, null=True, blank=True)
+    question_text = models.CharField(max_length=500, null=True, blank=True)
+    user_answer = models.CharField(max_length=500, null=True, blank=True)
+    correct_answer = models.CharField(max_length=500, null=True, blank=True)
+
+class ClassroomAttemptedIncorrectAnswer(models.Model):
+    attempted_quiz = models.ForeignKey(ClassroomAttemptedQuiz, on_delete=models.CASCADE, null=True, blank=True)
+    question_id = models.CharField(max_length=500, null=True, blank=True)
+    question_text = models.CharField(max_length=500, null=True, blank=True)
+    user_answer = models.CharField(max_length=500, null=True, blank=True)
+    correct_answer = models.CharField(max_length=500, null=True, blank=True)
+
+class ClassroomAttemptedCorrectAnswer(models.Model):
+    attempted_quiz = models.ForeignKey(ClassroomAttemptedQuiz, on_delete=models.CASCADE, null=True, blank=True)
+    question_id = models.CharField(max_length=500, null=True, blank=True)
+    question_text = models.CharField(max_length=500, null=True, blank=True)
+    user_answer = models.CharField(max_length=500, null=True, blank=True)
+    correct_answer = models.CharField(max_length=500, null=True, blank=True)

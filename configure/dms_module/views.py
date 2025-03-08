@@ -1203,8 +1203,8 @@ class DocumentExcelGenerateViewSet(viewsets.ModelViewSet):
 
             # Define the headers for the Excel file
             headers = [
-                'Document Title', 'Document Number', 'Document Type', 'Document Description', 'Parent Document No.',
-                'Revision Date', 'Status','Assigned User FirstName','Assign User LastName','Created At', 'Effective Date', 'Version','Request User Groups',
+                'Document Title', 'Document Number', 'Document Type', 'Parent Document No.',
+                'Revision Date', 'Status','Assigned User FirstName','Assign User LastName','Created At', 'Effective Date', 'Version',
                 'Author Name', 'Approver Name','Doc Admin Name'
             ]
             # Add headers to the Excel sheet
@@ -1225,13 +1225,13 @@ class DocumentExcelGenerateViewSet(viewsets.ModelViewSet):
                 ws[f'I{row_num}'] = document.created_at.strftime('%d-%m-%Y')
                 ws[f'J{row_num}'] = document.effective_date.strftime('%d-%m-%Y') if document.effective_date else "-"
                 ws[f'K{row_num}'] = document.version
-                ws[f'M{row_num}'] = document.author.username if document.author else "-"
-                ws[f'O{row_num}'] = document.approver.username if document.approver else "-"
-                ws[f'P{row_num}'] = document.doc_admin.username if document.doc_admin else "-"
+                ws[f'L{row_num}'] = document.author.username if document.author else "-"
+                ws[f'M{row_num}'] = document.approver.username if document.approver else "-"
+                ws[f'N{row_num}'] = document.doc_admin.username if document.doc_admin else "-"
 
                 user_groups = document.user.groups.all()
                 group_names = ', '.join([group.name for group in user_groups]) if user_groups else '-'
-                ws[f'L{row_num}'] = group_names
+                # ws[f'L{row_num}'] = group_names
 
             # Adjust column widths
             for col_num in range(1, len(headers) + 1):
@@ -5216,18 +5216,14 @@ class DocumentEffectiveViewSet(viewsets.ModelViewSet):
 
 
 class DocumentVersionListViewSet(viewsets.ModelViewSet):
-    serializer_class = AddNewDocumentCommentsSerializer
+    serializer_class = DocumentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
 
     def list(self, request, *args, **kwargs):
-        document_id = self.kwargs.get('document_id')
-
-        if not Document.objects.filter(id=document_id).exists():
-            return Response({"status": False, "message": "Document not found", "data": []}, status=404)
-
-        queryset = NewDocumentCommentsData.objects.filter(document=document_id)
-
+        
+        queryset = Document.objects.filter(document_current_status__in = [15,12])
+        
         if not queryset.exists():
             return Response({"status": True, "message": "No comments found for this document", "data": []})
 
