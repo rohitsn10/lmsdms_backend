@@ -4184,14 +4184,20 @@ class SaveJobDescriptionViewSet(viewsets.ModelViewSet):
 
             # job_role = JobRole.objects.get(id=job_role_id)
 
-            job_description, created = JobDescription.objects.update_or_create(
-                user_id=user_id,
-                # job_role=job_role,
-                defaults={
-                    'employee_job_description': employee_job_description,
-                    'status': 'draft'
-                }
-            )
+            job_description = JobDescription.objects.filter(user_id=user_id).order_by('-created_at').first()
+
+            if job_description:
+                # Update the existing draft job description
+                job_description.employee_job_description = employee_job_description
+                job_description.status = 'draft'
+                job_description.save()
+            else:
+                # Create a new draft job description
+                job_description = JobDescription.objects.create(
+                    user_id=user_id,
+                    employee_job_description=employee_job_description,
+                    status='draft'
+                )
             # job_description.user.is_description = True
             # job_description.user.save()
             
