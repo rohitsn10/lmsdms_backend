@@ -4087,23 +4087,22 @@ class DocumentDataOfStatusIdThree(viewsets.ModelViewSet):
             department_id = request.query_params.get('department_id', None)
             start_date = request.query_params.get('start_date', None)
             end_date = request.query_params.get('end_date', None)
-
+    
             fixed_status_id = 3
             status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
             if not status_obj:
                 return Response({"status": False, "message": "Status not found", "data": []})
-
-            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id') | Document.objects.filter(visible_to_users=user).order_by('-id')
-
-
-            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
-                if department_id:
-                    queryset = queryset.filter(user__department_id=department_id)
-            elif user.groups.filter(name='Reviewer').exists():
-                queryset = queryset.filter(visible_to_users=user)
-            elif user_department:
-                queryset = queryset.filter(user__department=user_department)
-
+    
+            # Apply filters BEFORE union
+            queryset1 = Document.objects.filter(document_current_status=status_obj)
+            queryset2 = Document.objects.filter(visible_to_users=user, document_current_status=8)
+    
+            # Apply department filter before union
+            if department_id:
+                queryset1 = queryset1.filter(user__department_id=department_id)
+                queryset2 = queryset2.filter(user__department_id=department_id)
+    
+            # Apply date range filter before union
             if start_date and end_date:
                 start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
                 if error:
@@ -4114,19 +4113,33 @@ class DocumentDataOfStatusIdThree(viewsets.ModelViewSet):
                 if end_date_obj:
                     end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
     
-                if start_date_obj and end_date_obj:
-                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
-
+                queryset1 = queryset1.filter(created_at__range=[start_date_obj, end_date_obj])
+                queryset2 = queryset2.filter(created_at__range=[start_date_obj, end_date_obj])
+    
+            # Apply additional user-based filtering before union
+            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
+                pass  # No extra filtering needed
+            elif user.groups.filter(name='Reviewer').exists():
+                queryset1 = queryset1.filter(visible_to_users=user)
+                queryset2 = queryset2.filter(visible_to_users=user)
+            elif user_department:
+                queryset1 = queryset1.filter(user__department=user_department)
+                queryset2 = queryset2.filter(user__department=user_department)
+    
+            # Perform union after all filtering
+            queryset = queryset1.union(queryset2).order_by('-id')
+    
             document_count = queryset.count()
-
+    
             serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
             if queryset.exists():
-                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+                return Response({"status": True, "message": "Documents fetched successfully", "user_group_ids": list(user_group_ids), "data_count": document_count, "data": serializer.data})
             else:
-                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
-
+                return Response({"status": True, "message": "No Documents found", "user_group_ids": list(user_group_ids), "data": []})
+    
         except Exception as e:
-            return Response({"status": False,"message": "Something went wrong","error": str(e)})
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
         
 class DocumentDataOfStatusIdFour(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -4705,6 +4718,7 @@ from django.shortcuts import redirect
 #     token = jwt.encode(editor_config, secret, algorithm="HS256")
 
 #     return JsonResponse({"token": token, **editor_config})
+@csrf_exempt
 def get_editor_config_for_obsolete_doc(request):
     # Get template_id from the request parameters
     # document_id = request.GET.get('document_id')
@@ -4775,7 +4789,7 @@ def get_editor_config_for_obsolete_doc(request):
     except Exception as e:
         return JsonResponse({"status": False, "message": str(e)})
     
-    
+@csrf_exempt
 def get_editor_config(request):
     # Get template_id from the request parameters
     document_id = request.GET.get('document_id')
@@ -4968,13 +4982,16 @@ class EmployeeTrainingNeedIdentyView(viewsets.ViewSet):
         employee_id = kwargs.get('employee_id')
         try:
             employee = CustomUser.objects.get(id=employee_id)
-
-            failed_quiz_sessions = QuizSession.objects.filter(user=employee, status='failed')
+            user_job_roles = JobRole.objects.filter(job_assigns__user=employee)
+            print(user_job_roles, "fffffffffffff")
+            trainings = Document.objects.filter(job_roles__in=user_job_roles).distinct()
+            print(trainings, "fffffffffffff")
+            failed_quiz_sessions = AttemptedQuiz.objects.filter(user=employee, is_pass=False)
             # if not failed_quiz_sessions.exists():
             #     return Response({"status": True, "message": "User has passed all quizzes"})
-
+            print(failed_quiz_sessions,"gggggggggggggg")
             users = CustomUser.objects.filter(id__in=failed_quiz_sessions.values_list('user_id', flat=True))
-
+            print(users,"ffffffvvvvv")
             all_users_data = []
             for user in users:
                 if user.department:
@@ -4985,15 +5002,14 @@ class EmployeeTrainingNeedIdentyView(viewsets.ViewSet):
                 user_failed_sessions = failed_quiz_sessions.filter(user=user)
                 user_training_data = []
                 
-                for session in user_failed_sessions:
-                    training = TrainingCreate.objects.filter(created_by=user).first()
-                    if training:
+                for training in trainings:
+                    if failed_quiz_sessions.filter(document=training).exists():
                         user_training_data.append({
-                            'training_name': training.training_name,
-                            'training_number': training.training_number
+                            'training_name': training.document_title,
+                            'training_number': training.document_number
                         })
                 print(user_training_data)
-                status = user_failed_sessions.first().status if user_failed_sessions else "No Status"
+                status = "Pass" if user_failed_sessions.first().is_pass else "Failed"
                 
                 user_data = {
                     'employee_name': user.username,
