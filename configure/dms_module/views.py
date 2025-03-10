@@ -4705,7 +4705,77 @@ from django.shortcuts import redirect
 #     token = jwt.encode(editor_config, secret, algorithm="HS256")
 
 #     return JsonResponse({"token": token, **editor_config})
+def get_editor_config_for_obsolete_doc(request):
+    # Get template_id from the request parameters
+    # document_id = request.GET.get('document_id')
+    # template_id = request.GET.get('template_id')
+    front_file_url = request.GET.get('front_file_url') 
 
+    # if not document_id:
+    #     return JsonResponse({"status": False, "message": "document_id parameter is required"})
+    # if not template_id:
+    #     return JsonResponse({"status": False, "message": "template_id parameter is required"})
+    if not front_file_url:
+        return JsonResponse({"status": False, "message": "front_file_url parameter is required"})
+
+    try:
+        # doc = Document.objects.filter(id=document_id).first()
+        
+        # Fetch the latest document associated with the template_id
+        # document = Document.objects.filter(select_template_id=template_id).order_by('-created_at').first()
+        # document_name = Document.objects.filter(id=document_id).first()
+        # print(document,"===========")
+        # if not document:
+        #     return JsonResponse({"status": False, "message": "No document found for the selected template"})
+
+        # Get the document file URL
+        # if not document.generatefile:
+        #     return JsonResponse({"status": False, "message": "Document file not available for the selected template"})
+        # BASE_URL = "http://host.docker.internal:8000"
+        # BASE_URL ="http://13.232.63.196:8080"
+        # Construct full document URL (assuming media files are served under MEDIA_URL)
+        # document_url = f"{BASE_URL}{settings.MEDIA_URL}/generated_docs/{document.generatefile}"  # Ensure MEDIA_URL is properly configured
+        # latest_comment = NewDocumentCommentsData.objects.filter(document=doc).order_by("-created_at").first()
+        # front_file_url_ = latest_comment.front_file_url.url if latest_comment and latest_comment.front_file_url else None
+        # front_file_url = f"{BASE_URL}{front_file_url_}"
+        # if front_file_url == 'http://host.docker.internal:8000None':
+        # if front_file_url == 'http://13.232.63.196:8080None':
+        #     unique_key = hashlib.sha256(document_url.encode()).hexdigest()
+        # else:
+        unique_key = hashlib.sha256(front_file_url.encode()).hexdigest()
+        # print( "document_url",document_url)
+        # Document data
+        document_data = {
+            "fileType": "docx",  # Assuming the document is of type 'docx'
+            "key": unique_key,
+            "title": "Document",  # Use the document title
+            # "url": document_url if front_file_url == 'http://host.docker.internal:8000None' else front_file_url,  # Direct link to the document
+            # "url": document_url if front_file_url == 'http://13.232.63.196:8080None' else front_file_url,
+            "url": front_file_url
+        }
+
+        # Editor configuration data
+        editor_config = {
+            "document": document_data,
+            "editorConfig": {
+                # Replace with your actual callback URL for the editor
+                # "callbackUrl": "http://host.docker.internal:8080/dms_module/onlyoffice_callback",
+                "callbackUrl": "http://13.232.63.196:8080/dms_module/onlyoffice_callback",
+                "mode": "edit",
+                "user": {"id": "1", "name": "Rohit Sharma"},
+            },
+        }
+
+        # Secret for encoding the JWT token
+        secret = "45540a6bfecc97ab6d06c436a74c333b1b54447c4de5fd41b8ad0b8361a395c6"
+        token = jwt.encode(editor_config, secret, algorithm="HS256")
+
+        return JsonResponse({"token": token, **editor_config})
+
+    except Exception as e:
+        return JsonResponse({"status": False, "message": str(e)})
+    
+    
 def get_editor_config(request):
     # Get template_id from the request parameters
     document_id = request.GET.get('document_id')
@@ -4784,75 +4854,6 @@ def onlyoffice_callback(request):
             return JsonResponse({"error": 1}, status=500)
     return JsonResponse({"error": 1}, status=400)
 
-def get_editor_config_for_obsolete_doc(request):
-    # Get template_id from the request parameters
-    # document_id = request.GET.get('document_id')
-    # template_id = request.GET.get('template_id')
-    front_file_url = request.GET.get('front_file_url') 
-
-    # if not document_id:
-    #     return JsonResponse({"status": False, "message": "document_id parameter is required"})
-    # if not template_id:
-    #     return JsonResponse({"status": False, "message": "template_id parameter is required"})
-    if not front_file_url:
-        return JsonResponse({"status": False, "message": "front_file_url parameter is required"})
-
-    try:
-        # doc = Document.objects.filter(id=document_id).first()
-        
-        # Fetch the latest document associated with the template_id
-        # document = Document.objects.filter(select_template_id=template_id).order_by('-created_at').first()
-        # document_name = Document.objects.filter(id=document_id).first()
-        # print(document,"===========")
-        # if not document:
-        #     return JsonResponse({"status": False, "message": "No document found for the selected template"})
-
-        # Get the document file URL
-        # if not document.generatefile:
-        #     return JsonResponse({"status": False, "message": "Document file not available for the selected template"})
-        # BASE_URL = "http://host.docker.internal:8000"
-        # BASE_URL ="http://13.232.63.196:8080"
-        # Construct full document URL (assuming media files are served under MEDIA_URL)
-        # document_url = f"{BASE_URL}{settings.MEDIA_URL}/generated_docs/{document.generatefile}"  # Ensure MEDIA_URL is properly configured
-        # latest_comment = NewDocumentCommentsData.objects.filter(document=doc).order_by("-created_at").first()
-        # front_file_url_ = latest_comment.front_file_url.url if latest_comment and latest_comment.front_file_url else None
-        # front_file_url = f"{BASE_URL}{front_file_url_}"
-        # if front_file_url == 'http://host.docker.internal:8000None':
-        # if front_file_url == 'http://13.232.63.196:8080None':
-        #     unique_key = hashlib.sha256(document_url.encode()).hexdigest()
-        # else:
-        unique_key = hashlib.sha256(front_file_url.encode()).hexdigest()
-        # print( "document_url",document_url)
-        # Document data
-        document_data = {
-            "fileType": "docx",  # Assuming the document is of type 'docx'
-            "key": unique_key,
-            "title": "Document",  # Use the document title
-            # "url": document_url if front_file_url == 'http://host.docker.internal:8000None' else front_file_url,  # Direct link to the document
-            # "url": document_url if front_file_url == 'http://13.232.63.196:8080None' else front_file_url,
-            "url": front_file_url
-        }
-
-        # Editor configuration data
-        editor_config = {
-            "document": document_data,
-            "editorConfig": {
-                # Replace with your actual callback URL for the editor
-                # "callbackUrl": "http://host.docker.internal:8080/dms_module/onlyoffice_callback",
-                "callbackUrl": "http://13.232.63.196:8080/dms_module/onlyoffice_callback",
-                "mode": "edit",
-                "user": {"id": "1", "name": "Rohit Sharma"},
-            },
-        }
-
-        # Secret for encoding the JWT token
-        secret = "45540a6bfecc97ab6d06c436a74c333b1b54447c4de5fd41b8ad0b8361a395c6"
-        token = jwt.encode(editor_config, secret, algorithm="HS256")
-
-        return JsonResponse({"token": token, **editor_config})
-
-    except Exception as e:
-        return JsonResponse({"status": False, "message": str(e)})
 
 
 class EmployeeJobRoleView(viewsets.ViewSet):

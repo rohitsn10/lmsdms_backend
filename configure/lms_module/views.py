@@ -1796,6 +1796,7 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
                     if len(questions) < count:
                         return Response({"status": False,"message": f"Not enough questions with {marks} marks. Found {len(questions)} questions.","data": []})
 
+                    random.shuffle(questions)
                     # Select the required number of questions
                     selected_questions = random.sample(questions, count)
 
@@ -1853,6 +1854,7 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
                         "data": []
                     })
 
+                random.shuffle(questions)
                 # Create QuizQuestion for each selected question
                 for question in questions:
                     if total_marks_accumulated + question.marks > total_marks:
