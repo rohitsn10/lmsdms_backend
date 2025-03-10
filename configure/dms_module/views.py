@@ -2587,6 +2587,7 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
             # document.version = new_version
             # document.document_current_status = status_revision
             document.save()
+            message = "Revision request processed successfully."
 
             if status_id == 10:  # If approved, create a duplicate document entry
                 new_version = increment_version(document.version)
@@ -2613,6 +2614,7 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
                     generatefile=document.generatefile,
                     # author=user
                 )
+                message = "Revision request successfully approved."
 
             elif status_id == 11:  # If rejected, just update the document status
                 document.document_current_status = status_revision  # Set status to 11 (rejected)
@@ -3177,6 +3179,9 @@ class DocumentReviseRequestGetViewSet(viewsets.ModelViewSet):
         user_groups = request.user.groups.values_list('id', flat=True)  # Get all group IDs
         group_id = user_groups[0] if user_groups else None  # Take the first group if available
 
+        pending_revise_count = DocumentRevisionRequestAction.objects.filter(
+            user=request.user, status="Pending"
+        ).count()
         # Add is_revise field for each document
         for doc in serializer.data:
             is_revise = DocumentRevisionRequestAction.objects.filter(
@@ -3188,6 +3193,7 @@ class DocumentReviseRequestGetViewSet(viewsets.ModelViewSet):
             "status": True,
             "message": "List of documents with current status ID 7 retrieved successfully",
             "user_group_id": group_id, 
+            "pending_revise_count": pending_revise_count,
             "data": serializer.data
         })
 

@@ -64,6 +64,7 @@ class TrainingCreateSerializer(serializers.ModelSerializer):
     training_document = serializers.SerializerMethodField()
     created_by_name = serializers.ReadOnlyField(source='created_by.first_name')
     job_roles_name = serializers.SerializerMethodField()
+    training_assesment_attempted = serializers.SerializerMethodField()
 
     class Meta:
         model = TrainingCreate
@@ -71,9 +72,15 @@ class TrainingCreateSerializer(serializers.ModelSerializer):
             'id', 'plant', 'plant_name', 'training_name', 'training_type', 'training_type_name',
             'training_number', 'training_version', 'refresher_time',
             'training_document', 'methodology', 'created_by', 'created_by_name','job_roles','job_roles_name',
-            'training_created_at', 'training_updated_at','schedule_date','number_of_attempts','training_status','start_time','end_time'
+            'training_created_at', 'training_updated_at','schedule_date','number_of_attempts','training_status','start_time','end_time', 'training_assesment_attempted'
         ]
 
+    def get_training_assesment_attempted(self, obj):
+        request = self.context.get('request')
+        user = request.user
+        document_ids = obj.training_document.values_list('id', flat=True)
+        
+        return AttemptedQuiz.objects.filter(user=user, document_id__in=document_ids, training_assesment_attempted=True).exists()
     def get_training_document(self, obj):
 
         if obj.training_document and hasattr(obj.training_document, 'url'):

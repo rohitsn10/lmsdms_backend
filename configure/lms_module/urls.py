@@ -128,4 +128,5 @@ urlpatterns = [
 
     path('classroom_attempted_quiz', ClassroomAttemptedQuizViewSet.as_view({'post': 'create'}), name='classroom_attempted_quiz'), 
     path('once_classroom_attempted', OnceClassroomAttemptedViewSet.as_view({'put': 'update'}), name='once_classroom_attempted'), 
+    path('once_training_attempted', OnceTrainingAttemptedViewSet.as_view({'put': 'update'}), name='once_training_attempted'), 
 ]

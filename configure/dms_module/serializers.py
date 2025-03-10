@@ -391,11 +391,15 @@ class ApprovedPrintRequestSerializer(serializers.ModelSerializer):
     no_of_request_by_admin = serializers.IntegerField()
     status = serializers.CharField(source='status.status', allow_null=True)
     created_at = serializers.DateTimeField()
+    no_of_retrival = serializers.SerializerMethodField()
 
     class Meta:
         model = PrintRequestApproval
-        fields = ['id','print_request', 'document_title', 'no_of_print', 'no_of_request_by_admin', 'status', 'created_at']
-
+        fields = ['id','print_request', 'document_title', 'no_of_print', 'no_of_request_by_admin', 'status', 'created_at', 'no_of_retrival']
+    def get_no_of_retrival(self, obj):
+        approvals = PrintRequestApproval.objects.filter(print_request=obj)
+        total_retrievals = sum(approval.retrival_numbers.count() for approval in approvals)
+        return total_retrievals
 
 class ApprovalNumberSerializer(serializers.ModelSerializer):
     class Meta:

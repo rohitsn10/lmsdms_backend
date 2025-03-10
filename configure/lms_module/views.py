@@ -4834,3 +4834,42 @@ class OnceClassroomAttemptedViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)}, status=500)
+
+
+class OnceTrainingAttemptedViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            document_id = request.data.get('document_id')
+            quiz_id = request.data.get('quiz_id')
+
+            if not document_id or not quiz_id:
+                return Response({"status": False, "message": "classroom_id and quiz_id are required"}, status=400)
+
+            # Fetch ClassroomTraining and ClassroomQuiz objects
+            try:
+                document = Document.objects.get(id=document_id)
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Classroom training not found"}, status=404)
+
+            try:
+                quiz = TrainingQuiz.objects.get(id=quiz_id)
+            except TrainingQuiz.DoesNotExist:
+                return Response({"status": False, "message": "Quiz not found"}, status=404)
+
+            # 🔹 Check if an attempted quiz entry exists
+            attempted_quiz = AttemptedQuiz.objects.filter(user=user, document=document, quiz=quiz).first()
+
+            if attempted_quiz:
+                # 🔹 If multiple records exist, update all of them
+                AttemptedQuiz.objects.filter(user=user, document=document, quiz=quiz).update(training_assesment_attempted=True)
+            else:
+                # 🔹 Create a new record if it doesn't exist
+                AttemptedQuiz.objects.create(user=user, document=document, quiz=quiz, training_assesment_attempted=True)
+
+            return Response({"status": True, "message": "Attempted quiz updated successfully"})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)}, status=500)
