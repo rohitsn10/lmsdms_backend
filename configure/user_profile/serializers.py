@@ -41,13 +41,16 @@ class CustomUserdataSerializer(serializers.ModelSerializer):
     job_role = serializers.SerializerMethodField()
     depratment = serializers.SerializerMethodField()
     remarks = serializers.SerializerMethodField()
+    department_name = serializers.SerializerMethodField()
     class Meta:
         model = CustomUser
         fields = ['id','email','full_name','first_name','last_name','phone','username','created_at','groups_list',
                    'is_user_created', 'is_department_assigned', 'is_induction_complete', 'is_induction_certificate',
                    'is_description', 'is_jr_assign', 'is_jr_approve', 'is_tni_generate', 'is_tni_consent', 
-                   'is_qualification', 'quiz_attemted', 'job_role', 'depratment', 'remarks']
+                   'is_qualification', 'quiz_attemted', 'job_role', 'depratment','department_name','remarks']
         
+    def get_department_name(self, obj):
+        return obj.department.department_name if obj.department else "N/A"
     def get_remarks(self, obj):
         remark = HODRemark.objects.filter(user= obj).order_by('-created_at').first()
         return remark.remarks if remark and remark.remarks else None

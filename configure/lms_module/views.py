@@ -3537,7 +3537,7 @@ class HrAcknowledgementViewSet(viewsets.ModelViewSet):
 
 import shutil
 import time
-import datetime
+from datetime import date
 class InductionCertificateViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated] 
 
@@ -3547,7 +3547,7 @@ class InductionCertificateViewSet(viewsets.ViewSet):
             user = CustomUser.objects.get(id=user_id)
             username = user.username
 
-            today_date = datetime.date.today().strftime("%Y-%m-%d")  # Format: YYYY-MM-DD
+            today_date = date.today().strftime("%Y-%m-%d")  # Format: YYYY-MM-DD
 
             # 🔹 Define filename based on user & date (to check if already exists)
             filename = f"induction_certificate_{user_id}_{today_date}.pdf"
@@ -4792,5 +4792,29 @@ class ClassroomAttemptedQuizViewSet(viewsets.ModelViewSet):
             user.classroom_assesment_done = True
             user.save()
             return Response({"status": True, "message": "Attempted quiz created successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+    
+class OnceClassroomAttemptedViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def update(self,request, *args, **kwargs):
+        try:
+            user = request.user
+            classroom_id = request.data.get('classroom_id')
+            quiz_id = request.data.get('quiz_id')
+
+
+            classroom = ClassroomTraining.objects.get(id=classroom_id)
+            quiz = ClassroomQuiz.objects.get(id=quiz_id)
+
+            attempted_quiz, created = ClassroomAttemptedQuiz.objects.get_or_create(user=user, classroom=classroom, quiz=quiz,defaults={'classroom_attempted': True})
+            
+            if not created:
+                attempted_quiz.classroom_attempted = True
+                attempted_quiz.save()
+
+            return Response({"status": True, "message": "Attempted quiz updated successfully"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})

@@ -284,7 +284,7 @@ class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
             # 🔹 Increase print count
             sop_document_instance.print_count += 1
             sop_document_instance.save()
-            print_count = sop_document_instance.print_count - 1  # Zero-based index
+            print_count = sop_document_instance.print_count - 1 
 
             # 🔹 Select the correct approval number
             if print_count < len(approval_numbers):

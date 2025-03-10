@@ -126,5 +126,6 @@ urlpatterns = [
 
     path('dashboard_document/<int:user_id>', DashboardDocumentViewSet.as_view({'get': 'list'}), name='dashboard_document'),
 
-    path('classroom_attempted_quiz', ClassroomAttemptedQuizViewSet.as_view({'post': 'create'}), name='classroom_attempted_quiz'),  
+    path('classroom_attempted_quiz', ClassroomAttemptedQuizViewSet.as_view({'post': 'create'}), name='classroom_attempted_quiz'), 
+    path('once_classroom_attempted', OnceClassroomAttemptedViewSet.as_view({'put': 'update'}), name='once_classroom_attempted'), 
 ]
