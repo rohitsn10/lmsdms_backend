@@ -4799,22 +4799,38 @@ class ClassroomAttemptedQuizViewSet(viewsets.ModelViewSet):
 class OnceClassroomAttemptedViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
-    def update(self,request, *args, **kwargs):
+    def update(self, request, *args, **kwargs):
         try:
             user = request.user
             classroom_id = request.data.get('classroom_id')
             quiz_id = request.data.get('quiz_id')
 
+            # Validate classroom_id and quiz_id
+            if not classroom_id or not quiz_id:
+                return Response({"status": False, "message": "classroom_id and quiz_id are required"}, status=400)
 
-            classroom = ClassroomTraining.objects.get(id=classroom_id)
-            quiz = ClassroomQuiz.objects.get(id=quiz_id)
+            # Fetch ClassroomTraining and ClassroomQuiz objects
+            try:
+                classroom = ClassroomTraining.objects.get(id=classroom_id)
+            except ClassroomTraining.DoesNotExist:
+                return Response({"status": False, "message": "Classroom training not found"}, status=404)
 
-            attempted_quiz, created = ClassroomAttemptedQuiz.objects.get_or_create(user=user, classroom=classroom, quiz=quiz,defaults={'classroom_attempted': True})
-            
-            if not created:
-                attempted_quiz.classroom_attempted = True
-                attempted_quiz.save()
+            try:
+                quiz = ClassroomQuiz.objects.get(id=quiz_id)
+            except ClassroomQuiz.DoesNotExist:
+                return Response({"status": False, "message": "Quiz not found"}, status=404)
+
+            # 🔹 Check if an attempted quiz entry exists
+            attempted_quiz = ClassroomAttemptedQuiz.objects.filter(user=user, classroom=classroom, quiz=quiz).first()
+
+            if attempted_quiz:
+                # 🔹 If multiple records exist, update all of them
+                ClassroomAttemptedQuiz.objects.filter(user=user, classroom=classroom, quiz=quiz).update(classroom_attempted=True)
+            else:
+                # 🔹 Create a new record if it doesn't exist
+                ClassroomAttemptedQuiz.objects.create(user=user, classroom=classroom, quiz=quiz, classroom_attempted=True)
 
             return Response({"status": True, "message": "Attempted quiz updated successfully"})
+
         except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)}, status=500)
