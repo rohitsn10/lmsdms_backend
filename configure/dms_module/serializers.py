@@ -342,7 +342,7 @@ class DocumentSerializer(serializers.ModelSerializer):
     document_type = serializers.CharField(source='document_type.document_name', read_only=True)  # Adjust 'name' to the appropriate field on DocumentType
     revise_request_id = serializers.SerializerMethodField()  # Field for revision request ID
     revision_created_at = serializers.SerializerMethodField()  # Field for revision created_at
-
+    front_file_url = serializers.SerializerMethodField()
     class Meta:
         model = Document
         fields = [
@@ -358,9 +358,13 @@ class DocumentSerializer(serializers.ModelSerializer):
             'document_type', 
             'revise_request_id',
             'revision_created_at',
-            'job_roles'
+            'job_roles',
+            'front_file_url'
         ]
 
+    def get_front_file_url(self, obj):
+        latest_comment = NewDocumentCommentsData.objects.filter(document=obj).order_by('-created_at').first()
+        return latest_comment.front_file_url.url if latest_comment and latest_comment.front_file_url else None
     def get_user(self, obj):
         action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
         return action.user.username if action else None
