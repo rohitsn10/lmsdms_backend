@@ -4325,6 +4325,7 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
             document = Document.objects.get(id=document_id)
             quiz = TrainingQuiz.objects.get(id=quiz_id)
 
+            AttemptedQuiz.objects.filter(user=user, document=document).update(training_assesment_attempted=False)
             previous_session = QuizSession.objects.filter(user=user, quiz=quiz).order_by('-id').first()
             assigned_document_version = document.version
 
@@ -4363,6 +4364,7 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                 total_marks=total_marks,
                 total_taken_time=total_taken_time,
                 is_pass=is_pass,
+                training_assesment_attempted = False
             )
             if is_pass:
                 quiz_session = QuizSession.objects.get(user=user, quiz=quiz)
@@ -4894,7 +4896,7 @@ class TrainingWiseUsersViewSet(viewsets.ModelViewSet):
             if not training_id:
                 return Response({"status": False, "message": "Training ID is required"}, status=400)
 
-            training = TrainingCreate.objects.get(id=training_id)
+            training = Document.objects.get(id=training_id)
 
             assigned_job_roles = training.job_roles.all()
 
