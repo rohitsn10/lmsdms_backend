@@ -4922,3 +4922,29 @@ class TrainingWiseUsersViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": str(e)}, status=500)
+        
+
+class OnOffUserForTrainingViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def update(self, request, *args, **kwargs):
+        try:
+            user_id = request.data.get('user_id')
+            training_id = request.data.get('document_id')
+            is_active = request.data.get('is_active')
+            is_active = str(is_active).lower() in ["true", "1"]
+            user = CustomUser.objects.get(id=user_id)
+            training = Document.objects.get(id=training_id)
+            attemptquiz = AttemptedQuiz.objects.filter(document=training, user=user).first()
+            if not user or not training:
+                return Response({"status": False, "message": "User or training document not found"})
+            if is_active:
+                attemptquiz.training_assesment_attempted = False
+                attemptquiz.save()
+                return Response({"status": True, "message": "User activated for training document"})
+            else:
+                attemptquiz.training_assesment_attempted = True
+                attemptquiz.save()
+                return Response({"status": True, "message": "User deactivated for training document"})
+        except Exception as e:
+            return Response({"status": False, "message": str(e)})

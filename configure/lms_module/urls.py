@@ -131,4 +131,6 @@ urlpatterns = [
     path('once_training_attempted', OnceTrainingAttemptedViewSet.as_view({'put': 'update'}), name='once_training_attempted'), 
 
     path('training_wise_users', TrainingWiseUsersViewSet.as_view({'get': 'list'}), name='training_wise_users'),
+
+    path('on_off_user_for_training', OnOffUserForTrainingViewSet.as_view({'put': 'update'}), name='on_off_user_for_training'), 
 ]
