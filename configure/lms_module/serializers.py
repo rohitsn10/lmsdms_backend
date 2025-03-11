@@ -370,26 +370,16 @@ class TrainingdataSerializer(serializers.ModelSerializer):
         model = TrainingCreate
         fields = ['id', 'training_name','training_number']
 
-# class HRacnowledgementSerializer(serializers.ModelSerializer):
-#     groups_list = serializers.SerializerMethodField()
-#     class Meta:
-#         model = HRacknowledgement
-#         fields = ['remarks','groups_list']
-
-#     def get_groups_list(self, obj):
-#         return [group.name for group in obj.groups.all()]
-
 class HRacnowledgementSerializer(serializers.ModelSerializer):
     groups_list = serializers.SerializerMethodField()
-
     class Meta:
         model = HRacknowledgement
-        fields = ['remarks', 'groups_list']
+        fields = ['remarks','groups_list']
 
     def get_groups_list(self, obj):
-        if obj.user:  # Ensure user is not None
-            return [group.name for group in obj.user.groups.all()]
-        return []
+        return [group.name for group in obj.groups.all()]
+
+
     
 class TrainerSerializer(serializers.ModelSerializer):
     class Meta:
