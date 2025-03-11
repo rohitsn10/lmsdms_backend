@@ -2371,7 +2371,10 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
         
     def list(self, request):
         user = request.user
-        queryset = ClassroomTraining.objects.filter(user=user).order_by('-id')
+        if user.groups.filter(name="DTC").exists():
+            queryset = ClassroomTraining.objects.all().order_by('-id')
+        else:
+            queryset = ClassroomTraining.objects.filter(user=user).order_by('-id')
         
         try:
             if queryset.exists():
