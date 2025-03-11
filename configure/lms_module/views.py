@@ -4558,9 +4558,11 @@ class TrainingAttendanceViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             document_id = self.kwargs.get('document_id')
-            if not document_id:
-                return Response({"status": False, "message": "training_id is required."})
-            classroom = ClassroomTraining.objects.filter(document=document_id).first()
+            classroom = self.kwargs.get('classroom_id')
+            if document_id:
+                classroom = ClassroomTraining.objects.filter(document=document_id).first()
+            else:
+                classroom = ClassroomTraining.objects.filter(id=classroom).first()
             session = Session.objects.filter(classroom=classroom).first()
             if not session:
                 return Response({"status": False, "message": "Session not found."})
