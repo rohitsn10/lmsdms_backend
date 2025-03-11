@@ -2028,7 +2028,14 @@ class DocumentReviewerActionCreateViewSet(viewsets.ModelViewSet):
             except DynamicStatus.DoesNotExist:
                 return Response({"status": False, "message": "Invalid Status ID"})
 
-            # Create the reviewer action
+            review_done, created = ReviewByUser.objects.get_or_create(
+                user=user,
+                document=document,
+                defaults={"is_reviewed": True}  # Set is_reviewed=True if new
+            )
+            if not created:
+                review_done.is_reviewed = True
+                review_done.save()
             document_reviewer_action = DocumentReviewerAction.objects.create(
                 user=user,
                 document=document,
@@ -3764,15 +3771,30 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             DocumentEffectiveAction,
             DocumentRevisionAction,
         ]
-        
-        reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('-created_at')
-        actions.extend(reviewer_actions)  # Append all reviewer actions
+
+        # Get all reviewer actions (since multiple can exist)
+        author_action = DocumentAuthorApproveAction.objects.filter(document=document).order_by('-created_at').first()
+        if author_action:
+            author_action.role = "Author"
+            actions.append(author_action)
     
-    # Get the latest action from other models
-        for model in action_models:
-            latest_action = model.objects.filter(document=document).order_by('-created_at').first()
-            if latest_action:
-                actions.append(latest_action)
+        # 2️⃣ Get all Reviewer actions (Multiple reviewers can exist)
+        reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('-created_at')
+        for action in reviewer_actions:
+            action.role = "Reviewer"
+            actions.append(action)
+    
+        # 3️⃣ Get the Approver action (Only one latest approver)
+        approver_action = DocumentApproverAction.objects.filter(document=document).order_by('-created_at').first()
+        if approver_action:
+            approver_action.role = "Approver"
+            actions.append(approver_action)
+    
+        # 4️⃣ Get the Doc Admin action (Only one latest admin)
+        doc_admin_action = DocumentDocAdminAction.objects.filter(document=document).order_by('-created_at').first()
+        if doc_admin_action:
+            doc_admin_action.role = "Doc Admin"
+            actions.append(doc_admin_action)
     
         return actions
 

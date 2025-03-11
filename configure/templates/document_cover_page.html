@@ -134,9 +134,7 @@
             {% for action in all_actions %}
             <tr>
                 <td>
-                    {% with action.user.groups.first as group %}
-                {{ group.name|default:"No Role Assigned" }}
-            {% endwith %}
+                    {{ action.role }}
                 </td>
                 <td>{{ action.user.department.department_name|default:"-" }}</td>
                 <td>{{ action.user.designation|default:"-" }}</td>

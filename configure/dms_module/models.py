@@ -258,3 +258,8 @@ class UserWiseSendBackView(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, blank=True, null=True)
     document = models.ForeignKey(Document, on_delete=models.CASCADE, blank=True, null=True)
     is_done = models.BooleanField(default=False)
+
+class ReviewByUser(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, blank=True, null=True)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, blank=True, null=True)
+    is_reviewed = models.BooleanField(default=False)
