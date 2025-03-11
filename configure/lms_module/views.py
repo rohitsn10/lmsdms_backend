@@ -4625,7 +4625,7 @@ class ClassroomTrainingAttendanceViewSet(viewsets.ModelViewSet):
             for user in user_in_session:
                 userlist_data.append({
                     'name': user.username,
-                    'department': user.department.department_name  # Assuming department is a ForeignKey
+                    'department': user.department.department_name if user.department else "No Department"  # Assuming department is a ForeignKey
                     })
 
             user_data = {
