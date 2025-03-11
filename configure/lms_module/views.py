@@ -2592,7 +2592,7 @@ class SessionCreateViewSet(viewsets.ModelViewSet):
                 session_info["user_ids"] = list(user_ids)
 
                 user = request.user
-                session_complete = SessionComplete.objects.filter(session=session, user=user).first()
+                session_complete = SessionComplete.objects.filter(session=session).first()
                 session_info["is_completed"] = session_complete.is_completed if session_complete else False
                 
                 session_data.append(session_info)
@@ -2620,7 +2620,7 @@ class SessionCompletedViewSet(viewsets.ModelViewSet):
             if not session_instance:
                 return Response({"status": False, "message": "Session not found."})
             
-            session_complete = SessionComplete.objects.create(session=session_instance, user=user, is_completed=True)
+            session_complete = SessionComplete.objects.create(session=session_instance, is_completed=True)
 
             serializer = SessionCompleteSerializer(session_complete, context={'request': request})
             return Response({"status": True, "message": "Session completed successfully", "data": serializer.data})
