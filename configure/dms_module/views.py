@@ -3199,13 +3199,13 @@ class DocumentReviseRequestGetViewSet(viewsets.ModelViewSet):
 
 class ApprovedPrintRequestViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    queryset = PrintRequestApproval.objects.filter(status_id=9)  
     serializer_class = ApprovedPrintRequestSerializer
 
     def list(self, request, *args, **kwargs):
         """List only approved print requests (status ID = 9)."""
         try:
-            queryset = self.get_queryset()
+            queryset = PrintRequestApproval.objects.filter(status__id=9)
+
             if queryset.exists():
                 serializer = self.get_serializer(queryset, many=True)
                 return Response({
@@ -3765,11 +3765,15 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             DocumentRevisionAction,
         ]
         
+        reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('-created_at')
+        actions.extend(reviewer_actions)  # Append all reviewer actions
+    
+    # Get the latest action from other models
         for model in action_models:
             latest_action = model.objects.filter(document=document).order_by('-created_at').first()
             if latest_action:
                 actions.append(latest_action)
-        
+    
         return actions
 
 
