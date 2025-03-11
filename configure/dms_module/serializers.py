@@ -401,10 +401,16 @@ class ApprovedPrintRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrintRequestApproval
         fields = ['id','print_request', 'document_title', 'no_of_print', 'no_of_request_by_admin', 'status', 'created_at', 'no_of_retrival']
+    # def get_no_of_retrival(self, obj):
+    #     approvals = PrintRequestApproval.objects.filter(print_request=obj)
+    #     total_retrievals = sum(approval.retrival_numbers.count() for approval in approvals)
+    #     return total_retrievals
     def get_no_of_retrival(self, obj):
-        approvals = PrintRequestApproval.objects.filter(print_request=obj)
-        total_retrievals = sum(approval.retrival_numbers.count() for approval in approvals)
-        return total_retrievals
+        if obj.print_request:  # Ensure print_request exists
+            approvals = PrintRequestApproval.objects.filter(print_request=obj.print_request)  
+            total_retrievals = sum(approval.retrival_numbers.count() for approval in approvals)
+            return total_retrievals
+        return 0  # Return 0 if print_request is missing
 
 class ApprovalNumberSerializer(serializers.ModelSerializer):
     class Meta:
