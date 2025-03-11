@@ -1902,8 +1902,8 @@ class TrainingQuizList(viewsets.ModelViewSet):
         try:
             document_id = kwargs.get('document_id')
             document = Document.objects.get(id=document_id)
-            queryset = TrainingQuiz.objects.filter(document=document)
-
+            queryset = list(TrainingQuiz.objects.filter(document=document))
+            random.shuffle(queryset)
             serializer = TrainingQuizSerializer(queryset, many=True, context={'request': request})
             return Response({"status": True, "message": "Quizzes retrieved successfully", "data": serializer.data})
         except Exception as e:
@@ -3832,8 +3832,8 @@ class ClassroomQuizList(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             classroom_id = kwargs.get('classroom_id')
-            queryset = ClassroomQuiz.objects.filter(classroom=classroom_id)
-
+            queryset = list(ClassroomQuiz.objects.filter(classroom=classroom_id))
+            random.shuffle(queryset)
             serializer = TrainingQuizSerializer(queryset, many=True, context={'request': request})
             return Response({"status": True, "message": "Quizzes retrieved successfully", "data": serializer.data})
         except Exception as e:
