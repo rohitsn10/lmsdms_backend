@@ -2147,22 +2147,27 @@ class InductionUpdateViewSet(viewsets.ModelViewSet):
         try:
             induction = self.get_object()
             induction_name = request.data.get('induction_name')
-            plant = request.data.get('plant')
-            trainings = request.data.get('trainings', [])
-
+            department = request.data.get('department')
+            document = request.FILES.get('document')
+    
             if induction_name:
                 induction.induction_name = induction_name
-            if plant:
-                induction.plant_id = plant
-
+    
+            if department:  # Ensure department exists
+                department_instance = Department.objects.filter(id=department).first()
+                if department_instance:
+                    induction.department = department_instance
+                else:
+                    return Response({'status': False, 'message': 'Invalid department ID'})
+    
+            if document:
+                induction.document = document  # Handle document upload
+    
             induction.save()
-
-            if trainings:
-                induction.trainings.set(trainings)
-
+    
             serializer = InductionSerializer(induction, context={'request': request})
             return Response({"status": True, "message": "Induction updated successfully", "data": serializer.data})
-
+    
         except Exception as e:
             return Response({"status": False, "message": f"Something went wrong: {str(e)}", "data": []})
 
