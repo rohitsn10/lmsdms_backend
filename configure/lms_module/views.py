@@ -4882,3 +4882,41 @@ class OnceTrainingAttemptedViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)}, status=500)
+
+
+class TrainingWiseUsersViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            training_id = request.query_params.get('document_id')
+            
+            if not training_id:
+                return Response({"status": False, "message": "Training ID is required"}, status=400)
+
+            training = TrainingCreate.objects.get(id=training_id)
+
+            assigned_job_roles = training.job_roles.all()
+
+            assigned_users = CustomUser.objects.filter(job_assigns__job_roles__in=assigned_job_roles).distinct()
+
+            users_data = []
+            for user in assigned_users:
+                assessment_attempted = AttemptedQuiz.objects.filter(document=training, user=user).first()
+                users_data.append({
+                    "id": user.id,
+                    "username": user.username,
+                    "training_assesment_attempted": assessment_attempted.training_assesment_attempted if assessment_attempted else False
+                })
+
+            return Response({
+                "status": True,
+                "message": "Users assigned to the training document",
+                "data": users_data
+            })
+
+        except TrainingCreate.DoesNotExist:
+            return Response({"status": False, "message": "Training document not found"}, status=404)
+
+        except Exception as e:
+            return Response({"status": False, "message": str(e)}, status=500)
