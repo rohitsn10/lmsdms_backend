@@ -4558,11 +4558,65 @@ class TrainingAttendanceViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             document_id = self.kwargs.get('document_id')
-            classroom = self.kwargs.get('classroom_id')
-            if document_id:
-                classroom = ClassroomTraining.objects.filter(document=document_id).first()
+            classroom = ClassroomTraining.objects.filter(document=document_id).first()
+            session = Session.objects.filter(classroom=classroom).first()
+            if not session:
+                return Response({"status": False, "message": "Session not found."})
+            user_in_session = session.user_ids.all()
+            userlist_data = []
+            for user in user_in_session:
+                userlist_data.append({
+                    'name': user.username,
+                    'department': user.department.department_name  # Assuming department is a ForeignKey
+                    })
+
+            user_data = {
+                'training_title': classroom.document.document_title,
+                'training_number': classroom.document.document_number,
+                'version': classroom.document.version,
+                'trainer' : classroom.trainer.trainer_name,
+                'start_time' : session.start_date,
+                'users' : userlist_data,
+            }
+
+            context = {'users_data': user_data}
+            template = get_template('training_attendance_sheet.html') 
+            html_content = template.render(context)
+            print(html_content, 'ddd')
+            timestamp = int(time.time())
+            filename = f"training_attendance_sheet{timestamp}.pdf"
+            file_path = os.path.join(settings.MEDIA_ROOT, 'training_attendance_sheet', filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+            if platform.system() == "Windows":
+                wkhtmltopdf_path = "C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe"
             else:
-                classroom = ClassroomTraining.objects.filter(id=classroom).first()
+                wkhtmltopdf_path = shutil.which("wkhtmltopdf") or "/usr/bin/wkhtmltopdf"
+            config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+
+            pdfkit.from_string(html_content, file_path, options={
+                'page-size': 'Letter',
+                'encoding': 'UTF-8',
+                'quiet': '',
+                '--enable-local-file-access': ''
+            }, configuration=config)
+
+            pdf_file_url = f"{settings.MEDIA_URL}training_attendance_sheet/{filename}"
+            full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+            return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
+
+        except CustomUser.DoesNotExist:
+            return Response({"status": False, "message": "User not found", "data": ""})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": ""})
+        
+class ClassroomTrainingAttendanceViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            classroom = self.kwargs.get('classroom_id')
+            classroom = ClassroomTraining.objects.filter(id=classroom).first()
             session = Session.objects.filter(classroom=classroom).first()
             if not session:
                 return Response({"status": False, "message": "Session not found."})
