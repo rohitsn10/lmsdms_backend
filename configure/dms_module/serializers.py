@@ -352,6 +352,7 @@ class DocumentSerializer(serializers.ModelSerializer):
         model = Document
         fields = [
             'document_id',
+            'select_template',
             'document_title',
             'document_current_status',
             'document_current_status_name',  # Added field for the status name
