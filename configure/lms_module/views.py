@@ -4363,6 +4363,7 @@ class AttemptedQuizViewSet(viewsets.ModelViewSet):
                 user.is_qualification = True
                 user.save()
             else:
+                UserCompleteViewDocument.objects.filter(user=user, document=document).delete()
                 user.is_tni_generate = False 
                 user.save()
             if obtain_marks:
