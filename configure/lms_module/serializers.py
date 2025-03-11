@@ -28,9 +28,10 @@ class GetJobRoleSerializer(serializers.ModelSerializer):
         fields = ['job_role_name', 'job_role_description']
 
 class GetAreaSerializer(serializers.ModelSerializer):
+    department_name = serializers.ReadOnlyField(source='department.department_name')
     class Meta:
         model = Area
-        fields = ['id', 'area_name', 'department', 'area_description', 'area_created_at']
+        fields = ['id', 'area_name', 'department','department_name', 'area_description', 'area_created_at']
 
 class AssessmentSerializer(serializers.ModelSerializer):
     class Meta:
