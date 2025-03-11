@@ -4722,9 +4722,9 @@ class DashboardDocumentViewSet(viewsets.ModelViewSet):
             if total_assign_document == 0:
                 return Response({"status": False, "message": "No documents assigned to this user's job roles."})
             
-            failed_users = QuizSession.objects.filter(user=user, status='Failed', quiz__status=True,quiz__document__in = documents).count()
+            failed_users = QuizSession.objects.filter(user=user, status='failed', quiz__status=True,quiz__document__in = documents).count()
 
-            passed_users = QuizSession.objects.filter(user=user, status='Passed', quiz__status=True,quiz__document__in = documents).count()
+            passed_users = QuizSession.objects.filter(user=user, status='passed', quiz__status=True,quiz__document__in = documents).count()
             return Response({"status": True, "message": "Documents retrieved successfully", "total_assign_document": total_assign_document, "failed_document": failed_users, "passed_document": passed_users})
         
         except Exception as e:
