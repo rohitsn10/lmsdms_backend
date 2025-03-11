@@ -4634,13 +4634,13 @@ class ClassroomTrainingAttendanceViewSet(viewsets.ModelViewSet):
                     })
 
             user_data = {
-                'training_title': classroom.document.document_title,
-                'training_number': classroom.document.document_number,
-                'version': classroom.document.version,
-                'trainer' : classroom.trainer.trainer_name,
-                'start_time' : session.start_date,
-                'users' : userlist_data,
-            }
+                    'training_title': classroom.document.document_title if classroom.document else "No Document",
+                    'training_number': classroom.document.document_number if classroom.document else "N/A",
+                    'version': classroom.document.version if classroom.document else "N/A",
+                    'trainer': classroom.trainer.trainer_name if classroom.trainer else "No Trainer",
+                    'start_time': session.start_date,
+                    'users': userlist_data,
+                }
 
             context = {'users_data': user_data}
             template = get_template('training_attendance_sheet.html') 
