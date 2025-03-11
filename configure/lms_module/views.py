@@ -2370,7 +2370,8 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
         
     def list(self, request):
-        queryset = ClassroomTraining.objects.all().order_by('-id')
+        user = request.user
+        queryset = ClassroomTraining.objects.filter(user=user).order_by('-id')
         
         try:
             if queryset.exists():
@@ -3832,7 +3833,14 @@ class ClassroomQuizList(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             classroom_id = kwargs.get('classroom_id')
-            queryset = list(ClassroomQuiz.objects.filter(classroom=classroom_id))
+            classroom = ClassroomTraining.objects.get(id=classroom_id)
+            # classroom_quizzes = list(ClassroomQuiz.objects.filter(classroom=classroom))
+            document_id = classroom.document.id
+            # training_quizzes = list(TrainingQuiz.objects.filter(document=document_id))
+            if document_id:
+                queryset = list(TrainingQuiz.objects.filter(document_id=document_id))
+            else:
+                queryset = list(ClassroomQuiz.objects.filter(classroom=classroom))
             random.shuffle(queryset)
             serializer = TrainingQuizSerializer(queryset, many=True, context={'request': request})
             return Response({"status": True, "message": "Quizzes retrieved successfully", "data": serializer.data})
