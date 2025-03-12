@@ -476,6 +476,7 @@ class ClassroomAttemptedQuiz(models.Model):
     # document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
     classroom = models.ForeignKey(ClassroomTraining, on_delete=models.CASCADE, null=True, blank=True)
     quiz = models.ForeignKey(ClassroomQuiz, on_delete=models.CASCADE, null=True, blank=True)
+    training_quiz = models.ForeignKey(TrainingQuiz, on_delete=models.CASCADE, null=True, blank=True)
     obtain_marks = models.CharField(max_length=500, null=True, blank=True)
     total_marks = models.CharField(max_length=500, null=True, blank=True)
     total_taken_time = models.CharField(max_length=500, null=True, blank=True)

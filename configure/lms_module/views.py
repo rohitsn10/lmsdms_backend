@@ -4799,7 +4799,7 @@ class ClassroomAttemptedQuizViewSet(viewsets.ModelViewSet):
                 user=user,
                 # document=document,
                 classroom=classroom,
-                quiz=quiz,
+                training_quiz=quiz,
                 obtain_marks=obtain_marks,
                 total_marks=total_marks,
                 total_taken_time=total_taken_time,
