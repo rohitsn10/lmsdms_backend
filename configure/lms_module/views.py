@@ -4763,7 +4763,7 @@ class ClassroomAttemptedQuizViewSet(viewsets.ModelViewSet):
             user = CustomUser.objects.get(id=user_id)
             # document = Document.objects.get(id=document_id)
             classroom = ClassroomTraining.objects.get(id=classroom_id)
-            quiz = ClassroomQuiz.objects.get(id=quiz_id)
+            quiz = TrainingQuiz.objects.get(id=quiz_id)
 
             # previous_session = QuizSession.objects.filter(user=user, quiz=quiz).order_by('-id').first()
             # assigned_document_version = document.version
