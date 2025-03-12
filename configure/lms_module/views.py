@@ -4873,8 +4873,12 @@ class ClassroomAttemptedQuizViewSet(viewsets.ModelViewSet):
                 )
             # user.is_tni_consent = True
             # user.quiz_attemted = True
-            user.classroom_assesment_done = True
-            user.save()
+            classroom_user, created = ClassroomTrainingUser.objects.get_or_create(
+            user=user,
+            classroom_training=classroom
+            )
+            classroom_user.assessment_completed = True
+            classroom_user.save()
             return Response({"status": True, "message": "Attempted quiz created successfully"})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})

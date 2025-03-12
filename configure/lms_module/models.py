@@ -269,6 +269,7 @@ class ClassroomTraining(models.Model):
     trainer = models.ForeignKey(Trainer, on_delete=models.CASCADE, null=True, blank=True)
     is_all_completed = models.BooleanField(default=False, null=True, blank=True)
     is_assessment_completed = models.BooleanField(default=False, null=True, blank=True)
+    assesment_user_completed = models.BooleanField(default=False, null=True, blank=True)
 class ClassroomTrainingFile(models.Model):
     classroom_training = models.ForeignKey(ClassroomTraining, related_name='files', on_delete=models.CASCADE)
     upload_doc = models.FileField(upload_to='classroom_trainings/', null=True, blank=True)
@@ -504,3 +505,8 @@ class ClassroomAttemptedCorrectAnswer(models.Model):
     question_text = models.CharField(max_length=500, null=True, blank=True)
     user_answer = models.CharField(max_length=500, null=True, blank=True)
     correct_answer = models.CharField(max_length=500, null=True, blank=True)
+
+class ClassroomTrainingUser(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    classroom_training = models.ForeignKey(ClassroomTraining, on_delete=models.CASCADE)
+    assessment_completed = models.BooleanField(default=False) 
