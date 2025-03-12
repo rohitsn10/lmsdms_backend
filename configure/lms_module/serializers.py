@@ -266,8 +266,9 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request and hasattr(request, "user"):
             user = request.user
-            return ClassroomAttemptedQuiz.objects.filter(user=user, classroom=obj, classroom_attempted=True).exists()
-        return False
+            for_me = ClassroomAttemptedQuiz.objects.filter(user=user, classroom=obj).first()
+            return for_me.classroom_attempted
+        
 class SessionSerializer(serializers.ModelSerializer):
     is_completed = serializers.SerializerMethodField()
     class Meta:
