@@ -244,9 +244,10 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
     files = ClassroomTrainingFileSerializer(many=True, read_only=True)
     classroom_id = serializers.IntegerField(source='id')
     classroom_attempted = serializers.SerializerMethodField()
+    classroom_assessment_done = serializers.SerializerMethodField()
     class Meta:
         model = ClassroomTraining
-        fields = ['classroom_id', 'document', 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at', 'trainer', 'user', 'is_all_completed', 'is_assessment_completed', 'online_offline_status', 'classroom_attempted']
+        fields = ['classroom_id', 'document', 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at', 'trainer', 'user', 'is_all_completed', 'is_assessment_completed', 'online_offline_status', 'classroom_attempted','classroom_assessment_done']
     # department_of_employee_first_name  = serializers.ReadOnlyField(source='department_or_employee.first_name')
     # department_of_employee_last_name = serializers.ReadOnlyField(source='department_or_employee.last_name')
     # class Meta:
@@ -256,6 +257,12 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
     #         'document', 'sop', 'start_date', 'start_time', 'end_time',
     #         'created_at', 'created_by', 'status','acknowledged_by_employee'
     #     ]
+    def get_classroom_assessment_done(self, obj):
+        request = self.context.get('request', None)  
+        if request and hasattr(request, "user"):  
+            user_in_training = obj.user.filter(id=request.user.id).exists()  # Check if user is in training
+            return user_in_training and request.user.classroom_assesment_done  # Ensure the user has done the assessment
+        return False
     def get_classroom_attempted(self, obj):
         request = self.context.get('request')
         if request and hasattr(request, "user"):
