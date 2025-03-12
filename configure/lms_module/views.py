@@ -4900,19 +4900,19 @@ class OnceClassroomAttemptedViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Classroom training not found"}, status=404)
 
             try:
-                quiz = ClassroomQuiz.objects.get(id=quiz_id)
-            except ClassroomQuiz.DoesNotExist:
+                quiz = TrainingQuiz.objects.get(id=quiz_id)
+            except TrainingQuiz.DoesNotExist:
                 return Response({"status": False, "message": "Quiz not found"}, status=404)
 
             # 🔹 Check if an attempted quiz entry exists
-            attempted_quiz = ClassroomAttemptedQuiz.objects.filter(user=user, classroom=classroom, quiz=quiz).first()
+            attempted_quiz = ClassroomAttemptedQuiz.objects.filter(user=user, classroom=classroom, training_quiz=quiz).first()
 
             if attempted_quiz:
                 # 🔹 If multiple records exist, update all of them
-                ClassroomAttemptedQuiz.objects.filter(user=user, classroom=classroom, quiz=quiz).update(classroom_attempted=True)
+                ClassroomAttemptedQuiz.objects.filter(user=user, classroom=classroom, training_quiz=quiz).update(classroom_attempted=True)
             else:
                 # 🔹 Create a new record if it doesn't exist
-                ClassroomAttemptedQuiz.objects.create(user=user, classroom=classroom, quiz=quiz, classroom_attempted=True)
+                ClassroomAttemptedQuiz.objects.create(user=user, classroom=classroom, training_quiz=quiz, classroom_attempted=True)
 
             return Response({"status": True, "message": "Attempted quiz updated successfully"})
 
