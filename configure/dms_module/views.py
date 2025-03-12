@@ -2329,18 +2329,18 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
         try:
             user = request.user
             document_id = request.data.get('document_id')
-            assigned_to_id = request.data.get('assigned_to')
+            # assigned_to_id = request.data.get('assigned_to')
             status_id = request.data.get('status_sendback')
             group_id = request.data.get('assign_user_group')
             remark = request.data.get('remark')
 
 
             # Validate required fields
-            if not document_id or not assigned_to_id or not status_id:
-                return Response({
-                    "status": False,
-                    "message": "Document ID, Assigned User ID, and Status ID are required"
-                })
+            # if not document_id or not assigned_to_id or not status_id:
+            #     return Response({
+            #         "status": False,
+            #         "message": "Document ID, Assigned User ID, and Status ID are required"
+            #     })
                 
             if not remark:
                 return Response({"status": False, "message": "remark is required"})
@@ -2353,10 +2353,10 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
                 return Response({"status": False, "message": "Invalid Document ID"})
 
             # Fetch the assigned user
-            try:
-                assigned_to = CustomUser.objects.get(id=assigned_to_id)
-            except CustomUser.DoesNotExist:
-                return Response({"status": False, "message": "Invalid Assigned User ID"})
+            # try:
+            #     assigned_to = CustomUser.objects.get(id=assigned_to_id)
+            # except CustomUser.DoesNotExist:
+            #     return Response({"status": False, "message": "Invalid Assigned User ID"})
 
             # Fetch the status
             try:
@@ -2392,12 +2392,12 @@ class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
                 send_for_user.save()
 
             # Update the document's assigned user and reason
-            document.assigned_to = assigned_to
+            # document.assigned_to = assigned_to
             document.assigned_to_group = group_id
             document.document_current_status = status
             document.save()
             document_title = document.document_title
-            send_document_sendback_email(assigned_to, document_title)
+            # send_document_sendback_email(assigned_to, document_title)
             
             return Response({
                 "status": True,
