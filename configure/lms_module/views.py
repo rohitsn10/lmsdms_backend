@@ -4185,7 +4185,12 @@ class JobDescriptionCreateViewSet(viewsets.ModelViewSet):
                 status='pending'
             )
             job_description.user.is_description = True
+            job_description.user.is_jr_assign = False
             job_description.user.is_jr_approve = False
+            job_description.user.is_tni_generate = False
+            job_description.user.is_tni_consent = False
+            job_description.user.is_qualification = False
+            job_description.user.quiz_attemted = False
             job_description.user.save()
             
             return Response({"status": True, "message": "Job description created successfully"})
