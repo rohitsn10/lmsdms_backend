@@ -4912,8 +4912,8 @@ class OnceClassroomAttemptedViewSet(viewsets.ModelViewSet):
             attempted_quiz = ClassroomAttemptedQuiz.objects.filter(user=user, classroom=classroom, training_quiz=quiz).first()
 
             if attempted_quiz:
-                # 🔹 If multiple records exist, update all of them
-                ClassroomAttemptedQuiz.objects.filter(user=user, classroom=classroom, training_quiz=quiz).update(classroom_attempted=True)
+                attempted_quiz.classroom_attempted = True
+                attempted_quiz.save()
             else:
                 # 🔹 Create a new record if it doesn't exist
                 ClassroomAttemptedQuiz.objects.create(user=user, classroom=classroom, training_quiz=quiz, classroom_attempted=True)
