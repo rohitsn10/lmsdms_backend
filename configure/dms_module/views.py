@@ -1915,7 +1915,8 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Invalid status ID"})
             
             SendBackofUser.objects.filter(document=document).update(is_send_back=False)
-
+            ReviewByUser.objects.filter(document=document).update(is_reviewed=False)
+            UserWiseSendBackView.objects.filter(document=document).update(is_done=False)
 
             # Update visible_to_users
             if isinstance(visible_to_users, str):
