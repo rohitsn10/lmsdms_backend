@@ -3702,12 +3702,11 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             # Fetch latest document comment for front_file_url
             latest_comment = NewDocumentCommentsData.objects.filter(document=document).order_by("-created_at").first()
             front_file_url = latest_comment.front_file_url.path if latest_comment and latest_comment.front_file_url else None
-
             # Define the context for the template
             context = {
                 'document': document,
                 'all_actions': all_actions,
-                'front_file_url': request.build_absolute_uri(latest_comment.front_file_url.url) if front_file_url else None,
+                'front_file_url': request.build_absolute_uri(latest_comment.front_file_url.url.lstrip('/')) if front_file_url else None,
                 'logo': os.path.join(settings.BASE_DIR, 'static', 'certificate_logo_image', 'logo.png')
             }
             
@@ -3742,9 +3741,9 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
                     merger.append(docx_pdf_path)  # Converted DOCX PDF
                     merger.write(merged_pdf_path)
                     merger.close()
-
+            
             # Return the merged PDF URL only
-            pdf_file_url = f"{settings.MEDIA_URL}document_cover/{os.path.basename(merged_pdf_path)}"
+            pdf_file_url = f"{settings.MEDIA_URL.rstrip('/')}/document_cover/{os.path.basename(merged_pdf_path)}"
             full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
             return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
 
