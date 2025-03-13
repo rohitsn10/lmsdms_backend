@@ -3735,12 +3735,16 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
 
                 # Check if conversion was successful
                 if os.path.exists(docx_pdf_path) and os.path.getsize(docx_pdf_path) > 0:
+                    print("stttsttts merge")
                     # Merge PDFs
                     merger = PdfMerger()
                     merger.append(pdf_path)  # Main certificate PDF
                     merger.append(docx_pdf_path)  # Converted DOCX PDF
                     merger.write(merged_pdf_path)
                     merger.close()
+
+                    document.generated_pdf = f"document_cover/{os.path.basename(merged_pdf_path)}"
+                    document.save()
             
             # Return the merged PDF URL only
             pdf_file_url = f"{settings.MEDIA_URL.rstrip('/')}/document_cover/{os.path.basename(merged_pdf_path)}"
