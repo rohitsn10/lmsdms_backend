@@ -3672,19 +3672,17 @@ class GetDocumentCertificateDataListViewSet(viewsets.ViewSet):
             roles.append("No Role")
         return roles
 
-
 import os
 import time
 import subprocess
-import platform
 from django.conf import settings
-from django.http import JsonResponse
+from django.template.loader import get_template
+from django.http import FileResponse
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
-from django.template.loader import get_template
+from PyPDF2 import PdfReader, PdfWriter
 from xhtml2pdf import pisa
-from PyPDF2 import PdfMerger
-from .models import Document, NewDocumentCommentsData
+
 
 class DocumentCertificatePdfExportView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -3695,13 +3693,14 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
         try:
             # Fetch the document
             document = Document.objects.get(id=document_id)
-            
+
             # Fetch all actions for the document
             all_actions = self.get_document_actions(document)
 
             # Fetch latest document comment for front_file_url
             latest_comment = NewDocumentCommentsData.objects.filter(document=document).order_by("-created_at").first()
             front_file_url = latest_comment.front_file_url.path if latest_comment and latest_comment.front_file_url else None
+
             # Define the context for the template
             context = {
                 'document': document,
@@ -3709,7 +3708,7 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
                 'front_file_url': request.build_absolute_uri(latest_comment.front_file_url.url.lstrip('/')) if front_file_url else None,
                 'logo': os.path.join(settings.BASE_DIR, 'static', 'certificate_logo_image', 'logo.png')
             }
-            
+
             # Render the template with context data
             template = get_template('document_cover_page.html')
             html = template.render(context)
@@ -3735,18 +3734,13 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
 
                 # Check if conversion was successful
                 if os.path.exists(docx_pdf_path) and os.path.getsize(docx_pdf_path) > 0:
-                    print("stttsttts merge")
-                    # Merge PDFs
-                    merger = PdfMerger()
-                    merger.append(pdf_path)  # Main certificate PDF
-                    merger.append(docx_pdf_path)  # Converted DOCX PDF
-                    merger.write(merged_pdf_path)
-                    merger.close()
+                    # Merge PDFs using Ghostscript or PyPDF2
+                    self.merge_pdfs([pdf_path, docx_pdf_path], merged_pdf_path)
 
                     document.generated_pdf = f"document_cover/{os.path.basename(merged_pdf_path)}"
                     document.save()
-            
-            # Return the merged PDF URL only
+
+            # Return the merged PDF URL
             pdf_file_url = f"{settings.MEDIA_URL.rstrip('/')}/document_cover/{os.path.basename(merged_pdf_path)}"
             full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
             return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
@@ -3765,44 +3759,57 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
         except Exception as e:
             print(f"LibreOffice conversion failed: {e}")
 
+    def merge_pdfs(self, input_pdfs, output_pdf):
+        """Merge multiple PDFs using PyPDF2 or Ghostscript."""
+        try:
+            # Use Ghostscript (better for Linux)
+            command = ["gs", "-dBATCH", "-dNOPAUSE", "-q", "-sDEVICE=pdfwrite",
+                       f"-sOutputFile={output_pdf}"] + input_pdfs
+            subprocess.run(command, check=True)
+        except Exception as e:
+            print(f"Ghostscript merge failed, trying PyPDF2: {e}")
+            # Use PyPDF2 as a fallback
+            self.merge_pdfs_pypdf2(input_pdfs, output_pdf)
+
+    def merge_pdfs_pypdf2(self, input_pdfs, output_pdf):
+        """Merge multiple PDFs using PyPDF2 (fallback for Ghostscript)."""
+        pdf_writer = PdfWriter()
+        for pdf_path in input_pdfs:
+            pdf_reader = PdfReader(pdf_path)
+            for page in pdf_reader.pages:
+                pdf_writer.add_page(page)
+        with open(output_pdf, "wb") as output_file:
+            pdf_writer.write(output_file)
+
     def get_document_actions(self, document):
         actions = []
-        action_models = [
-            DocumentAuthorApproveAction,
-            DocumentReviewerAction,
-            DocumentApproverAction,
-            DocumentDocAdminAction,
-            DocumentSendBackAction,
-            DocumentReleaseAction,
-            DocumentEffectiveAction,
-            DocumentRevisionAction,
-        ]
 
-        # Get all reviewer actions (since multiple can exist)
+        # Get the latest Author action
         author_action = DocumentAuthorApproveAction.objects.filter(document=document).order_by('-created_at').first()
         if author_action:
             author_action.role = "Author"
             actions.append(author_action)
-    
-        # Get all Reviewer actions (Multiple reviewers can exist)
+
+        # Get all Reviewer actions (Multiple reviewers)
         reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('-created_at')
         for action in reviewer_actions:
             action.role = "Reviewer"
             actions.append(action)
-    
-        # Get the Approver action (Only one latest approver)
+
+        # Get the latest Approver action
         approver_action = DocumentApproverAction.objects.filter(document=document).order_by('-created_at').first()
         if approver_action:
             approver_action.role = "Approver"
             actions.append(approver_action)
-    
-        # Get the Doc Admin action (Only one latest admin)
+
+        # Get the latest Doc Admin action
         doc_admin_action = DocumentDocAdminAction.objects.filter(document=document).order_by('-created_at').first()
         if doc_admin_action:
             doc_admin_action.role = "Doc Admin"
             actions.append(doc_admin_action)
-    
+
         return actions
+
 
 
 
