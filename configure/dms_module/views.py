@@ -3672,28 +3672,20 @@ class GetDocumentCertificateDataListViewSet(viewsets.ViewSet):
             roles.append("No Role")
         return roles
 
-import os
-import time
-import subprocess
-from django.conf import settings
-from django.template.loader import get_template
-from django.http import FileResponse
-from rest_framework import viewsets, permissions
-from rest_framework.response import Response
-from PyPDF2 import PdfReader, PdfWriter
-from xhtml2pdf import pisa
 
-
+from PyPDF2 import PdfMerger
+from docx2pdf import convert
+import platform
 class DocumentCertificatePdfExportView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'document_id'
-
+    
     def list(self, request, *args, **kwargs):
         document_id = kwargs.get('document_id')
         try:
             # Fetch the document
             document = Document.objects.get(id=document_id)
-
+            
             # Fetch all actions for the document
             all_actions = self.get_document_actions(document)
 
@@ -3705,10 +3697,10 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             context = {
                 'document': document,
                 'all_actions': all_actions,
-                'front_file_url': request.build_absolute_uri(latest_comment.front_file_url.url.lstrip('/')) if front_file_url else None,
+                'front_file_url': request.build_absolute_uri(latest_comment.front_file_url.url) if front_file_url else None,
                 'logo': os.path.join(settings.BASE_DIR, 'static', 'certificate_logo_image', 'logo.png')
             }
-
+            
             # Render the template with context data
             template = get_template('document_cover_page.html')
             html = template.render(context)
@@ -3726,22 +3718,29 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             if pisa_status.err:
                 return Response({"status": False, "message": "Error occurred while generating PDF", "data": ""})
 
+            final_pdf_path = pdf_path  # Default to cover page PDF
+
             # Convert DOCX to PDF if the document exists
-            merged_pdf_path = pdf_path.replace(".pdf", "_final.pdf")
             if front_file_url and front_file_url.endswith('.docx'):
                 docx_pdf_path = pdf_path.replace(".pdf", "_converted.pdf")
                 self.convert_docx_to_pdf(front_file_url, docx_pdf_path)
 
                 # Check if conversion was successful
                 if os.path.exists(docx_pdf_path) and os.path.getsize(docx_pdf_path) > 0:
-                    # Merge PDFs using Ghostscript or PyPDF2
-                    self.merge_pdfs([pdf_path, docx_pdf_path], merged_pdf_path)
+                    # Merge PDFs
+                    merged_pdf_path = pdf_path.replace(".pdf", "_final.pdf")
+                    merger = PdfMerger()
+                    
+                    merger.append(pdf_path)  # Main certificate PDF
+                    merger.append(docx_pdf_path)  # Converted DOCX PDF
+                    
+                    merger.write(merged_pdf_path)
+                    merger.close()
 
-                    document.generated_pdf = f"document_cover/{os.path.basename(merged_pdf_path)}"
-                    document.save()
+                    final_pdf_path = merged_pdf_path  # Use merged PDF as final file
 
-            # Return the merged PDF URL
-            pdf_file_url = f"{settings.MEDIA_URL.rstrip('/')}/document_cover/{os.path.basename(merged_pdf_path)}"
+            # Return the final merged PDF URL
+            pdf_file_url = f"{settings.MEDIA_URL}document_cover/{os.path.basename(final_pdf_path)}"
             full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
             return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
 
@@ -3751,65 +3750,54 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             return Response({"status": False, "message": str(e), "data": ""})
 
     def convert_docx_to_pdf(self, docx_path, pdf_path):
-        """Convert DOCX to PDF using LibreOffice on Linux."""
-        try:
-            subprocess.run([
-                "soffice", "--headless", "--convert-to", "pdf", "--outdir", os.path.dirname(pdf_path), docx_path
-            ], check=True)
-        except Exception as e:
-            print(f"LibreOffice conversion failed: {e}")
-
-    def merge_pdfs(self, input_pdfs, output_pdf):
-        """Merge multiple PDFs using PyPDF2 or Ghostscript."""
-        try:
-            # Use Ghostscript (better for Linux)
-            command = ["gs", "-dBATCH", "-dNOPAUSE", "-q", "-sDEVICE=pdfwrite",
-                       f"-sOutputFile={output_pdf}"] + input_pdfs
-            subprocess.run(command, check=True)
-        except Exception as e:
-            print(f"Ghostscript merge failed, trying PyPDF2: {e}")
-            # Use PyPDF2 as a fallback
-            self.merge_pdfs_pypdf2(input_pdfs, output_pdf)
-
-    def merge_pdfs_pypdf2(self, input_pdfs, output_pdf):
-        """Merge multiple PDFs using PyPDF2 (fallback for Ghostscript)."""
-        pdf_writer = PdfWriter()
-        for pdf_path in input_pdfs:
-            pdf_reader = PdfReader(pdf_path)
-            for page in pdf_reader.pages:
-                pdf_writer.add_page(page)
-        with open(output_pdf, "wb") as output_file:
-            pdf_writer.write(output_file)
+        """Convert DOCX to PDF based on OS"""
+        if platform.system() == "Windows":
+            convert(docx_path, pdf_path)  # Use docx2pdf for Windows
+        else:
+            # Use LibreOffice for Linux
+            try:
+                subprocess.run(["soffice", "--headless", "--convert-to", "pdf", "--outdir", os.path.dirname(pdf_path), docx_path], check=True)
+            except Exception as e:
+                print(f"LibreOffice conversion failed: {e}")
 
     def get_document_actions(self, document):
         actions = []
+        action_models = [
+            DocumentAuthorApproveAction,
+            DocumentReviewerAction,
+            DocumentApproverAction,
+            DocumentDocAdminAction,
+            DocumentSendBackAction,
+            DocumentReleaseAction,
+            DocumentEffectiveAction,
+            DocumentRevisionAction,
+        ]
 
-        # Get the latest Author action
+        # Get all reviewer actions (since multiple can exist)
         author_action = DocumentAuthorApproveAction.objects.filter(document=document).order_by('-created_at').first()
         if author_action:
             author_action.role = "Author"
             actions.append(author_action)
-
-        # Get all Reviewer actions (Multiple reviewers)
+    
+        # 2️⃣ Get all Reviewer actions (Multiple reviewers can exist)
         reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('-created_at')
         for action in reviewer_actions:
             action.role = "Reviewer"
             actions.append(action)
-
-        # Get the latest Approver action
+    
+        # 3️⃣ Get the Approver action (Only one latest approver)
         approver_action = DocumentApproverAction.objects.filter(document=document).order_by('-created_at').first()
         if approver_action:
             approver_action.role = "Approver"
             actions.append(approver_action)
-
-        # Get the latest Doc Admin action
+    
+        # 4️⃣ Get the Doc Admin action (Only one latest admin)
         doc_admin_action = DocumentDocAdminAction.objects.filter(document=document).order_by('-created_at').first()
         if doc_admin_action:
             doc_admin_action.role = "Doc Admin"
             actions.append(doc_admin_action)
-
+    
         return actions
-
 
 
 
