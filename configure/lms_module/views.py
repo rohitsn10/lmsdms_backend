@@ -3846,7 +3846,7 @@ class ClassroomQuizList(viewsets.ModelViewSet):
             classroom_id = kwargs.get('classroom_id')
             classroom = ClassroomTraining.objects.get(id=classroom_id)
             # classroom_quizzes = list(ClassroomQuiz.objects.filter(classroom=classroom))
-            document_id = classroom.document.id
+            document_id = classroom.document.id if classroom.document else None
             # training_quizzes = list(TrainingQuiz.objects.filter(document=document_id))
             if document_id:
                 queryset = list(TrainingQuiz.objects.filter(document_id=document_id))
