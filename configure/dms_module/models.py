@@ -57,6 +57,7 @@ class TemplateModel(models.Model):
 class Document(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     parent_document = models.ForeignKey('self', on_delete=models.CASCADE,blank=True, null=True)
+    is_parent = models.BooleanField(default=False, null=True, blank=True)
     document_title = models.TextField(blank=True, null=True) 
     document_number = models.CharField(max_length=255) 
     document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE) 

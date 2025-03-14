@@ -741,6 +741,8 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             if parent_document:
                 try:
                     parent_document_instance = Document.objects.get(id=parent_document)
+                    parent_document_instance.is_parent = True
+                    parent_document_instance.save()
                 except Document.DoesNotExist:
                     return Response({"status": False, "message": "Parent document not found", "data": []})
                 
@@ -3692,7 +3694,7 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             # Fetch latest document comment for front_file_url
             latest_comment = NewDocumentCommentsData.objects.filter(document=document).order_by("-created_at").first()
             front_file_url = latest_comment.front_file_url.path if latest_comment and latest_comment.front_file_url else None
-
+            print(front_file_url, "Front file")
             # Define the context for the template
             context = {
                 'document': document,
