@@ -2383,7 +2383,7 @@ class ClassroomCreateViewSet(viewsets.ModelViewSet):
         
         try:
             if queryset.exists():
-                serializer = ClassroomTrainingSerializer(queryset, many=True)
+                serializer = ClassroomTrainingSerializer(queryset, many=True, context={'request': request})
                 return Response({"status": True,"message": "Classroom training fetched successfully","data": serializer.data})
             else:
                 return Response({"status": True,"message": "No classroom training found","data": []})

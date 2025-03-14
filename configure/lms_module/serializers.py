@@ -265,10 +265,11 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
     def get_classroom_attempted(self, obj):
         request = self.context.get('request')
         if request and hasattr(request, "user"):
-            user = request.user
-            for_me = ClassroomAttemptedQuiz.objects.filter(user=user, classroom=obj).first()
-            return for_me.classroom_attempted
-        
+            for_me = ClassroomAttemptedQuiz.objects.filter(user=request.user, classroom=obj).order_by('-created_at').first()
+            print(f"AttemptedQuiz: {for_me}")
+            if for_me:
+                return for_me.classroom_attempted
+            return False
 class SessionSerializer(serializers.ModelSerializer):
     is_completed = serializers.SerializerMethodField()
     class Meta:
