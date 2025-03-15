@@ -184,10 +184,13 @@ class DocumentviewSerializer(serializers.ModelSerializer):
     is_done = serializers.SerializerMethodField()
     training_assesment_attempted = serializers.SerializerMethodField()
     is_reviewed = serializers.SerializerMethodField()
+    quiz_count = serializers.SerializerMethodField()
     class Meta:
         model = Document
-        fields = ['id', 'parent_document','is_parent','document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at','document_type','document_type_name','form_status','document_current_status', 'is_done','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url','request_user_groups','user_department_id','user_department','workflow','document_description', 'effective_date', 'revision_date','product_code','equipment_id', 'front_file_url', 'user_view', 'training_quiz_ids','training_assesment_attempted', 'is_reviewed']
+        fields = ['id','quiz_count', 'parent_document','is_parent','document_title','revision_month','assigned_to','select_template', 'document_number', 'created_at','document_type','document_type_name','form_status','document_current_status', 'is_done','current_status_name','version','training_required','approval_status','visible_to_users', 'approval_numbers', 'no_of_request_by_admin','selected_template_url','request_user_groups','user_department_id','user_department','workflow','document_description', 'effective_date', 'revision_date','product_code','equipment_id', 'front_file_url', 'user_view', 'training_quiz_ids','training_assesment_attempted', 'is_reviewed']
 
+    def get_quiz_count(self,obj):
+        return TrainingQuiz.objects.filter(document=obj).count()
     def get_is_reviewed(self,obj):
         user = self.context.get('request').user
         comments = ReviewByUser.objects.filter(document=obj, user=user).first()

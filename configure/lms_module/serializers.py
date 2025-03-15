@@ -245,9 +245,10 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
     classroom_id = serializers.IntegerField(source='id')
     classroom_attempted = serializers.SerializerMethodField()
     classroom_assessment_done = serializers.SerializerMethodField()
+    quiz_count = serializers.SerializerMethodField()
     class Meta:
         model = ClassroomTraining
-        fields = ['classroom_id', 'document', 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at', 'trainer', 'user', 'is_all_completed', 'is_assessment_completed', 'online_offline_status', 'classroom_attempted','classroom_assessment_done']
+        fields = ['quiz_count', 'classroom_id', 'document', 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at', 'trainer', 'user', 'is_all_completed', 'is_assessment_completed', 'online_offline_status', 'classroom_attempted','classroom_assessment_done']
     # department_of_employee_first_name  = serializers.ReadOnlyField(source='department_or_employee.first_name')
     # department_of_employee_last_name = serializers.ReadOnlyField(source='department_or_employee.last_name')
     # class Meta:
@@ -257,6 +258,8 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
     #         'document', 'sop', 'start_date', 'start_time', 'end_time',
     #         'created_at', 'created_by', 'status','acknowledged_by_employee'
     #     ]
+    def get_quiz_count(self,obj):
+        return ClassroomQuiz.objects.filter(classroom=obj).count() if obj else 0
     def get_classroom_assessment_done(self, obj):
         request = self.context.get('request')
         if request and hasattr(request, "user"):
