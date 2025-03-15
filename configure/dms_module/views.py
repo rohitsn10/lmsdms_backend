@@ -2584,6 +2584,14 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
             revision_request = DocumentRevisionRequestAction.objects.get(id=request_action_id)
             revision_request.status = action_status
             revision_request.save()
+
+            if document.parent_document:
+                document_parent = Document.objects.get(id=document.parent_document.id)
+                print(document_parent)
+                parent_job_roles = document_parent.job_roles.all()
+                
+                document_parent.job_roles.clear()
+                print(f"Cleared all job roles from parent document {document_parent.id}")
             # revise_action = DocumentRevisionAction.objects.create(
             #     user=user,
             #     document=document,
