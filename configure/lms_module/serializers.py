@@ -447,6 +447,13 @@ class AttemptedQuizSerializer(serializers.ModelSerializer):
         model = AttemptedQuiz
         fields = ['id', 'user', 'quiz', 'document','document_name', 'status', 'attempts', 'obtain_marks', 'total_marks', 'total_taken_time', 'created_at', 'is_pass']
 
+class ClassroomAttemptedQuizSerializer(serializers.ModelSerializer):
+    classroom_name = serializers.CharField(source = 'classroom.classroom_name', read_only = True)
+    class Meta:
+        model = ClassroomAttemptedQuiz
+        fields = ['id', 'user', 'quiz', 'training_quiz', 'classroom','classroom_name', 'obtain_marks', 'total_marks', 'total_taken_time', 'created_at', 'is_pass']
+
+
 class AttemptedQuizQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttemptedQuizQuestion

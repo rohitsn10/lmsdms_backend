@@ -3460,6 +3460,24 @@ class UserIdWiseNoOfAttemptsViewSet(viewsets.ModelViewSet):
         except CustomUser.DoesNotExist:return Response({'status': False,'message': 'User not found'})
         except Exception as e:
             return Response({'status': False,'message': 'Something went wrong', 'error': str(e)})
+        
+
+class ClassroomUserIdWiseNoOfAttemptsViewSet(viewsets.ModelViewSet):
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user_id = request.data.get('user_id')
+            user = CustomUser.objects.get(id=user_id)
+            if not user:
+                return Response({'status': False,'message': 'User not found'})
+            quiz_sessions = ClassroomAttemptedQuiz.objects.filter(user=user, quiz__status=True)
+            serializer = ClassroomAttemptedQuizSerializer(quiz_sessions, many=True)
+            if not quiz_sessions.exists():
+                return Response({'status': False, 'message': 'No quiz sessions found for this user'})
+            return Response({'status': True, 'message': 'fetched successfully', 'data': serializer.data})
+        except CustomUser.DoesNotExist:return Response({'status': False,'message': 'User not found'})
+        except Exception as e:
+            return Response({'status': False,'message': 'Something went wrong', 'error': str(e)})
 
 from user_profile.serializers import *
 class ClassRoomWiseSelectedUserViewSet(viewsets.ModelViewSet):
