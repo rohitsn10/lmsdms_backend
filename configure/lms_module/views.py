@@ -3460,7 +3460,7 @@ class UserIdWiseNoOfAttemptsViewSet(viewsets.ModelViewSet):
         except CustomUser.DoesNotExist:return Response({'status': False,'message': 'User not found'})
         except Exception as e:
             return Response({'status': False,'message': 'Something went wrong', 'error': str(e)})
-        
+
 from user_profile.serializers import *
 class ClassRoomWiseSelectedUserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -4743,7 +4743,7 @@ class DashboardDocumentViewSet(viewsets.ModelViewSet):
 
 class ClassroomAttemptedQuizViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    queryset = AttemptedQuiz.objects.all()
+    queryset = ClassroomAttemptedQuiz.objects.all()
     serializer_class = AttemptedQuizSerializer
 
     def create(self, request, *args, **kwargs):
@@ -4902,10 +4902,16 @@ class OnceClassroomAttemptedViewSet(viewsets.ModelViewSet):
                 classroom = ClassroomTraining.objects.get(id=classroom_id)
             except ClassroomTraining.DoesNotExist:
                 return Response({"status": False, "message": "Classroom training not found"}, status=404)
+            
+            document_id = classroom.document.id if classroom.document else None
 
-            try:
-                quiz = TrainingQuiz.objects.get(id=quiz_id)
-            except TrainingQuiz.DoesNotExist:
+            if document_id:
+                quiz = TrainingQuiz.objects.filter(document_id=document_id, id=quiz_id).first()
+            else:
+                quiz = ClassroomQuiz.objects.filter(classroom=classroom, id=quiz_id).first()
+
+            # Handle case if quiz is not found
+            if not quiz:
                 return Response({"status": False, "message": "Quiz not found"}, status=404)
 
             # 🔹 Check if an attempted quiz entry exists

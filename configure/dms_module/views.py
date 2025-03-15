@@ -2604,6 +2604,7 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
                 new_document = Document.objects.create(
                     user=user,
                     document_title=document.document_title,
+                    parent_document=document.parent_document,
                     workflow = document.workflow,
                     document_operation = document.document_operation,
                     revision_month=document.revision_month,
