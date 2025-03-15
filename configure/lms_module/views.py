@@ -4763,8 +4763,14 @@ class ClassroomAttemptedQuizViewSet(viewsets.ModelViewSet):
             user = CustomUser.objects.get(id=user_id)
             # document = Document.objects.get(id=document_id)
             classroom = ClassroomTraining.objects.get(id=classroom_id)
-            quiz = TrainingQuiz.objects.get(id=quiz_id)
-
+            quiz = None
+            training_quiz = TrainingQuiz.objects.filter(id=quiz_id).first()
+            if training_quiz:
+                quiz = training_quiz
+            else:
+                classroom_quiz = ClassroomQuiz.objects.filter(id=quiz_id, classroom=classroom).first()
+                if classroom_quiz:
+                    quiz = classroom_quiz
             # previous_session = QuizSession.objects.filter(user=user, quiz=quiz).order_by('-id').first()
             # assigned_document_version = document.version
 
@@ -4799,7 +4805,8 @@ class ClassroomAttemptedQuizViewSet(viewsets.ModelViewSet):
                 user=user,
                 # document=document,
                 classroom=classroom,
-                training_quiz=quiz,
+                training_quiz=quiz if isinstance(quiz, TrainingQuiz) else None,
+                quiz=quiz if isinstance(quiz, ClassroomQuiz) else None,
                 obtain_marks=obtain_marks,
                 total_marks=total_marks,
                 total_taken_time=total_taken_time,
@@ -4923,7 +4930,11 @@ class OnceClassroomAttemptedViewSet(viewsets.ModelViewSet):
                 attempted_quiz.save()
             else:
                 # 🔹 Create a new record if it doesn't exist
-                ClassroomAttemptedQuiz.objects.create(user=user, classroom=classroom, training_quiz=quiz, classroom_attempted=True)
+                ClassroomAttemptedQuiz.objects.create(user=user, 
+                                                      classroom=classroom, 
+                                                      training_quiz=quiz if isinstance(quiz, TrainingQuiz) else None, 
+                                                      quiz=quiz if isinstance(quiz, ClassroomQuiz) else None, 
+                                                      classroom_attempted=True)
 
             return Response({"status": True, "message": "Attempted quiz updated successfully"})
 
