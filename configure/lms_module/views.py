@@ -4907,12 +4907,12 @@ class OnceClassroomAttemptedViewSet(viewsets.ModelViewSet):
 
             if document_id:
                 quiz = TrainingQuiz.objects.filter(document_id=document_id, id=quiz_id).first()
+                if not quiz:
+                    return Response({"status": False, "message": "Quiz not found"})
             else:
                 quiz = ClassroomQuiz.objects.filter(classroom=classroom, id=quiz_id).first()
-
-            # Handle case if quiz is not found
-            if not quiz:
-                return Response({"status": False, "message": "Quiz not found"}, status=404)
+                if not quiz:
+                    return Response({"status": False, "message": "Quiz not found"})
 
             # 🔹 Check if an attempted quiz entry exists
             attempted_quiz = ClassroomAttemptedQuiz.objects.filter(user=user, classroom=classroom, training_quiz=quiz).first()
