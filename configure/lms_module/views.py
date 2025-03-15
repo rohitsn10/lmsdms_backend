@@ -2697,6 +2697,7 @@ class AttendanceCreateViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
+            ipdb.set_trace()
             session_id = request.data.get('session_id')
             user_ids = request.data.get('user_ids')
             status = request.data.get('status')
@@ -2731,7 +2732,7 @@ class AttendanceCreateViewSet(viewsets.ModelViewSet):
                 attendance.status = status
                 attendance.save()
 
-            classroom_training = ClassroomTraining.objects.filter(user__in=users).distinct().first()
+            classroom_training = ClassroomTraining.objects.filter(user__in=users, sessions__id=session_id).distinct().first()
             classroom_training.is_all_completed = True
             classroom_training.save()
             if classroom_training:
