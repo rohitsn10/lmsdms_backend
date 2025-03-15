@@ -2697,7 +2697,6 @@ class AttendanceCreateViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            ipdb.set_trace()
             session_id = request.data.get('session_id')
             user_ids = request.data.get('user_ids')
             status = request.data.get('status')
