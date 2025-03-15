@@ -4811,6 +4811,7 @@ class ClassroomAttemptedQuizViewSet(viewsets.ModelViewSet):
                 total_marks=total_marks,
                 total_taken_time=total_taken_time,
                 is_pass=is_pass,
+                classroom_attempted=True
             )
             # if is_pass:
             #     quiz_session = QuizSession.objects.get(user=user, quiz=quiz)
