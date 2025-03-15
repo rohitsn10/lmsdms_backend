@@ -2732,11 +2732,11 @@ class AttendanceCreateViewSet(viewsets.ModelViewSet):
                 attendance.save()
 
             classroom_training = ClassroomTraining.objects.filter(user__in=users).distinct().first()
-
+            classroom_training.is_all_completed = True
+            classroom_training.save()
             if classroom_training:
                 all_present = Attendance.objects.filter(session=session, status='absent').count() == 0
-                classroom_training.is_all_completed = True
-                classroom_training.save()
+                
 
             if Attendance.objects.filter(session=session, status='present').exists():
                 session.attend = True
