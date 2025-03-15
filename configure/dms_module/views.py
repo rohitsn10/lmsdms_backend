@@ -3413,7 +3413,7 @@ class ParentDocumentViewSet(viewsets.ModelViewSet):
         
         # Filter queryset based on document_id
         if document_id:
-            queryset = Document.objects.filter(parent_document_id=document_id).order_by('-id')
+            queryset = Document.objects.filter(parent_document_id=document_id).exclude(document_current_status=7).order_by('-id')
         else:
             queryset = Document.objects.none()  
 
