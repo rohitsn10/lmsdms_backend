@@ -259,7 +259,10 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
     #         'created_at', 'created_by', 'status','acknowledged_by_employee'
     #     ]
     def get_quiz_count(self,obj):
-        return ClassroomQuiz.objects.filter(classroom=obj).count() if obj else 0
+        if obj and obj.document:
+            return TrainingQuiz.objects.filter(document=obj.document).count()
+        else:
+            return ClassroomQuiz.objects.filter(classroom=obj).count()
     def get_classroom_assessment_done(self, obj):
         request = self.context.get('request')
         if request and hasattr(request, "user"):
