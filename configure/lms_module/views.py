@@ -979,7 +979,7 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
 
             else:
                 job_roles = JobRole.objects.filter(job_assigns__user=user)
-                queryset_documents = Document.objects.filter(job_roles__in=job_roles).distinct()
+                queryset_documents = Document.objects.filter(job_roles__in=job_roles).exclude(document_current_status_id=12).distinct()
     
             queryset_documents = self.filter_queryset(queryset_documents)
             document_serializer = DocumentviewSerializer(queryset_documents, many=True, context={'request': request})
