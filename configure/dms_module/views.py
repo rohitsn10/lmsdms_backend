@@ -1916,6 +1916,7 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
             except DynamicStatus.DoesNotExist:
                 return Response({"status": False, "message": "Invalid status ID"})
             
+            DocumentReviewerAction.objects.filter(document=document).delete()
             SendBackofUser.objects.filter(document=document).update(is_send_back=False)
             ReviewByUser.objects.filter(document=document).update(is_reviewed=False)
             UserWiseSendBackView.objects.filter(document=document).update(is_done=False)
@@ -3413,7 +3414,7 @@ class ParentDocumentViewSet(viewsets.ModelViewSet):
         
         # Filter queryset based on document_id
         if document_id:
-            queryset = Document.objects.filter(parent_document_id=document_id).exclude(document_current_status=7).order_by('-id')
+            queryset = Document.objects.filter(parent_document_id=document_id).exclude(document_current_status=15).order_by('-id')
         else:
             queryset = Document.objects.none()  
 
