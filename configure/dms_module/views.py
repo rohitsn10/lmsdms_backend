@@ -3159,7 +3159,7 @@ class DocumentReviseRequestViewSet(viewsets.ModelViewSet):
             document = Document.objects.get(id=document_id)
 
             revise_request, created = DocumentRevisionRequestAction.objects.get_or_create(
-                user=user,
+                # user=user,
                 document=document,
                 defaults={
                     "revise_description": revise_description,
