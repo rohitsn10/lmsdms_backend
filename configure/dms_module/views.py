@@ -5338,3 +5338,19 @@ class DocxConvertPDFViewSet(viewsets.ModelViewSet):
             return Response({'status': False, 'message': 'Print request not found.'})
         except Exception as e:
             return Response({'status': False, 'message': 'An error occurred while processing the document.', 'error': str(e)})
+
+
+class IDWiSeDocumentListViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentviewSerializer
+    queryset = Document.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        try:
+            document_id = self.kwargs.get('document_id')
+            queryset = self.queryset.filter(id=document_id)
+            serializer = self.serializer_class(queryset, many=True, context={'request': request})
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({'status': False,'message': 'Error fetching documents', 'error': str(e)})
+    
