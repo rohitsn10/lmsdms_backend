@@ -974,17 +974,18 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             user = self.request.user
+            format_type = DocumentType.objects.filter(document_name="Format").first()
             if user.groups.filter(name="DTC").exists():
-                queryset_documents = Document.objects.filter(Q(document_current_status_id=6) | Q(document_current_status_id=7, training_required=True))
+                queryset_documents = Document.objects.filter(Q(document_current_status_id=6) | Q(document_current_status_id=7, training_required=True)).exclude(document_type=format_type)
 
             else:
                 job_roles = JobRole.objects.filter(job_assigns__user=user)
-                queryset_documents = Document.objects.filter(job_roles__in=job_roles).exclude(document_current_status_id=12).distinct()
+                queryset_documents = Document.objects.filter(job_roles__in=job_roles).exclude(document_current_status_id=12).exclude(document_type=format_type).distinct()
     
             queryset_documents = self.filter_queryset(queryset_documents)
             document_serializer = DocumentviewSerializer(queryset_documents, many=True, context={'request': request})
             document_data = document_serializer.data
-    
+
             quiz_sessions = QuizSession.objects.filter(user=user)
             quiz_session_serializer = QuizSessionSerializer(quiz_sessions, many=True, context={'request': request})
             quiz_session_data = quiz_session_serializer.data
