@@ -3158,19 +3158,18 @@ class DocumentReviseRequestViewSet(viewsets.ModelViewSet):
 
             document = Document.objects.get(id=document_id)
 
-            revise_request, created = DocumentRevisionRequestAction.objects.get_or_create(
-                # user=user,
-                document=document,
-                defaults={
-                    "revise_description": revise_description,
-                    "is_revise": True  # ✅ Setting is_revise = True
-                }
-            )
+            revise_request = DocumentRevisionRequestAction.objects.filter(document=document).first()
 
-            if not created:  # If already exists, update description & set is_revise = True
+            if revise_request:
                 revise_request.revise_description = revise_description
                 revise_request.is_revise = True
                 revise_request.save()
+            else:
+                revise_request = DocumentRevisionRequestAction.objects.create(
+                    document=document,
+                    revise_description=revise_description,
+                    is_revise=True
+                )
 
             return Response({
                 "status": True,
