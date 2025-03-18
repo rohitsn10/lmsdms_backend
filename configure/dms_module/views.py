@@ -3166,7 +3166,7 @@ class DocumentReviseRequestViewSet(viewsets.ModelViewSet):
                 revise_request.save()
             else:
                 revise_request = DocumentRevisionRequestAction.objects.create(
-                    user=user
+                    user=user,
                     document=document,
                     revise_description=revise_description,
                     is_revise=True
