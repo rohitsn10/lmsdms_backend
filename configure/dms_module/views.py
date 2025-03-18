@@ -3158,7 +3158,7 @@ class DocumentReviseRequestViewSet(viewsets.ModelViewSet):
 
             document = Document.objects.get(id=document_id)
 
-            revise_request = DocumentRevisionRequestAction.objects.filter(document=document).order_by('-created_at').first()
+            revise_request = DocumentRevisionRequestAction.objects.filter(user=user, document=document).order_by('-created_at').first()
 
             if revise_request:
                 revise_request.revise_description = revise_description
@@ -3166,6 +3166,7 @@ class DocumentReviseRequestViewSet(viewsets.ModelViewSet):
                 revise_request.save()
             else:
                 revise_request = DocumentRevisionRequestAction.objects.create(
+                    user=user
                     document=document,
                     revise_description=revise_description,
                     is_revise=True
@@ -3199,12 +3200,12 @@ class DocumentReviseRequestGetViewSet(viewsets.ModelViewSet):
         group_id = user_groups[0] if user_groups else None  # Take the first group if available
 
         pending_revise_count = DocumentRevisionRequestAction.objects.filter(
-            user=request.user, status="Pending"
+            status="Pending"
         ).count()
         # Add is_revise field for each document
         for doc in serializer.data:
             is_revise = DocumentRevisionRequestAction.objects.filter(
-                user=request.user, document_id=doc['document_id'], is_revise=True
+                document_id=doc['document_id'], is_revise=True
             ).exists()
             doc['is_revise'] = is_revise  # Append is_revise to response
 
