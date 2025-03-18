@@ -3158,7 +3158,7 @@ class DocumentReviseRequestViewSet(viewsets.ModelViewSet):
 
             document = Document.objects.get(id=document_id)
 
-            revise_request = DocumentRevisionRequestAction.objects.filter(document=document).first()
+            revise_request = DocumentRevisionRequestAction.objects.filter(document=document).order_by('-created_at').first()
 
             if revise_request:
                 revise_request.revise_description = revise_description
