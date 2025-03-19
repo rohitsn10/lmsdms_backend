@@ -2190,17 +2190,17 @@ class DocumentApproverActionCreateViewSet(viewsets.ModelViewSet):
                 document=document,
                 version=version_number
             )
-            if new_version.endswith(".0"):  
-                previous_major_version = str(int(new_version.split(".")[0]) - 1) + ".0"
+            # if new_version.endswith(".0"):  
+            #     previous_major_version = str(int(new_version.split(".")[0]) - 1) + ".0"
 
-                old_doc = Document.objects.filter(
-                    document_number=document.document_number,
-                    version=previous_major_version
-                ).first()
+            #     old_doc = Document.objects.filter(
+            #         document_number=document.document_number,
+            #         version=previous_major_version
+            #     ).first()
 
-                if old_doc:
-                    old_doc.document_current_status = DynamicStatus.objects.get(id=15)
-                    old_doc.save()
+            #     if old_doc:
+            #         old_doc.document_current_status = DynamicStatus.objects.get(id=15)
+            #         old_doc.save()
             
             # Send approval notification to approvers and department users
             document_title = document.document_title
@@ -2634,7 +2634,21 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
                     generatefile=document.generatefile,
                     # author=user
                 )
-                message = "Revision request successfully approved."
+                old_questions = TrainingQuestions.objects.filter(document=document)
+                for question in old_questions:
+                    TrainingQuestions.objects.create(
+                        document=new_document,  # Assign the new document
+                        question_type=question.question_type,
+                        question_text=question.question_text,
+                        options=question.options,
+                        correct_answer=question.correct_answer,
+                        marks=question.marks,
+                        created_by=user,  # Set the user who initiated the revision
+                        selected_file_type=question.selected_file_type,
+                        selected_file=question.selected_file,
+                        question_created_at=timezone.now()
+                    )
+                message = "Revision request successfully approved, and questions were copied."
 
             elif status_id == 11:  # If rejected, just update the document status
                 document.document_current_status = status_revision  # Set status to 11 (rejected)
@@ -3792,7 +3806,7 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             actions.append(author_action)
     
         # 2️⃣ Get all Reviewer actions (Multiple reviewers can exist)
-        reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('-created_at')
+        reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('created_at')
         for action in reviewer_actions:
             action.role = "Reviewer"
             actions.append(action)
@@ -5271,7 +5285,15 @@ class DocumentEffectiveViewSet(viewsets.ModelViewSet):
             document_data.document_current_status = status_data
             document_data.effective_date = datetime.now()
             document_data.save()
-            return Response({"status": True,"message": "Document effective date created successfully"})
+            if document_data.version and document_data.version.endswith(".0"): 
+                previous_major_version = str(int(document_data.version.split(".")[0]) - 1) + ".0"
+
+                old_doc = Document.objects.filter(
+                    document_number=document_data.document_number,
+                    version=previous_major_version
+                ).update(document_current_status=DynamicStatus.objects.get(id=15))
+                
+            return Response({"status": True,"message": "Document effective date with supersede created successfully"})
         
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})

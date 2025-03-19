@@ -8,7 +8,7 @@ from user_profile.function_call import *
 from user_profile.models import Department
 from django.db import IntegrityError            
 import random
-from django.db.models import Q
+from django.db.models import *
 import ast
 from django.template.loader import get_template
 from xhtml2pdf import pisa
@@ -981,7 +981,15 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
             else:
                 job_roles = JobRole.objects.filter(job_assigns__user=user)
                 queryset_documents = Document.objects.filter(job_roles__in=job_roles).exclude(document_current_status_id=12).exclude(document_type=format_type).distinct()
-    
+
+            latest_versions = queryset_documents.values('document_title').annotate(
+                max_version=Max('version')
+            )
+            queryset_documents = queryset_documents.filter(
+            version=Subquery(
+                latest_versions.filter(document_title=OuterRef('document_title')).values('max_version')[:1]
+            )
+        )
             queryset_documents = self.filter_queryset(queryset_documents)
             document_serializer = DocumentviewSerializer(queryset_documents, many=True, context={'request': request})
             document_data = document_serializer.data
