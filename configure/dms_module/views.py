@@ -419,7 +419,7 @@ class PrintRequestExcelGenerateViewSet(viewsets.ModelViewSet):
             ws.title = "Print Requests"
 
             headers = [
-                'Data Number', 'User','SOP Document Number','SOP Document Title', 'No of Prints', 'Issue Type', 'Reason for Print',
+                'Data Number', 'User','SOP Document Number','SOP Document Title', 'No of Prints', 'Retrieval Numbers', 'Issue Type', 'Reason for Print',
                 'Print Request Status', 'Created At', 'Printer', 'Master Copy Users', 'Other Users', 'Reminder Sent'
             ]
 
@@ -433,15 +433,16 @@ class PrintRequestExcelGenerateViewSet(viewsets.ModelViewSet):
                 ws[f'C{row_num}'] = print_request.sop_document_id.document_number if print_request.sop_document_id else ""
                 ws[f'D{row_num}'] = print_request.sop_document_id.document_title if print_request.sop_document_id else ""
                 ws[f'E{row_num}'] = print_request.no_of_print
-                ws[f'F{row_num}'] = print_request.issue_type
-                ws[f'G{row_num}'] = print_request.reason_for_print
+                ws[f'F{row_num}'] = ", ".join([str(num) for num in print_request.approvals.all().values_list('retrival_numbers__number', flat=True) if num])
+                ws[f'G{row_num}'] = print_request.issue_type
+                ws[f'H{row_num}'] = print_request.reason_for_print
                 status = print_request.print_request_status.status if print_request.print_request_status else ""
-                ws[f'H{row_num}'] = status.capitalize() if status else ""
-                ws[f'I{row_num}'] = print_request.created_at.strftime('%d-%m-%Y')
-                ws[f'J{row_num}'] = print_request.printer.printer_name if print_request.printer else ""
-                ws[f'K{row_num}'] = ", ".join([user.username for user in print_request.master_copy_user.all()])
-                ws[f'L{row_num}'] = ", ".join([user.username for user in print_request.other_user.all()])
-                ws[f'M{row_num}'] = "Yes" if print_request.reminder_sent else "No"
+                ws[f'I{row_num}'] = status.capitalize() if status else ""
+                ws[f'J{row_num}'] = print_request.created_at.strftime('%d-%m-%Y')
+                ws[f'K{row_num}'] = print_request.printer.printer_name if print_request.printer else ""
+                ws[f'L{row_num}'] = ", ".join([user.username for user in print_request.master_copy_user.all()])
+                ws[f'M{row_num}'] = ", ".join([user.username for user in print_request.other_user.all()])
+                ws[f'N{row_num}'] = "Yes" if print_request.reminder_sent else "No"
 
             for col_num in range(1, len(headers) + 1):
                 col_letter = get_column_letter(col_num)
