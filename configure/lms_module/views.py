@@ -3479,7 +3479,7 @@ class ClassroomUserIdWiseNoOfAttemptsViewSet(viewsets.ModelViewSet):
             user = CustomUser.objects.get(id=user_id)
             if not user:
                 return Response({'status': False,'message': 'User not found'})
-            quiz_sessions = ClassroomAttemptedQuiz.objects.filter(user=user, quiz__status=True)
+            quiz_sessions = ClassroomAttemptedQuiz.objects.filter(Q(user=user) & (Q(quiz__status=True) | Q(training_quiz__status=True)))
             serializer = ClassroomAttemptedQuizSerializer(quiz_sessions, many=True)
             if not quiz_sessions.exists():
                 return Response({'status': False, 'message': 'No quiz sessions found for this user'})
