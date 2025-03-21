@@ -128,7 +128,7 @@ def get_new_version(version_str):
 
 
 
-def generate_document_number(user, document_type, parent_document_instance=None):
+def generate_document_number(user, document_type, parent_document_instance):
     # Access the department name
     if user.department:
         department_name = user.department.department_name  # Access department_name correctly
