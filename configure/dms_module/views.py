@@ -3485,8 +3485,8 @@ class DocumentTimelineViewSet(viewsets.ModelViewSet):
             DocumentAuthorApproveAction.objects.filter(document_id=document_id), many=True
         ).data
 
-        data['reviewer_actions'] = DocumentReviewerActionSerializer(
-            DocumentReviewerAction.objects.filter(document_id=document_id), many=True
+        dataa['reviewer_actions'] = DocumentReviewerActionSerializer(
+            DocumenteReviewerAction.objects.filter(document_id=document_id), many=True
         ).data
 
         data['approver_actions'] = DocumentApproverActionSerializer(
