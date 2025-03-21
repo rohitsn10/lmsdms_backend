@@ -3173,7 +3173,7 @@ class TrainingAssigntoJobroleViewSet(viewsets.ModelViewSet):
             existing_documents = Document.objects.filter(job_roles=job_role_instance)
             for doc in existing_documents:
                 doc.job_roles.remove(job_role_instance)
-                
+
             valid_document = Document.objects.filter(id__in=document_ids)
             if len(valid_document) != len(document_ids):
                 return Response({"status": False, "message": "Some Training IDs are invalid"})
@@ -3194,7 +3194,7 @@ class TrainingAssigntoJobroleViewSet(viewsets.ModelViewSet):
             if not job_role_id:
                 return Response({"status": False, "message": "Job role ID is required"})
 
-            job_role_instance = JobRole.objects.filter(id=job_role_id)
+            job_role_instance = JobRole.objects.filter(id=job_role_id).first()
             if not job_role_instance:
                 return Response({"status": False, "message": "Invalid Job role ID"})
 
