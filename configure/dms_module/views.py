@@ -1104,26 +1104,26 @@ class DocumentViewSet(viewsets.ModelViewSet):
              # Check if the user is in the "Admin" group
             if user.groups.filter(name="Admin").exists():
                 # Admins can view all documents
-                queryset = Document.objects.all().order_by('-id')
+                queryset = Document.objects.all().exclude(document_current_status=15).order_by('-id')
             elif user.groups.filter(name="Author").exists():
                 # Authors can only see documents created by users in the same department
                 if department_id:
                     queryset = Document.objects.filter(
                         user__department_id=department_id,
                         user__groups__name="Author"
-                    ).order_by('-id') | Document.objects.filter(document_current_status=10) | Document.objects.filter(author=user).order_by('-id')
+                    ).exclude(document_current_status=15).order_by('-id') | Document.objects.filter(document_current_status=10) | Document.objects.filter(author=user).order_by('-id')
                 else:
                     queryset = Document.objects.filter(
                         user__department_id=user.department_id,
                         user__groups__name="Author"
-                    ).order_by('-id') | Document.objects.filter(document_current_status=10) | Document.objects.filter(author=user).order_by('-id')
+                    ).exclude(document_current_status=15).order_by('-id') | Document.objects.filter(document_current_status=10) | Document.objects.filter(author=user).order_by('-id')
             else:
                 # Other roles: View documents assigned to them
                 queryset = Document.objects.filter(
                     Q(approver=user) |
                     Q(doc_admin=user) |
                     Q(visible_to_users=user)
-                ).distinct()
+                ).exclude(document_current_status=15).distinct()
 
             # Filter by document_current_status if provided
             if document_current_status:
