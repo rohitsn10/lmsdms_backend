@@ -3170,12 +3170,16 @@ class TrainingAssigntoJobroleViewSet(viewsets.ModelViewSet):
             if not isinstance(document_ids, list) or not document_ids:
                 return Response({"status": False, "message": "document_ids should be a non-empty list"})
 
+            existing_documents = Document.objects.filter(job_roles=job_role_instance)
+            for doc in existing_documents:
+                doc.job_roles.remove(job_role_instance)
+                
             valid_document = Document.objects.filter(id__in=document_ids)
             if len(valid_document) != len(document_ids):
                 return Response({"status": False, "message": "Some Training IDs are invalid"})
 
             for training in valid_document:
-                training.job_roles.update(job_role_instance)
+                training.job_roles.add(job_role_instance)
 
             return Response({
                 "status": True,
