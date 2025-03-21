@@ -3190,7 +3190,7 @@ class TrainingAssigntoJobroleViewSet(viewsets.ModelViewSet):
             if not job_role_id:
                 return Response({"status": False, "message": "Job role ID is required"})
 
-            job_role_instance = JobRole.objects.filter(id=job_role_id).first()
+            job_role_instance = JobRole.objects.filter(id=job_role_id)
             if not job_role_instance:
                 return Response({"status": False, "message": "Invalid Job role ID"})
 
