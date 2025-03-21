@@ -135,4 +135,6 @@ urlpatterns = [
     path('training_wise_users', TrainingWiseUsersViewSet.as_view({'get': 'list'}), name='training_wise_users'),
 
     path('on_off_user_for_training', OnOffUserForTrainingViewSet.as_view({'put': 'update'}), name='on_off_user_for_training'), 
+   
+    path('employee_training_excel/', EmployeeRecordLogExcelView.as_view({'get': 'list'}), name='employee_training_excel'),
 ]
