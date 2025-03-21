@@ -738,14 +738,26 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             #     return Response({"status": False, "message": "Doc Admin user not found", "data": []})
 
             # Handle Parent Document if provided
+            # parent_document_instance = []
+            # if parent_document:
+            #     try:
+            #         parent_document_instance = Document.objects.get(id__in=parent_document)
+            #         parent_document_instance.is_parent = True
+            #         parent_document_instance.save()
+            #     except Document.DoesNotExist:
+            #         return Response({"status": False, "message": "Parent document not found", "data": []})
             parent_document_instance = []
             if parent_document:
-                try:
-                    parent_document_instance = Document.objects.get(id__in=parent_document)
-                    parent_document_instance.is_parent = True
-                    parent_document_instance.save()
-                except Document.DoesNotExist:
-                    return Response({"status": False, "message": "Parent document not found", "data": []})
+                if isinstance(parent_document, list):
+                    parent_document_instance = Document.objects.filter(id__in=parent_document)
+                else:  # Single ID case
+                    try:
+                        parent_doc = Document.objects.get(id=parent_document)
+                        parent_doc.is_parent = True
+                        parent_doc.save()
+                        parent_document_instance = [parent_doc]
+                    except Document.DoesNotExist:
+                        return Response({"status": False, "message": "Parent document not found", "data": []})
                 
             department_name = user.department.department_name if user.department else 'UnknownDepartment'
             document_number = generate_document_number(user, document_type, parent_document_instance)

@@ -5072,3 +5072,83 @@ class OnOffUserForTrainingViewSet(viewsets.ModelViewSet):
                 return Response({"status": True, "message": "User deactivated for training document"})
         except Exception as e:
             return Response({"status": False, "message": str(e)})
+        
+
+        
+import openpyxl
+from io import BytesIO
+from openpyxl.utils import get_column_letter
+class EmployeeRecordLogExcelView(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            users = CustomUser.objects.all()
+
+            # Create Excel Workbook and Sheet
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Employee Record Excel"
+
+            # Define Headers
+            headers = [
+                'Employeessss Name', 'Designation', 'Department',
+                'Training Date', 'Training Name', 'Status',
+                'Document Number', 'Current Version', 'Trainer Name'
+            ]
+
+            # Add Headers to Sheet
+            for col_num, header in enumerate(headers, 1):
+                ws[f'{get_column_letter(col_num)}1'] = header
+
+            # Populate Data Rows
+            for row_num, user in enumerate(users, 2):
+                department_name = user.department.department_name if user.department else "No Department"
+                datestatus = QuizSession.objects.filter(user=user).first()
+                training = TrainingCreate.objects.filter(created_by=user).first()
+                document = Document.objects.filter(user=user).first()
+                trainer = Trainer.objects.filter(user=user).first()
+                status = datestatus.status if datestatus else "No Status"
+                training_name = training.training_name if training else "No Training"
+                document_number = document.document_number if document else "No Document"
+                version = document.version if document else "No Version"
+                trainer_name = trainer.trainer_name if trainer else "No Trainer"
+
+                # Assign values to cells
+                ws[f'A{row_num}'] = user.username
+                ws[f'B{row_num}'] = user.designation
+                ws[f'C{row_num}'] = department_name
+                ws[f'E{row_num}'] = training_name
+                ws[f'F{row_num}'] = status
+                ws[f'G{row_num}'] = document_number
+                ws[f'H{row_num}'] = version
+                ws[f'I{row_num}'] = trainer_name
+
+            # Adjust Column Widths
+            for col_num in range(1, len(headers) + 1):
+                ws.column_dimensions[get_column_letter(col_num)].width = 20
+
+            # Generate Filename
+            timestamp = time.strftime("%d_%m_%Y_%H_%M_%S")
+            filename = f"employee_excel_log_{timestamp}.xlsx"
+            file_path = os.path.join(settings.MEDIA_ROOT, 'employee_excel_log', filename)
+
+            # Create Directory if Not Exists
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+            # Save to File
+            file_stream = BytesIO()
+            wb.save(file_stream)
+            file_stream.seek(0)
+
+            with open(file_path, 'wb') as f:
+                f.write(file_stream.read())
+
+            # Build File URL
+            base_url = request.build_absolute_uri('/')
+            file_url = base_url + f'media/employee_excel_log/{filename}'
+
+            return Response({"status": True, "message": "Excel report generated successfully.", "data": file_url})
+
+        except Exception as e:
+            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
