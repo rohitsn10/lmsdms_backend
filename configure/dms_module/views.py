@@ -4854,6 +4854,7 @@ def get_editor_config(request):
     # Get template_id from the request parameters
     document_id = request.GET.get('document_id')
     template_id = request.GET.get('template_id')
+    is_view = request.GET.get('is_view')
 
     if not document_id:
         return JsonResponse({"status": False, "message": "document_id parameter is required"})
@@ -4886,6 +4887,7 @@ def get_editor_config(request):
         else:
             unique_key = hashlib.sha256(front_file_url.encode()).hexdigest()
         print( "document_url",document_url)
+        is_view = str(is_view).lower() in ["true", "1"]
         # Document data
         document_data = {
             "fileType": "docx",  # Assuming the document is of type 'docx'
@@ -4893,6 +4895,10 @@ def get_editor_config(request):
             "title": document_name.document_title or "Untitled Document",  # Use the document title
             # "url": document_url if front_file_url == 'http://host.docker.internal:8000None' else front_file_url,  # Direct link to the document
             "url": document_url if front_file_url == 'http://13.232.63.196:8080None' else front_file_url,
+            "permissions": {
+                "print": False,
+                "download": not is_view
+            }
         }
 
         # Editor configuration data
@@ -4904,10 +4910,6 @@ def get_editor_config(request):
                 "callbackUrl": "http://13.232.63.196:8080/dms_module/onlyoffice_callback",
                 "mode": "edit",
                 "user": {"id": "1", "name": "Rohit Sharma"},
-                "customization": {
-                "toolbarHide": False, 
-                "hidePrintButton": True, 
-                },
             },
         }
 
