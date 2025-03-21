@@ -433,7 +433,7 @@ class PrintRequestExcelGenerateViewSet(viewsets.ModelViewSet):
                 ws[f'C{row_num}'] = print_request.sop_document_id.document_number if print_request.sop_document_id else ""
                 ws[f'D{row_num}'] = print_request.sop_document_id.document_title if print_request.sop_document_id else ""
                 ws[f'E{row_num}'] = print_request.no_of_print
-                ws[f'F{row_num}'] = ", ".join([str(num) for num in print_request.approvals.all().values_list('retrival_numbers__number', flat=True) if num])
+                ws[f'F{row_num}'] = ", ".join([str(num) for num in print_request.approvals.all().values_list('retrival_numbers__retrival_number', flat=True) if num])
                 ws[f'G{row_num}'] = print_request.issue_type
                 ws[f'H{row_num}'] = print_request.reason_for_print
                 status = print_request.print_request_status.status if print_request.print_request_status else ""

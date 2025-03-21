@@ -1637,9 +1637,9 @@ class TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
             options = request.data.get('options', section.options)
             correct_answer = request.data.get('correct_answer', section.correct_answer)
             marks = request.data.get('marks', section.marks)
-            image_file = request.FILES.get('image_file', section.image_file)
-            audio_file = request.FILES.get('audio_file', section.audio_file)
-            video_file = request.FILES.get('video_file', section.video_file)
+            # image_file = request.FILES.get('image_file', section.image_file)
+            # audio_file = request.FILES.get('audio_file', section.audio_file)
+            # video_file = request.FILES.get('video_file', section.video_file)
 
             # Validation checks for question_type and other fields
             if not question_type:
@@ -1668,14 +1668,14 @@ class TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
             section.marks = marks
 
             # Only update the audio or video file if they are provided in the request
-            if image_file:
-                section.image_file = image_file
+            # if image_file:
+            #     section.image_file = image_file
                 
-            if audio_file:
-                section.audio_file = audio_file
+            # if audio_file:
+            #     section.audio_file = audio_file
 
-            if video_file:
-                section.video_file = video_file
+            # if video_file:
+            #     section.video_file = video_file
 
             section.updated_by = user
             section.question_updated_at = timezone.now()
@@ -4958,11 +4958,7 @@ class OnceClassroomAttemptedViewSet(viewsets.ModelViewSet):
                 attempted_quiz.save()
             else:
                 # 🔹 Create a new record if it doesn't exist
-                ClassroomAttemptedQuiz.objects.create(user=user, 
-                                                      classroom=classroom, 
-                                                      training_quiz=quiz if isinstance(quiz, TrainingQuiz) else None, 
-                                                      quiz=quiz if isinstance(quiz, ClassroomQuiz) else None, 
-                                                      classroom_attempted=True)
+                pass
 
             return Response({"status": True, "message": "Attempted quiz updated successfully"})
 
