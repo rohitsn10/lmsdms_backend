@@ -4904,6 +4904,10 @@ def get_editor_config(request):
                 "callbackUrl": "http://13.232.63.196:8080/dms_module/onlyoffice_callback",
                 "mode": "edit",
                 "user": {"id": "1", "name": "Rohit Sharma"},
+                "customization": {
+                "toolbarHide": False, 
+                "hidePrintButton": True, 
+                },
             },
         }
 
