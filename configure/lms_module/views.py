@@ -5064,6 +5064,7 @@ class OnOffUserForTrainingViewSet(viewsets.ModelViewSet):
             if is_active:
                 attemptquiz.training_assesment_attempted = False
                 attemptquiz.save()
+                UserCompleteViewDocument.objects.filter(user=user, document=training).delete()
                 return Response({"status": True, "message": "User activated for training document"})
             else:
                 attemptquiz.training_assesment_attempted = True
