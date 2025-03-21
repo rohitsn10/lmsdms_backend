@@ -77,14 +77,14 @@ class Document(models.Model):
     is_revised = models.BooleanField(default=False)
     training_required = models.BooleanField(default=False)  # New field added
     last_action_time = models.DateTimeField(blank=True, null=True, default=None)
-    visible_to_users = models.ManyToManyField(CustomUser, related_name="visible_documents", null=True, blank=True)
+    visible_to_users = models.ManyToManyField(CustomUser, related_name="visible_documents", blank=True)
     effective_date = models.DateTimeField(blank=True, null=True)  # New field added
     reminder_sent = models.BooleanField(default=False)
     reminder_sent_times = models.JSONField(default=list)
     approver = models.ForeignKey(CustomUser,related_name="approver_documents",on_delete=models.SET_NULL,blank=True,null=True)
     doc_admin = models.ForeignKey(CustomUser,related_name="doc_admin_documents",on_delete=models.SET_NULL,blank=True,null=True)
     author = models.ForeignKey(CustomUser,related_name="author_documents",on_delete=models.SET_NULL,blank=True,null=True)
-    job_roles = models.ManyToManyField('lms_module.JobRole', related_name='documents', null=True, blank=True)
+    job_roles = models.ManyToManyField('lms_module.JobRole', related_name='documents', blank=True)
     generatefile = models.CharField(max_length=255,blank=True, null=True) 
     equipment_id = models.CharField(max_length=255,blank=True, null=True)
     product_code = models.CharField(max_length=255,blank=True, null=True)
