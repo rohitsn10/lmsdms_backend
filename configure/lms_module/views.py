@@ -5156,65 +5156,66 @@ class EmployeeRecordLogExcelView(viewsets.ViewSet):
             return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
         
 
-# class PendingTrainingReportView(viewsets.ViewSet):
-#     permission_classes = [permissions.IsAuthenticated]
+class PendingTrainingReportView(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
     
-#     def list(self, request, *args, **kwargs):
-#         try:
-#             document_id = kwargs.get('document_id')
-#             training = Document.objects.get(id=document_id)
-#             users = CustomUser.objects.filter(job_assigns__job_roles__in=training.job_roles.all())
+    def list(self, request, *args, **kwargs):
+        try:
+            document_id = kwargs.get('document_id')
+            training = Document.objects.get(id=document_id)
+            users = CustomUser.objects.filter(job_assigns__job_roles__in=training.job_roles.all()).distinct()
 
-#             all_users_data = []
-#             for user in users:
-#                 if user.department:
-#                     department_name = user.department.department_name
-#                 else:
-#                     department_name = "No Department"
-#                 datestatus = QuizSession.objects.filter(user=user).first()
-#                 name = training.document_title if training.document else None
-#                 document_number = Document.objects.filter(user=user).first()
-#                 version = document_number.version if document_number else "No Version"
-#                 trainer = Trainer.objects.filter(user=user).first()
+            all_users_data = []
+            for user in users:
+                if user.department:
+                    department_name = user.department.department_name
+                else:
+                    department_name = "No Department"
+                datestatus = AttemptedQuiz.objects.filter(user=user, document=training).first()
+                name = training.document_title if training else None
+                version = training.version if training else "No Version"
+                status = "Passed" if datestatus and datestatus.is_pass else "Failed"
+                document_number = training.document_number
 
-#                 # training_date = datestatus.started_at if datestatus else "Not started"
-#                 status = datestatus.status if datestatus else "No Status"
-#                 # training_name = name.training_name if name else "No Training"
-#                 document_number = document_number.document_number if document_number else "No Document"
-#                 trainer_name = trainer.trainer_name if trainer else "No Trainer"
+                user_data  = {
+                    'employee_name': user.username,
+                    'emp_no': user.employee_number,
+                    # 'designation': user.designation,
+                    'department_name': department_name,
+                    # 'training_date': training_date,
+                    'training_name': name,
+                    'status': status,
+                    'document_number': document_number,
+                    'current_version': version,
+                    # 'trainer_name': trainer_name,
+                }
+                # print(user_data)
+                all_users_data.append(user_data)
+            context = {
+                'training_type': "SOP",
+                'training_no': training.document_number,
+                'training_version': training.version,
+                'training_title': training.document_title,
+                'users_data': all_users_data
+            }
 
-#                 user_data  = {
-#                     'employee_name': user.username,
-#                     # 'designation': user.designation,
-#                     'department_name': department_name,
-#                     # 'training_date': training_date,
-#                     'training_name': name,
-#                     'status': status,
-#                     'document_number': document_number,
-#                     'current_version': version,
-#                     # 'trainer_name': trainer_name,
-#                 }
-#                 print(user_data)
-#                 all_users_data.append(user_data)
-#             context = {'users_data': all_users_data}
-
-#             template = get_template('pending_training_report.html')
-#             html = template.render(context)
-#             print(html)
-#             timestamp = int(time.time())
-#             filename = f"pending_training_report{timestamp}.pdf"
-#             file_path = os.path.join(settings.MEDIA_ROOT, 'pending_training_report', filename)
-#             os.makedirs(os.path.dirname(file_path), exist_ok=True)
-#             with open(file_path, 'wb') as output_file:
-#                 pisa_status = pisa.CreatePDF(html, dest=output_file)
-#             if pisa_status.err:
-#                 return Response({"status": False, "message": "Error occurred while generating PDF", "data": ""})
+            template = get_template('pending_training_report.html')
+            html = template.render(context)
+            print(html)
+            timestamp = int(time.time())
+            filename = f"pending_training_report{timestamp}.pdf"
+            file_path = os.path.join(settings.MEDIA_ROOT, 'pending_training_report', filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'wb') as output_file:
+                pisa_status = pisa.CreatePDF(html, dest=output_file)
+            if pisa_status.err:
+                return Response({"status": False, "message": "Error occurred while generating PDF", "data": ""})
             
-#             pdf_file_url = f"{settings.MEDIA_URL}pending_training_report/{filename}"
-#             full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
-#             return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
+            pdf_file_url = f"{settings.MEDIA_URL}pending_training_report/{filename}"
+            full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+            return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
 
-#         except Document.DoesNotExist:
-#             return Response({"status": False, "message": "Document not found", "data": ""})
-#         except Exception as e:
-#             return Response({"status": False, "message": str(e), "data": ""})
+        except Document.DoesNotExist:
+            return Response({"status": False, "message": "Document not found", "data": ""})
+        except Exception as e:
+            return Response({"status": False, "message": str(e), "data": ""})

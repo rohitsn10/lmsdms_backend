@@ -750,6 +750,8 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             if parent_document:
                     try:
                         parent_document_instance = Document.objects.filter(id=parent_document).first()
+                        parent_document_instance.is_parent = True
+                        parent_document_instance.save()
                     except Document.DoesNotExist:
                         return Response({"status": False, "message": "Parent document not found", "data": []})
                 
