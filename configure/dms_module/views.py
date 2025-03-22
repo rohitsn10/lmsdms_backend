@@ -320,7 +320,7 @@ class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
             # 🔹 Apply Watermark Every Time
             watermarked_pdf_path = pdf_output_path
             add_watermark(pdf_output_path, watermarked_pdf_path, document_status, approval_number)
-            print_pdf_with_one_copy(watermarked_pdf_path)
+            # print_pdf_with_one_copy(watermarked_pdf_path)
             pdf_relative_path = os.path.relpath(watermarked_pdf_path, settings.MEDIA_ROOT)
             pdf_url = f"{settings.MEDIA_URL}{pdf_relative_path}"
 
@@ -2668,6 +2668,7 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
             elif status_id == 11:  # If rejected, just update the document status
                 document.document_current_status = status_revision  # Set status to 11 (rejected)
                 revision_request.is_revise = False # Set status to 11 (rejected)
+                revision_request.save()
                 document.save()
                 message = "Revision request successfully rejected."
 
