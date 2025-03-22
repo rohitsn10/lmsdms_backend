@@ -1641,7 +1641,8 @@ class TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
             # image_file = request.FILES.get('image_file', section.image_file)
             # audio_file = request.FILES.get('audio_file', section.audio_file)
             # video_file = request.FILES.get('video_file', section.video_file)
-
+            if isinstance(status, str):
+                status = status.lower() in ['true', '1']
             # Validation checks for question_type and other fields
             if not question_type:
                 return Response({"status": False, "message": "Question type is required", "data": []})
