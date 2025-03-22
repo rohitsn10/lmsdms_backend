@@ -749,7 +749,7 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             parent_document_instance = None
             if parent_document:
                     try:
-                        parent_document_instance = Document.objects.filter(id=parent_document)
+                        parent_document_instance = Document.objects.filter(id=parent_document).first()
                     except Document.DoesNotExist:
                         return Response({"status": False, "message": "Parent document not found", "data": []})
                 
@@ -3049,8 +3049,8 @@ class DepartmentUsersViewSet(viewsets.ModelViewSet):
                 })
 
             # Fetch the users linked to the document ID in the DocApprove model
-            approved_users = DocApprove.objects.filter(document_id=document_id).select_related('user')
-            if not approved_users.exists():
+            document = Document.objects.filter(id=document_id).first()
+            if not document:
                 return Response({
                     "status": False,
                     "message": "No users found for the given document ID.",
@@ -3059,15 +3059,12 @@ class DepartmentUsersViewSet(viewsets.ModelViewSet):
 
             # Prepare data for response
             response_data = []
-            for approval in approved_users:
-                user = approval.user
-                user_groups = user.groups.all()
-                for group in user_groups:
-                    response_data.append({
-                        "id": user.id,
-                        "first_name": f"{user.first_name}({group.name})",
-                        "group_id": [group.id],
-                    })
+            if document.author:
+                response_data.append({
+                    "id": document.author.id,
+                    "first_name": f"{document.author.first_name} (Author)",
+                    "group_id": [group.id for group in document.author.groups.all()]
+                })
 
             # Return the response
             return Response({
