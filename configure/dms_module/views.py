@@ -320,7 +320,7 @@ class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
             # 🔹 Apply Watermark Every Time
             watermarked_pdf_path = pdf_output_path
             add_watermark(pdf_output_path, watermarked_pdf_path, document_status, approval_number)
-
+            restrict_pdf_print(watermarked_pdf_path)
             pdf_relative_path = os.path.relpath(watermarked_pdf_path, settings.MEDIA_ROOT)
             pdf_url = f"{settings.MEDIA_URL}{pdf_relative_path}"
 

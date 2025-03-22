@@ -211,3 +211,11 @@ def get_file_data(request: Request, obj, field_name: str):
     return None
 
 
+import fitz  # PyMuPDF
+
+def restrict_pdf_print(pdf_path):
+    doc = fitz.open(pdf_path)
+    # ✅ Allow only **low-res printing**, preventing high-quality prints.
+    doc.set_permissions(fitz.PDF_PERM_PRINT, no_high_res=True)
+    doc.save(pdf_path)
+    doc.close()
