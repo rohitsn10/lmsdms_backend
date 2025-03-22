@@ -666,7 +666,7 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             user = self.request.user
-            parent_document = request.data.get('parent_document', [])
+            parent_document = request.data.get('parent_document', None)
             equipment_id = request.data.get('equipment_id','')
             product_code = request.data.get('product_code','')
             document_title = request.data.get('document_title')
@@ -746,16 +746,10 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
             #         parent_document_instance.save()
             #     except Document.DoesNotExist:
             #         return Response({"status": False, "message": "Parent document not found", "data": []})
-            parent_document_instance = []
+            parent_document_instance = None
             if parent_document:
-                if isinstance(parent_document, list):
-                    parent_document_instance = Document.objects.filter(id__in=parent_document)
-                else:  # Single ID case
                     try:
-                        parent_doc = Document.objects.get(id=parent_document)
-                        parent_doc.is_parent = True
-                        parent_doc.save()
-                        parent_document_instance = [parent_doc]
+                        parent_document_instance = Document.objects.filter(id=parent_document)
                     except Document.DoesNotExist:
                         return Response({"status": False, "message": "Parent document not found", "data": []})
                 
@@ -764,7 +758,7 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
 
             document = Document.objects.create(
                 user=user,
-                # parent_document = parent_document_instance,
+                parent_document = parent_document_instance,
                 document_title=document_title,
                 document_number=document_number,
                 document_type_id=document_type.id,
@@ -783,10 +777,6 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                 training_required=training_required,
 
             )
-            if parent_document_instance:
-                document.parent_document.set(parent_document_instance)
-            else:
-                document.parent_document.clear()
             # if visible_to_users:
             #     document.visible_to_users.set(visible_to_users)
 
@@ -1236,9 +1226,7 @@ class DocumentExcelGenerateViewSet(viewsets.ModelViewSet):
                 ws[f'A{row_num}'] = document.document_title
                 ws[f'B{row_num}'] = document.document_number
                 ws[f'C{row_num}'] = document.document_type.document_name if document.document_type else "-"
-                parent_documents = document.parent_document.all()
-                parent_doc_numbers = ', '.join([str(doc.document_number) for doc in parent_documents]) if parent_documents else "-"
-                ws[f'D{row_num}'] = parent_doc_numbers
+                ws[f'D{row_num}'] = document.parent_document.id if document.parent_document else "-"
                 ws[f'E{row_num}'] = document.revision_date.strftime('%d-%m-%Y') if document.revision_date else "-"
                 ws[f'F{row_num}'] = document.document_current_status.status if document.document_current_status else "-"
                 ws[f'G{row_num}'] = document.assigned_to.first_name if document.assigned_to else "-"
@@ -1338,9 +1326,7 @@ class DocumentPDFGenerateViewSet(viewsets.ModelViewSet):
 
             # Apply any filters set in the queryset
             queryset = self.filter_queryset(queryset)
-            for document in queryset:
-                parent_documents = document.parent_document.all()
-                parent_doc_numbers = ', '.join([str(doc.document_number) for doc in parent_documents]) if parent_documents else "-"
+
             documents_data = queryset.select_related(
                 'document_type', 
                 'document_current_status', 
@@ -1349,7 +1335,7 @@ class DocumentPDFGenerateViewSet(viewsets.ModelViewSet):
             ).values(
                 'document_title', 
                 'document_number', 
-                'parent_doc_numbers',
+                'parent_document__id',
                 'document_type__document_name',  
                 'document_current_status__status',
                 'select_template__template_name',
@@ -2608,11 +2594,11 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
             revision_request.status = action_status
             revision_request.save()
 
-            if document.parent_document.exists():
-                document_parent = Document.parent_document.all()
+            if document.parent_document:
+                document_parent = Document.objects.get(id=document.parent_document.id)
                 # print(document_parent)
-                for parent in document_parent:
-                    parent.job_roles.clear() 
+                parent_job_roles = document_parent.job_roles.all()
+                document_parent.job_roles.clear()
                     # print(f"Cleared all job roles from parent document {parent.id}")
             # revise_action = DocumentRevisionAction.objects.create(
             #     user=user,
@@ -2634,7 +2620,7 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
                 new_document = Document.objects.create(
                     user=user,
                     document_title=document.document_title,
-                    # parent_document=document.parent_document,
+                    parent_document=document.parent_document,
                     workflow = document.workflow,
                     document_operation = document.document_operation,
                     revision_month=document.revision_month,
@@ -2655,10 +2641,9 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
                     generatefile=document.generatefile,
                     # author=user
                 )
-                new_document.parent_document.set(document.parent_document.all())
                 child_documents = Document.objects.filter(parent_documents=document)
                 for child in child_documents:
-                    child.parent_document.add(new_document)  # ✅ Add new parent reference
+                    child.parent_document.add(new_document)
                     child.save()
                 old_questions = TrainingQuestions.objects.filter(document=document)
                 for question in old_questions:
@@ -3454,7 +3439,7 @@ class ParentDocumentViewSet(viewsets.ModelViewSet):
         
         # Filter queryset based on document_id
         if document_id:
-            queryset = Document.objects.filter(parent_document__id=document_id).exclude(document_current_status=15).order_by('-id')
+            queryset = Document.objects.filter(parent_document_id=document_id).order_by('-id')
         else:
             queryset = Document.objects.none()  
 

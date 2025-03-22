@@ -128,7 +128,7 @@ def get_new_version(version_str):
 
 
 
-def generate_document_number(user, document_type, parent_document_instance):
+def generate_document_number(user, document_type, parent_document_instance=None):
     # Access the department name
     if user.department:
         department_name = user.department.department_name  # Access department_name correctly
@@ -162,9 +162,7 @@ def generate_document_number(user, document_type, parent_document_instance):
 
     else:
         # Case 2: Parent document is provided (for document types 2 or 3)
-        parent_document_numbers = [doc.document_number for doc in parent_document_instance]
-        parent_document_number = ', '.join(parent_document_numbers) if parent_document_numbers else None
-
+        parent_document_number = parent_document_instance.document_number
         suffix_prefix = ""
 
         if document_type.id == 2:  # DocumentType 2 => "A001"
@@ -173,7 +171,7 @@ def generate_document_number(user, document_type, parent_document_instance):
             suffix_prefix = "F"
 
         last_document = Document.objects.filter(
-            parent_document__in=parent_document_instance,
+            parent_document=parent_document_instance,
             document_type=document_type
         ).order_by('-document_number').first()
 
