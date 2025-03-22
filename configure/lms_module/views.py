@@ -1637,6 +1637,7 @@ class TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
             options = request.data.get('options', section.options)
             correct_answer = request.data.get('correct_answer', section.correct_answer)
             marks = request.data.get('marks', section.marks)
+            status = request.data.get('status', section.status)
             # image_file = request.FILES.get('image_file', section.image_file)
             # audio_file = request.FILES.get('audio_file', section.audio_file)
             # video_file = request.FILES.get('video_file', section.video_file)
@@ -1666,6 +1667,7 @@ class TrainingQuestionUpdateViewSet(viewsets.ModelViewSet):
             section.options = options
             section.correct_answer = correct_answer
             section.marks = marks
+            section.status = status
 
             # Only update the audio or video file if they are provided in the request
             # if image_file:
