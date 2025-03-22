@@ -1924,7 +1924,9 @@ class DocumentApproveActionCreateViewSet(viewsets.ModelViewSet):
             except DynamicStatus.DoesNotExist:
                 return Response({"status": False, "message": "Invalid status ID"})
             
-            DocumentReviewerAction.objects.filter(document=document).delete()
+            status_underreivew = DynamicStatus.objects.get(id=3)
+            # DocumentReviewerAction.objects.filter(document=document).delete()
+            DocumentReviewerAction.objects.filter(document=document).update(status_approve=status_underreivew)
             SendBackofUser.objects.filter(document=document).update(is_send_back=False)
             ReviewByUser.objects.filter(document=document).update(is_reviewed=False)
             UserWiseSendBackView.objects.filter(document=document).update(is_done=False)
