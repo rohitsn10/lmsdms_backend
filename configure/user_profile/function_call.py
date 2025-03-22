@@ -213,9 +213,38 @@ def get_file_data(request: Request, obj, field_name: str):
 
 import fitz  # PyMuPDF
 
-def restrict_pdf_print(pdf_path):
-    doc = fitz.open(pdf_path)
-    # ✅ Allow only **low-res printing**, preventing high-quality prints.
-    doc.set_permissions(fitz.PDF_PERM_PRINT, no_high_res=True)
-    doc.save(pdf_path)
-    doc.close()
+import os
+import subprocess
+import platform
+
+def print_pdf_with_one_copy(pdf_path, printer_name=None):
+    """
+    Sends a PDF file to a printer and forces printing only 1 copy.
+    Works on both Linux (CUPS) and Windows (Win32 API).
+    """
+    try:
+        os_type = platform.system()
+
+        if os_type == "Linux":
+            # ✅ Use CUPS (Common Unix Printing System) for Linux
+            command = ["lp", "-n", "1", pdf_path]  # "-n 1" ensures 1 copy
+            if printer_name:
+                command.insert(2, "-d")  # "-d printer_name" for specific printer
+                command.insert(3, printer_name)
+            subprocess.run(command, check=True)
+
+        elif os_type == "Windows":
+            import win32print
+            import win32api
+
+            # ✅ Use Win32 API for Windows
+            if not printer_name:
+                printer_name = win32print.GetDefaultPrinter()
+
+            win32api.ShellExecute(0, "print", pdf_path, f'/D:"{printer_name}"', ".", 0)
+
+        return True
+    except Exception as e:
+        print("Printing failed:", str(e))
+        return False
+
