@@ -2667,6 +2667,7 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
 
             elif status_id == 11:  # If rejected, just update the document status
                 document.document_current_status = status_revision  # Set status to 11 (rejected)
+                revision_request.is_revise = False # Set status to 11 (rejected)
                 document.save()
                 message = "Revision request successfully rejected."
 
