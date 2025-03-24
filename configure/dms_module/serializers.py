@@ -437,7 +437,7 @@ class AllDocumentSerializer(serializers.ModelSerializer):
     status = serializers.CharField(source='document_current_status.status')
     class Meta:
         model = Document
-        fields = ['id', 'select_template', 'document_title', 'status', 'effective_date', 'revision_date', 'revision_month']
+        fields = ['id', 'select_template', 'document_title','document_current_status', 'status', 'effective_date', 'revision_date', 'revision_month']
 
 class DocumentAuthorApproveActionSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source='user.username')
