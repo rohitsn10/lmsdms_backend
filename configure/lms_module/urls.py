@@ -140,7 +140,7 @@ urlpatterns = [
 
     path('training_report_pending_completed/<int:document_id>', PendingTrainingReportView.as_view({'get': 'list'}), name='training_report_pending_completed'),
 
-    path('classroom_is_preview/<int:document_id>', ClassroomIsPreviewViewSet.as_view({'put': 'update'}), name='classroom_is_preview'),
+    path('classroom_is_preview/<int:classroom_id>', ClassroomIsPreviewViewSet.as_view({'put': 'update'}), name='classroom_is_preview'),
 
     path('classroom_without_assesment/<int:user_id>', ClassroomWithoutAssesmentViewSet.as_view({'get': 'list'}), name='classroom_without_assesment'),
 ]
