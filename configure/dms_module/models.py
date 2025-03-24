@@ -191,7 +191,7 @@ class DocumentRevisionAction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 class DocumentRevisionRemarks(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    # user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     remarks = models.TextField(blank=True, null=True)
 
