@@ -246,6 +246,7 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
     classroom_attempted = serializers.SerializerMethodField()
     classroom_assessment_done = serializers.SerializerMethodField()
     quiz_count = serializers.SerializerMethodField()
+    is_preview = serializers.SerializerMethodField()
     class Meta:
         model = ClassroomTraining
         fields = ['quiz_count', 'classroom_id', 'document', 'classroom_name', 'is_assesment', 'description', 'status', 'files', 'created_at', 'trainer', 'user', 'is_all_completed', 'is_assessment_completed', 'online_offline_status', 'classroom_attempted','classroom_assessment_done', 'is_preview']
@@ -258,6 +259,12 @@ class ClassroomTrainingSerializer(serializers.ModelSerializer):
     #         'document', 'sop', 'start_date', 'start_time', 'end_time',
     #         'created_at', 'created_by', 'status','acknowledged_by_employee'
     #     ]
+    def get_is_preview(self,obj):
+        request = self.context.get('request')
+        if request and hasattr(request, "user"):
+            return IsPreviewForClassroom.objects.filter(user=request.user,classroom=obj,is_preview=True).exists()
+        return False   
+
     def get_quiz_count(self,obj):
         if obj and obj.document:
             return TrainingQuiz.objects.filter(document=obj.document).count()

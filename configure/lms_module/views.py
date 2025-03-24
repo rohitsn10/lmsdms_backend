@@ -3212,6 +3212,17 @@ class TrainingAssigntoJobroleViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
+class DocumentHasQuizListViewSet(viewsets.ModelViewSet):
+    # permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DocumentSerializer
+    def list(self, request, *args, **kwargs):
+        try:
+            training = Document.objects.filter(trainingquiz__isnull=False).distinct()
+            serializer = self.serializer_class(training, many=True)
+            return Response({"status": True, "message": "Training with quizzes fetched successfully", "data": serializer.data})
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+
 
 class MaterialStartStopReadingView(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -5228,13 +5239,14 @@ class ClassroomIsPreviewViewSet(viewsets.ModelViewSet):
         try:
             classroom_id = kwargs.get('classroom_id')
             user = request.user
-            classroom = ClassroomTraining.objects.filter(id=classroom_id, user=user).first()
+            classroom = ClassroomTraining.objects.filter(id=classroom_id).first()
             if not classroom:
                 return Response({"status": False, "message": "Classroom not found or you don't have permission to update it"})
             is_preview = request.data.get('is_preview')
             is_preview = str(is_preview).lower() in ["true", "1"]
-            classroom.is_preview = is_preview
-            classroom.save()
+            preview_obj, created = IsPreviewForClassroom.objects.update_or_create(
+                classroom=classroom, user=user,defaults={"is_preview": is_preview}
+            )
             return Response({"status": True, "message": "Classroom preview status updated successfully"})
         except Exception as e:
             return Response({"status": False, "message": str(e)})

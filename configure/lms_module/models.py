@@ -270,7 +270,13 @@ class ClassroomTraining(models.Model):
     is_all_completed = models.BooleanField(default=False, null=True, blank=True)
     is_assessment_completed = models.BooleanField(default=False, null=True, blank=True)
     assesment_user_completed = models.BooleanField(default=False, null=True, blank=True)
+
+
+class IsPreviewForClassroom(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True,blank=True)
+    classroom = models.ForeignKey(ClassroomTraining, on_delete=models.CASCADE, null=True, blank=True)
     is_preview = models.BooleanField(default=False, null=True, blank=True)
+
 class ClassroomTrainingFile(models.Model):
     classroom_training = models.ForeignKey(ClassroomTraining, related_name='files', on_delete=models.CASCADE)
     upload_doc = models.FileField(upload_to='classroom_trainings/', null=True, blank=True)
