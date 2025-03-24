@@ -752,6 +752,7 @@ class DocumentCreateViewSet(viewsets.ModelViewSet):
                         parent_document_instance = Document.objects.filter(id=parent_document).first()
                         parent_document_instance.is_parent = True
                         parent_document_instance.save()
+                        # ParentDocMany.objects.create(parent_doc=parent_document_instance)
                     except Document.DoesNotExist:
                         return Response({"status": False, "message": "Parent document not found", "data": []})
                 
@@ -3439,10 +3440,16 @@ class ParentDocumentViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         document_id = self.kwargs.get('document_id')
-        
+        document = Document.objects.filter(id=document_id).first()
+        if not document:
+            return Response({"message": "Document not found"})
+        title = document.document_title
+
+        title_filter = Document.objects.filter(document_title=title)
+        document_ids = title_filter.values_list('id', flat=True)
         # Filter queryset based on document_id
         if document_id:
-            queryset = Document.objects.filter(parent_document_id=document_id).order_by('-id')
+            queryset = Document.objects.filter(parent_document_id__in=document_ids).order_by('-id')
         else:
             queryset = Document.objects.none()  
 

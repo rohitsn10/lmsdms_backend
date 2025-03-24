@@ -264,3 +264,7 @@ class ReviewByUser(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, blank=True, null=True)
     document = models.ForeignKey(Document, on_delete=models.CASCADE, blank=True, null=True)
     is_reviewed = models.BooleanField(default=False)
+
+class ParentDocMany(models.Model):
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, blank=True, null=True)
+    parent_doc = models.ForeignKey('self', on_delete=models.CASCADE, blank=True, null=True)
