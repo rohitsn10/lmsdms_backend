@@ -5007,25 +5007,34 @@ class EmployeeRecordLogView(viewsets.ViewSet):
                     department_name = user.department.department_name
                 else:
                     department_name = "No Department"
-                datestatus = QuizSession.objects.filter(user=user).first()
-                name = TrainingCreate.objects.filter(created_by=user).first()
-                document_number = Document.objects.filter(user=user).first()
-                version = document_number.version if document_number else "No Version"
-                trainer = Trainer.objects.filter(user=user).first()
+                datestatus = AttemptedQuiz.objects.filter(user=user)
+                name = Document.objects.filter(user=user)
+                classroom = ClassroomAttemptedQuiz.objects.filter(user=user)
+                document_number = Document.objects.filter(user=user)
+                version = document_number.last().version if document_number.exists() else "No Version"
+                # trainer = Trainer.objects.filter(user=user).first()
 
-                training_date = datestatus.started_at if datestatus else "Not started"
-                status = datestatus.status if datestatus else "No Status"
-                training_name = name.training_name if name else "No Training"
-                document_number = document_number.document_number if document_number else "No Document"
-                trainer_name = trainer.trainer_name if trainer else "No Trainer"
+                # training_date = datestatus.started_at if datestatus else "Not started"
+                status = ["Passed" if session.is_pass else "Failed" for session in datestatus]
+                training_name = [training.document_title for training in name]
+                classroom_name = [attempt.classroom.classroom_name for attempt in classroom if attempt.classroom]
+                classroom_result = ["Passed" if attempt.is_pass else "Failed" for attempt in classroom]
+                document_number = document_number.last().document_number if document_number.exists() else "No Document"
+                trainer_names = list(set([attempt.classroom.trainer.trainer_name for attempt in classroom if attempt.classroom and attempt.classroom.trainer]))
+
+                title_classroom = " / ".join(training_name + classroom_name) if training_name or classroom_name else "No Training"
+                final_result = " / ".join(status + classroom_result) if status or classroom_result else "No Status"
+                trainer_name = ", ".join(trainer_names) if trainer_names else "-"
+
+                training_dates = ", ".join([session.created_at.strftime("%Y-%m-%d") for session in datestatus]) if datestatus else "Not started"
 
                 user_data  = {
                     'employee_name': user.username,
                     'designation': user.designation,
                     'department_name': department_name,
-                    'training_date': training_date,
-                    'training_name': training_name,
-                    'status': status,
+                    'training_date': training_dates,
+                    'training_name': title_classroom,
+                    'status': final_result,
                     'document_number': document_number,
                     'current_version': version,
                     'trainer_name': trainer_name,

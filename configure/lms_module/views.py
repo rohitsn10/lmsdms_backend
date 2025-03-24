@@ -5004,7 +5004,7 @@ class OnceTrainingAttemptedViewSet(viewsets.ModelViewSet):
                 AttemptedQuiz.objects.filter(user=user, document=document, quiz=quiz).update(training_assesment_attempted=True)
             else:
                 # 🔹 Create a new record if it doesn't exist
-                AttemptedQuiz.objects.create(user=user, document=document, quiz=quiz, training_assesment_attempted=True)
+                pass
 
             return Response({"status": True, "message": "Attempted quiz updated successfully"})
 
