@@ -976,11 +976,11 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
             user = self.request.user
             format_type = DocumentType.objects.filter(document_name="Format").first()
             if user.groups.filter(name="DTC").exists():
-                queryset_documents = Document.objects.filter(Q(document_current_status_id=6) | Q(document_current_status_id=7, training_required=True)).exclude(document_type=format_type)
+                queryset_documents = Document.objects.filter(Q(document_current_status_id=6) | Q(document_current_status_id=7, training_required=True)).exclude(document_type=format_type).exclude(document_current_status=15).exclude(document_current_status=12)
 
             else:
                 job_roles = JobRole.objects.filter(job_assigns__user=user)
-                queryset_documents = Document.objects.filter(job_roles__in=job_roles).exclude(document_current_status_id=12).exclude(document_type=format_type).distinct()
+                queryset_documents = Document.objects.filter(job_roles__in=job_roles).exclude(document_current_status_id=12).exclude(document_type=format_type).exclude(document_current_status=15).distinct()
 
             latest_versions = queryset_documents.values('document_title').annotate(
                 max_version=Max('version')
@@ -5220,3 +5220,39 @@ class PendingTrainingReportView(viewsets.ViewSet):
             return Response({"status": False, "message": "Document not found", "data": ""})
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": ""})
+        
+
+class ClassroomIsPreviewViewSet(viewsets.ModelViewSet):
+
+    def update(self, request, *args, **kwargs):
+        try:
+            classroom_id = kwargs.get('classroom_id')
+            user = request.user
+            classroom = ClassroomTraining.objects.filter(id=classroom_id, user=user).first()
+            if not classroom:
+                return Response({"status": False, "message": "Classroom not found or you don't have permission to update it"})
+            is_preview = request.data.get('is_preview')
+            is_preview = str(is_preview).lower() in ["true", "1"]
+            classroom.is_preview = is_preview
+            classroom.save()
+            return Response({"status": True, "message": "Classroom preview status updated successfully"})
+        except Exception as e:
+            return Response({"status": False, "message": str(e)})
+        
+class ClassroomWithoutAssesmentViewSet(viewsets.ModelViewSet):
+    queryset = ClassroomTraining.objects.all()
+    serializer_class = ClassroomTrainingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user_id = kwargs.get('user_id')
+            if not user_id:
+                return Response({"status": False, "message": "User not found"})
+            user = CustomUser.objects.get(id=user_id)
+            present_sessions = Attendance.objects.filter(user=user, status=Attendance.PRESENT).values_list('session_id', flat=True)
+            classrooms = ClassroomTraining.objects.filter(user=user, is_assesment="without_assessment", sessions__id__in=present_sessions).distinct()
+            serializer = ClassroomTrainingSerializer(classrooms, many=True)
+            return Response({"status": True, "message": "Classrooms fetched successfully", "data": serializer.data})
+        except Exception as e:
+            return Response({"status": False, "message": str(e)})

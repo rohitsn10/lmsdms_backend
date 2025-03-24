@@ -196,6 +196,7 @@ class DocumentRevisionRequestAction(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     revise_description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, default="Pending")
+    remarks = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_revise = models.BooleanField(default=False)
 

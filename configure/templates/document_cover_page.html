@@ -113,11 +113,11 @@
             </colgroup>
             <tr>
                 <td>Effective Date</td>
-                <td contenteditable="true">{{document.effective_date|date:"d-m-Y"}}</td>
+                <td contenteditable="true">{{document.effective_date|default:"--" |date:"d-m-Y"}}</td>
             </tr>
             <tr>
                 <td>Revision Date</td>
-                <td contenteditable="true">{{document.revision_date|date:"d-m-Y"}}</td>
+                <td contenteditable="true">{{date_revise|default:"--" |date:"d-m-Y"}}</td>
             </tr>
         </table>
         

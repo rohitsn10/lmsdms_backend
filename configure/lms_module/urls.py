@@ -139,4 +139,8 @@ urlpatterns = [
     path('employee_training_excel/', EmployeeRecordLogExcelView.as_view({'get': 'list'}), name='employee_training_excel'),
 
     path('training_report_pending_completed/<int:document_id>', PendingTrainingReportView.as_view({'get': 'list'}), name='training_report_pending_completed'),
+
+    path('classroom_is_preview', ClassroomIsPreviewViewSet.as_view({'put': 'update'}), name='classroom_is_preview'),
+
+    path('classroom_without_assesment/<int:user_id>', ClassroomWithoutAssesmentViewSet.as_view({'get': 'list'}), name='classroom_without_assesment'),
 ]

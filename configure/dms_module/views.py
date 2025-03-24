@@ -2583,6 +2583,7 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
             status_id = request.data.get('status_id',None)
             request_action_id = request.data.get('request_action_id',None)
             action_status = request.data.get('action_status',None)
+            # remarks = request.data.get('remarks',None)
             print(status_id, "status_id")
             if not document_id:
                 return Response({"status": False, "message": "Document ID is required"})
@@ -2646,7 +2647,12 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
                     generatefile=document.generatefile,
                     # author=user
                 )
-                child_documents = Document.objects.filter(parent_documents=document)
+                front_url = NewDocumentCommentsData.objects.filter(document=document).first()
+                NewDocumentCommentsData.objects.create(
+                    document=new_document,  # Assign the new document
+                    front_file_url=front_url.front_file_url,
+                )
+                child_documents = Document.objects.filter(parent_document=document)
                 for child in child_documents:
                     child.parent_document.add(new_document)
                     child.save()
@@ -3449,7 +3455,7 @@ class ParentDocumentViewSet(viewsets.ModelViewSet):
         document_ids = title_filter.values_list('id', flat=True)
         # Filter queryset based on document_id
         if document_id:
-            queryset = Document.objects.filter(parent_document_id__in=document_ids).order_by('-id')
+            queryset = Document.objects.filter(parent_document_id__in=document_ids).order_by('id')
         else:
             queryset = Document.objects.none()  
 
@@ -3667,7 +3673,6 @@ class GetDocumentCertificateDataListViewSet(viewsets.ViewSet):
                 'effective_date': document.effective_date.strftime('%d-%m-%Y') if document.effective_date else None,
                 'revision_date': document.revision_date.strftime('%d-%m-%Y') if document.revision_date else None,
             }
-            
             # Collect actions data
             actions_data = []
             for action in all_actions:
@@ -3732,10 +3737,11 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
         try:
             # Fetch the document
             document = Document.objects.get(id=document_id)
-            
+            revision_date = DocumentRevisionAction.objects.filter(document=document).first()
+            date_revise = revision_date.created_at if revision_date else "--"
             # Fetch all actions for the document
             all_actions = self.get_document_actions(document)
-
+            # print(all_actions)
             # Fetch latest document comment for front_file_url
             latest_comment = NewDocumentCommentsData.objects.filter(document=document).order_by("-created_at").first()
             front_file_url = latest_comment.front_file_url.path if latest_comment and latest_comment.front_file_url else None
@@ -3743,15 +3749,16 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             # Define the context for the template
             context = {
                 'document': document,
+                'date_revise': date_revise,
                 'all_actions': all_actions,
                 'front_file_url': request.build_absolute_uri(latest_comment.front_file_url.url) if front_file_url else None,
                 'logo': os.path.join(settings.BASE_DIR, 'static', 'certificate_logo_image', 'logo.png')
             }
-            
+            # print(context)
             # Render the template with context data
             template = get_template('document_cover_page.html')
             html = template.render(context)
-
+            # print(html)
             timestamp = int(time.time())  # Timestamp in seconds
             base_filename = f"document_certificate_cover{timestamp}"
             pdf_filename = f"{base_filename}.pdf"
@@ -3827,7 +3834,7 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             actions.append(author_action)
     
         # 2️⃣ Get all Reviewer actions (Multiple reviewers can exist)
-        reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('created_at')
+        reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('created_at')[:2]
         for action in reviewer_actions:
             action.role = "Reviewer"
             actions.append(action)
