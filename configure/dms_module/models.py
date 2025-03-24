@@ -190,13 +190,17 @@ class DocumentRevisionAction(models.Model):
     status_revision = models.ForeignKey(DynamicStatus, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
+class DocumentRevisionRemarks(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
+    remarks = models.TextField(blank=True, null=True)
+
 class DocumentRevisionRequestAction(models.Model):
 
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
     document = models.ForeignKey(Document, on_delete=models.CASCADE,blank=True, null=True)
     revise_description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, default="Pending")
-    remarks = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_revise = models.BooleanField(default=False)
 

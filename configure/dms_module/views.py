@@ -2583,7 +2583,7 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
             status_id = request.data.get('status_id',None)
             request_action_id = request.data.get('request_action_id',None)
             action_status = request.data.get('action_status',None)
-            # remarks = request.data.get('remarks',None)
+            remarks = request.data.get('remarks',None)
             print(status_id, "status_id")
             if not document_id:
                 return Response({"status": False, "message": "Document ID is required"})
@@ -2679,6 +2679,11 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
                 document.save()
                 message = "Revision request successfully rejected."
 
+            DocumentRevisionRemarks.objects.create(
+                document=document,
+                remarks=remarks
+            )
+            
             DocumentRevisionAction.objects.create(
                 user=user,
                 document=document,
