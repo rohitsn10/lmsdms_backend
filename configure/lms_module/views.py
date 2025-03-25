@@ -3218,7 +3218,7 @@ class TrainingAssigntoJobroleViewSet(viewsets.ModelViewSet):
 
 class DocumentHasQuizListViewSet(viewsets.ModelViewSet):
     # permission_classes = [permissions.IsAuthenticated]
-    serializer_class = DocumentSerializer
+    serializer_class = DocumentMappingSerializer
     def list(self, request, *args, **kwargs):
         try:
             training = Document.objects.filter(trainingquiz__isnull=False).distinct()
