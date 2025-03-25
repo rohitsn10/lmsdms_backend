@@ -5271,7 +5271,7 @@ class ClassroomWithoutAssesmentViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "User not found"})
             user = CustomUser.objects.get(id=user_id)
             present_sessions = Attendance.objects.filter(user=user, status=Attendance.PRESENT).values_list('session_id', flat=True)
-            classrooms = ClassroomTraining.objects.filter(user=user, is_assesment="without_assessment", sessions__id__in=present_sessions).distinct()
+            classrooms = ClassroomTraining.objects.filter(user=user, is_assesment="Without_assessment", sessions__id__in=present_sessions).distinct()
             serializer = ClassroomTrainingSerializer(classrooms, many=True)
             return Response({"status": True, "message": "Classrooms fetched successfully", "data": serializer.data})
         except Exception as e:
