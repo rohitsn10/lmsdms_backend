@@ -3561,11 +3561,7 @@ class FailedUserViewSet(viewsets.ModelViewSet):
             # Filter remaining failed users who haven't completed assessment
             remaining_failed_users = CustomUser.objects.filter(
                 id__in=failed_users
-            ).exclude(
-                classroomtraining__is_assessment_completed=True
-            ).exclude(
-                classroomtraining__assesment_user_completed=True
-            ).distinct()  # Remove duplicates
+            )
     
             serializer = CustomUserSerializer(remaining_failed_users, many=True)
             return Response({'status': True, 'message': 'Failed users fetched successfully', 'data': serializer.data})
