@@ -3548,7 +3548,7 @@ class FailedUserViewSet(viewsets.ModelViewSet):
     
             # Fetch failed users for the given document
             failed_users = QuizSession.objects.filter(
-                status='Failed',
+                status='failed',
                 quiz__status=True,
                 quiz__document=document
             ).values_list('user_id', flat=True)  # Extract user IDs only
