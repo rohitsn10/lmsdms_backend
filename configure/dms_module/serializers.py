@@ -359,7 +359,7 @@ class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
         fields = [
-            'document_id',
+            'id',
             'select_template',
             'document_title',
             'document_current_status',
