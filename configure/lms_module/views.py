@@ -3206,7 +3206,9 @@ class TrainingAssigntoJobroleViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Invalid Job role ID"})
 
             assigned_documents = Document.objects.filter(job_roles=job_role_instance)
-            serialized_documents = DocumentSerializer(assigned_documents, many=True)
+            # serialized_documents = DocumentSerializer(assigned_documents, many=True)
+            serialized_documents = DocumentMappingSerializer(assigned_documents, many=True)
+            
 
             return Response({
                 "status": True,
