@@ -2673,10 +2673,10 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
                 message = "Revision request successfully approved, and questions were copied."
 
             elif status_id == 11:  # If rejected, just update the document status
-                document.document_current_status = status_revision  # Set status to 11 (rejected)
+                # document.document_current_status = status_revision  # Set status to 11 (rejected)
                 revision_request.is_revise = False # Set status to 11 (rejected)
                 revision_request.save()
-                document.save()
+                # document.save()
                 message = "Revision request successfully rejected."
 
             DocumentRevisionRemarks.objects.create(
@@ -3743,8 +3743,8 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
         try:
             # Fetch the document
             document = Document.objects.get(id=document_id)
-            revision_date = DocumentRevisionAction.objects.filter(document=document).first()
-            date_revise = revision_date.created_at if revision_date else "--"
+            revision_date = Document.objects.filter(id=document).first()
+            date_revise = revision_date.revision_date if revision_date else "---"
             # Fetch all actions for the document
             all_actions = self.get_document_actions(document)
             # print(all_actions)

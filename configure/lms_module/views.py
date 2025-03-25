@@ -3223,7 +3223,7 @@ class DocumentHasQuizListViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentMappingSerializer
     def list(self, request, *args, **kwargs):
         try:
-            training = Document.objects.filter(trainingquiz__isnull=False).distinct()
+            training = Document.objects.filter(trainingquiz__isnull=False).exclude(document_current_status=15).exclude(document_current_status=12).distinct()
             serializer = self.serializer_class(training, many=True)
             return Response({"status": True, "message": "Training with quizzes fetched successfully", "document_data": {"documents": serializer.data}})
         except Exception as e:
@@ -5233,7 +5233,7 @@ class PendingTrainingReportView(viewsets.ViewSet):
                 datestatus = AttemptedQuiz.objects.filter(user=user, document=training).first()
                 name = training.document_title if training else None
                 version = training.version if training else "No Version"
-                status = "Passed" if datestatus and datestatus.is_pass else "Failed"
+                status = "Passed" if datestatus and datestatus.is_pass else ("Failed" if datestatus else "Pending")
                 document_number = training.document_number
 
                 user_data  = {
