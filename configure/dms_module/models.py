@@ -88,6 +88,7 @@ class Document(models.Model):
     generatefile = models.CharField(max_length=255,blank=True, null=True) 
     equipment_id = models.CharField(max_length=255,blank=True, null=True)
     product_code = models.CharField(max_length=255,blank=True, null=True)
+    is_effective = models.BooleanField(default=False, null=True, blank=True)
 
 class UploadedDocument(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE)  

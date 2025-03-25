@@ -3176,6 +3176,8 @@ class TrainingAssigntoJobroleViewSet(viewsets.ModelViewSet):
             existing_documents = Document.objects.filter(job_roles=job_role_instance)
             for doc in existing_documents:
                 doc.job_roles.remove(job_role_instance)
+                doc.is_effective = False
+                doc.save()
 
             valid_document = Document.objects.filter(id__in=document_ids)
             if len(valid_document) != len(document_ids):
@@ -3183,6 +3185,8 @@ class TrainingAssigntoJobroleViewSet(viewsets.ModelViewSet):
 
             for training in valid_document:
                 training.job_roles.add(job_role_instance)
+                training.is_effective = True
+                training.save()
 
             return Response({
                 "status": True,
