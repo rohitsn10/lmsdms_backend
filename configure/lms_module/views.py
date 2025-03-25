@@ -3544,7 +3544,9 @@ class FailedUserViewSet(viewsets.ModelViewSet):
             document_id = kwargs.get('document_id')
             document = Document.objects.get(id=document_id)
             failed_users = QuizSession.objects.filter(status='Failed', quiz__status=True,quiz__document = document)
-            serializer = QuizSessionSerializer(failed_users, many=True)
+            assigned_users = ClassroomTraining.objects.filter(document=document)
+            remaining_failed_users = CustomUser.objects.filter(id__in=failed_users).exclude(id__in=assigned_users)
+            serializer = CustomUserSerializer(remaining_failed_users, many=True)
             return Response({'status': True, 'message': 'Failed users fetched successfully', 'data': serializer.data})
         except Document.DoesNotExist:
             return Response({
