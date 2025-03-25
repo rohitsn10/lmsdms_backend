@@ -456,9 +456,10 @@ class AttemptedQuizSerializer(serializers.ModelSerializer):
     attempts = serializers.CharField(source = 'quiz_session.attempts', read_only = True)
     status = serializers.CharField(source = 'quiz_session.status', read_only = True)
     document_name = serializers.CharField(source = 'document.document_title', read_only = True)
+    version = serializers.CharField(source = 'document.version', read_only = True)
     class Meta:
         model = AttemptedQuiz
-        fields = ['id', 'user', 'quiz', 'document','document_name', 'status', 'attempts', 'obtain_marks', 'total_marks', 'total_taken_time', 'created_at', 'is_pass']
+        fields = ['id', 'user', 'quiz', 'document','document_name','version', 'status', 'attempts', 'obtain_marks', 'total_marks', 'total_taken_time', 'created_at', 'is_pass']
 
 class ClassroomAttemptedQuizSerializer(serializers.ModelSerializer):
     classroom_name = serializers.CharField(source = 'classroom.classroom_name', read_only = True)

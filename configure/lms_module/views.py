@@ -3223,7 +3223,7 @@ class DocumentHasQuizListViewSet(viewsets.ModelViewSet):
         try:
             training = Document.objects.filter(trainingquiz__isnull=False).distinct()
             serializer = self.serializer_class(training, many=True)
-            return Response({"status": True, "message": "Training with quizzes fetched successfully", "data": serializer.data})
+            return Response({"status": True, "message": "Training with quizzes fetched successfully", "document_data": {"documents": serializer.data}})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 
