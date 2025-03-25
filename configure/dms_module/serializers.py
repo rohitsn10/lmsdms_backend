@@ -346,7 +346,7 @@ class PrinterSerializer(serializers.ModelSerializer):
 #         fields = ['id', 'user_first_name', 'document', 'revise_description', 'created_at']
 
 class DocumentSerializer(serializers.ModelSerializer):
-    document_id = serializers.IntegerField(source='id', read_only=True)
+    # document_id = serializers.IntegerField(source='id', read_only=True)
     document_title = serializers.CharField(read_only=True)
     user = serializers.SerializerMethodField()
     revise_description = serializers.SerializerMethodField()
