@@ -5278,39 +5278,29 @@ class ClassroomIsPreviewViewSet(viewsets.ModelViewSet):
 #             return Response({"status": False, "message": str(e)})
 
 class ClassroomWithoutAssesmentViewSet(viewsets.ModelViewSet):
-    queryset = ClassroomTraining.objects.all()
-    serializer_class = ClassroomTrainingSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, user_id, *args, **kwargs):
         try:
-            user_id = kwargs.get('user_id')
-            if not user_id:
-                return Response({"status": False, "message": "User ID is required"})
+            # Step 1: Check if user ki attendance "present" hai
+            is_present = Attendance.objects.filter(user_id=user_id, status="present").exists()
 
-            user = CustomUser.objects.get(id=user_id)
+            if not is_present:
+                return Response({"status": False, "message": "User is not present in any session", "data": []})
 
-            # Fetch session IDs where the user was present
-            present_sessions = Attendance.objects.filter(
-                user=user, 
-                status=Attendance.PRESENT
-            ).values_list('session_id', flat=True)
-
-            # Fetch classrooms without assessment where the user attended at least one session
+            # Step 2: Fetch classrooms where user is enrolled & is_assesment = "Without Assessment"
             classrooms = ClassroomTraining.objects.filter(
-                user__id=user_id,  # Many-to-Many field ke liye
-                is_assesment="without_assessment",
-                session__id__in=present_sessions  # Session aur ClassroomTraining ka relation check karein
+                is_assesment="Without Assessment",
+                user__id=user_id  # Many-to-Many relation check
             ).distinct()
 
-            if not classrooms.exists():
-                return Response({"status": False, "message": "No classrooms found", "data": []})
+            # Step 3: Response prepare karo
+            if not classrooms:
+                return Response({"status": False, "message": "No matching classrooms found", "data": []})
 
-            serializer = ClassroomTrainingSerializer(classrooms, many=True)
-            return Response({"status": True, "message": "Classrooms fetched successfully", "data": serializer.data})
+            classroom_data = classrooms.values("classroom_id", "classroom_name", "description", "status")
 
-        except CustomUser.DoesNotExist:
-            return Response({"status": False, "message": "User not found"})
+            return Response({"status": True, "message": "Classrooms fetched successfully", "data": list(classroom_data)})
 
         except Exception as e:
             return Response({"status": False, "message": str(e)})
