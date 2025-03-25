@@ -3246,6 +3246,7 @@ class DocumentReviseRequestGetViewSet(viewsets.ModelViewSet):
         for doc in serializer.data:
             is_revise = DocumentRevisionRequestAction.objects.filter(
                 document_id=doc['document_id'], is_revise=True
+                # document_id=doc['id'], is_revise=True
             ).exists()
             doc['is_revise'] = is_revise  # Append is_revise to response
 

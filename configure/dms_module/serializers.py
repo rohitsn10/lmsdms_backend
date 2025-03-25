@@ -346,6 +346,61 @@ class PrinterSerializer(serializers.ModelSerializer):
 #         fields = ['id', 'user_first_name', 'document', 'revise_description', 'created_at']
 
 class DocumentSerializer(serializers.ModelSerializer):
+    document_id = serializers.IntegerField(source='id', read_only=True)
+    document_title = serializers.CharField(read_only=True)
+    user = serializers.SerializerMethodField()
+    revise_description = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    document_current_status_name = serializers.CharField(source='document_current_status.status', read_only=True)
+    document_type = serializers.CharField(source='document_type.document_name', read_only=True)  # Adjust 'name' to the appropriate field on DocumentType
+    revise_request_id = serializers.SerializerMethodField()  # Field for revision request ID
+    revision_created_at = serializers.SerializerMethodField()  # Field for revision created_at
+    front_file_url = serializers.SerializerMethodField()
+    class Meta:
+        model = Document
+        fields = [
+            'document_id',
+            'select_template',
+            'document_title',
+            'document_current_status',
+            'document_current_status_name',
+            'version',
+            'user',
+            'revise_description',
+            'revision_date',
+            'effective_date',
+            'status',
+            'document_type', 
+            'revise_request_id',
+            'revision_created_at',
+            'job_roles',
+            'front_file_url'
+        ]
+
+    def get_front_file_url(self, obj):
+        latest_comment = NewDocumentCommentsData.objects.filter(document=obj).order_by('-created_at').first()
+        return latest_comment.front_file_url.url if latest_comment and latest_comment.front_file_url else None
+    def get_user(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.user.username if action else None
+
+    def get_revise_description(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.revise_description if action else None
+
+    def get_status(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.status if action else None
+    
+    def get_revise_request_id(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.id if action else None
+
+    def get_revision_created_at(self, obj):
+        action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
+        return action.created_at if action else None
+    
+class DocumentMappingSerializer(serializers.ModelSerializer):
     # document_id = serializers.IntegerField(source='id', read_only=True)
     document_title = serializers.CharField(read_only=True)
     user = serializers.SerializerMethodField()
@@ -398,7 +453,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     def get_revision_created_at(self, obj):
         action = DocumentRevisionRequestAction.objects.filter(document=obj).first()
-        return action.created_at if action else None
+        return action.created_at if action else None    
 
 class ApprovedPrintRequestSerializer(serializers.ModelSerializer):
     document_title = serializers.CharField(source='print_request.sop_document_id.document_title')

@@ -3206,7 +3206,9 @@ class TrainingAssigntoJobroleViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Invalid Job role ID"})
 
             assigned_documents = Document.objects.filter(job_roles=job_role_instance)
-            serialized_documents = DocumentSerializer(assigned_documents, many=True)
+            # serialized_documents = DocumentSerializer(assigned_documents, many=True)
+            serialized_documents = DocumentMappingSerializer(assigned_documents, many=True)
+            
 
             return Response({
                 "status": True,
@@ -3218,7 +3220,7 @@ class TrainingAssigntoJobroleViewSet(viewsets.ModelViewSet):
 
 class DocumentHasQuizListViewSet(viewsets.ModelViewSet):
     # permission_classes = [permissions.IsAuthenticated]
-    serializer_class = DocumentSerializer
+    serializer_class = DocumentMappingSerializer
     def list(self, request, *args, **kwargs):
         try:
             training = Document.objects.filter(trainingquiz__isnull=False).exclude(document_current_status=15).exclude(document_current_status=12).distinct()
@@ -5269,8 +5271,9 @@ class ClassroomWithoutAssesmentViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "User not found"})
             user = CustomUser.objects.get(id=user_id)
             present_sessions = Attendance.objects.filter(user=user, status=Attendance.PRESENT).values_list('session_id', flat=True)
-            classrooms = ClassroomTraining.objects.filter(user=user, is_assesment="without_assessment", sessions__id__in=present_sessions).distinct()
+            classrooms = ClassroomTraining.objects.filter(user=user, is_assesment="Without Assessment", sessions__id__in=present_sessions).distinct()
             serializer = ClassroomTrainingSerializer(classrooms, many=True)
             return Response({"status": True, "message": "Classrooms fetched successfully", "data": serializer.data})
         except Exception as e:
             return Response({"status": False, "message": str(e)})
+
