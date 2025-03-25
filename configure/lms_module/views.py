@@ -5291,18 +5291,24 @@ class ClassroomWithoutAssesmentViewSet(viewsets.ModelViewSet):
             user = CustomUser.objects.get(id=user_id)
 
             # Fetch session IDs where the user was present
-            present_sessions = Attendance.objects.filter(user=user, status=Attendance.PRESENT).values_list('session_id', flat=True)
+            present_sessions = Attendance.objects.filter(
+                user=user, 
+                status=Attendance.PRESENT
+            ).values_list('session_id', flat=True)
 
-            # Fetch classrooms without assessment and where the user attended at least one session
+            # Fetch classrooms without assessment where the user attended at least one session
             classrooms = ClassroomTraining.objects.filter(
-                user=user,
+                user__id=user_id,  # Many-to-Many field ke liye
                 is_assesment="without_assessment",
-                sessions__id__in=present_sessions
+                session__id__in=present_sessions  # Session aur ClassroomTraining ka relation check karein
             ).distinct()
+
+            if not classrooms.exists():
+                return Response({"status": False, "message": "No classrooms found", "data": []})
 
             serializer = ClassroomTrainingSerializer(classrooms, many=True)
             return Response({"status": True, "message": "Classrooms fetched successfully", "data": serializer.data})
-        
+
         except CustomUser.DoesNotExist:
             return Response({"status": False, "message": "User not found"})
 
