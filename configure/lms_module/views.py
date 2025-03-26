@@ -5214,6 +5214,7 @@ class PendingTrainingReportView(viewsets.ViewSet):
     
     def list(self, request, *args, **kwargs):
         try:
+            log_user = request.user
             document_id = kwargs.get('document_id')
             training = Document.objects.get(id=document_id)
             users = CustomUser.objects.filter(job_assigns__job_roles__in=training.job_roles.all()).distinct()
@@ -5240,6 +5241,8 @@ class PendingTrainingReportView(viewsets.ViewSet):
                     'status': status,
                     'document_number': document_number,
                     'current_version': version,
+                    'log_user': log_user,
+                    'current_datetime': timezone.now().strftime('%d-%m-%Y %H:%M:%S'),
                     # 'trainer_name': trainer_name,
                 }
                 # print(user_data)

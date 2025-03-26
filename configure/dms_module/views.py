@@ -1117,12 +1117,12 @@ class DocumentViewSet(viewsets.ModelViewSet):
                     queryset = Document.objects.filter(
                         user__department_id=department_id,
                         user__groups__name="Author"
-                    ).exclude(document_current_status=15).order_by('-id') | Document.objects.filter(document_current_status=10) | Document.objects.filter(author=user).order_by('-id')
+                    ).exclude(document_current_status=15).order_by('-id') | Document.objects.filter(document_current_status=10).exclude(document_current_status=15) | Document.objects.filter(author=user).exclude(document_current_status=15).order_by('-id')
                 else:
                     queryset = Document.objects.filter(
                         user__department_id=user.department_id,
                         user__groups__name="Author"
-                    ).exclude(document_current_status=15).order_by('-id') | Document.objects.filter(document_current_status=10) | Document.objects.filter(author=user).order_by('-id')
+                    ).exclude(document_current_status=15).order_by('-id') | Document.objects.filter(document_current_status=10).exclude(document_current_status=15) | Document.objects.filter(author=user).exclude(document_current_status=15).order_by('-id')
             else:
                 # Other roles: View documents assigned to them
                 queryset = Document.objects.filter(
@@ -4632,36 +4632,16 @@ class DocumentDataOfStatusIdEleven(viewsets.ModelViewSet):
             if not status_obj:
                 return Response({"status": False, "message": "Status not found", "data": []})
 
-            queryset = Document.objects.filter(document_current_status=status_obj).order_by('-id')
-
-            if user.groups.filter(name='Admin').exists() or user.groups.filter(name='Doc Admin').exists():
-                if department_id:
-                    queryset = queryset.filter(user__department_id=department_id)
-            elif user.groups.filter(name='Reviewer').exists():
-                queryset = queryset.filter(visible_to_users=user)
-            elif user_department:
-                queryset = queryset.filter(user__department=user_department)
-
-            if start_date and end_date:
-                start_date_obj, end_date_obj, error = validate_dates(start_date, end_date)
-                if error:
-                    return Response({"status": False, "message": error, "data": []})
-    
-                if start_date_obj:
-                    start_date_obj = timezone.make_aware(datetime.combine(start_date_obj, datetime.min.time()))
-                if end_date_obj:
-                    end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
-    
-                if start_date_obj and end_date_obj:
-                    queryset = queryset.filter(created_at__range=[start_date_obj, end_date_obj])
-
+            queryset = DocumentRevisionAction.objects.filter(status_revision=status_obj).order_by('-id')
+            print_reject = PrintRequestApproval.objects.filter(status=status_obj).order_by('-id')
             document_count = queryset.count()
-
-            serializer = DocumentviewSerializer(queryset, many=True, context={'request': request})
+            print_reject_count = print_reject.count()
+            serializer = DocumentRevisionActionSerializer(queryset, many=True, context={'request': request})
+            print_reject_serializer = ApprovedPrintRequestSerializer(print_reject, many=True, context={'request': request})
             if queryset.exists():
-                return Response({"status": True,"message": "Documents fetched successfully","user_group_ids": list(user_group_ids),"data_count": document_count,"data": serializer.data})
+                return Response({"status": True,"message": "Documents fetched successfully","data_count": document_count,"data": serializer.data, 'print_reject_count': print_reject_count,"print_reject_serializer": print_reject_serializer.data})
             else:
-                return Response({"status": True,"message": "No Documents found","user_group_ids": list(user_group_ids),"data": []})
+                return Response({"status": True,"message": "No Documents found","data": []})
 
         except Exception as e:
             return Response({"status": False,"message": "Something went wrong","error": str(e)})
@@ -5039,33 +5019,62 @@ class EmployeeRecordLogView(viewsets.ViewSet):
                 version = document_number.last().version if document_number.exists() else "No Version"
                 # trainer = Trainer.objects.filter(user=user).first()
 
+
+                for attempt in datestatus:
+                    all_users_data.append({
+                        'employee_name': user.username,
+                        'designation': user.designation,
+                        'department_name': department_name,
+                        'training_date': attempt.created_at.strftime("%Y-%m-%d"),
+                        'training_name': attempt.document.document_title if attempt.document else "No Title",
+                        'document_number': attempt.document.document_number if attempt.document else "No Document",
+                        'current_version': attempt.document.version if attempt.document else "No Version",
+                        'status': "Passed" if attempt.is_pass else "Failed",
+                        'trainer_name': "-",  # No trainer for AttemptedQuiz
+                    })
+
+
+                for classroom in classroom:
+                    all_users_data.append({
+                        'employee_name': user.username,
+                        'designation': user.designation,
+                        'department_name': department_name,
+                        'training_date': classroom.created_at.strftime("%Y-%m-%d"),
+                        'training_name': classroom.classroom.classroom_name if classroom.classroom else "No Classroom",
+                        'document_number': classroom.classroom.document.document_number if classroom.classroom and classroom.classroom.document else "No Document",
+                        'current_version': classroom.classroom.document.version if classroom.classroom and classroom.classroom.document else "No Version",
+                        'status': "Passed" if classroom.is_pass else "Failed",
+                        'trainer_name': classroom.classroom.trainer.trainer_name if classroom.classroom and classroom.classroom.trainer else "-",
+                    })
+
+
                 # training_date = datestatus.started_at if datestatus else "Not started"
-                status = ["Passed" if session.is_pass else "Failed" for session in datestatus]
-                training_name = [training.document_title for training in name]
-                classroom_name = [attempt.classroom.classroom_name for attempt in classroom if attempt.classroom]
-                classroom_result = ["Passed" if attempt.is_pass else "Failed" for attempt in classroom]
-                document_number = document_number.last().document_number if document_number.exists() else "No Document"
-                trainer_names = list(set([attempt.classroom.trainer.trainer_name for attempt in classroom if attempt.classroom and attempt.classroom.trainer]))
+                # status = ["Passed" if session.is_pass else "Failed" for session in datestatus]
+                # training_name = [training.document_title for training in name]
+                # classroom_name = [attempt.classroom.classroom_name for attempt in classroom if attempt.classroom]
+                # classroom_result = ["Passed" if attempt.is_pass else "Failed" for attempt in classroom]
+                # document_number = document_number.last().document_number if document_number.exists() else "No Document"
+                # trainer_names = list(set([attempt.classroom.trainer.trainer_name for attempt in classroom if attempt.classroom and attempt.classroom.trainer]))
 
-                title_classroom = " / ".join(training_name + classroom_name) if training_name or classroom_name else "No Training"
-                final_result = " / ".join(status + classroom_result) if status or classroom_result else "No Status"
-                trainer_name = ", ".join(trainer_names) if trainer_names else "-"
+                # title_classroom = " / ".join(training_name + classroom_name) if training_name or classroom_name else "No Training"
+                # final_result = " / ".join(status + classroom_result) if status or classroom_result else "No Status"
+                # trainer_name = ", ".join(trainer_names) if trainer_names else "-"
 
-                training_dates = ", ".join([session.created_at.strftime("%Y-%m-%d") for session in datestatus]) if datestatus else "Not started"
+                # training_dates = ", ".join([session.created_at.strftime("%Y-%m-%d") for session in datestatus]) if datestatus else "Not started"
 
-                user_data  = {
-                    'employee_name': user.username,
-                    'designation': user.designation,
-                    'department_name': department_name,
-                    'training_date': training_dates,
-                    'training_name': title_classroom,
-                    'status': final_result,
-                    'document_number': document_number,
-                    'current_version': version,
-                    'trainer_name': trainer_name,
-                }
-                print(user_data)
-                all_users_data.append(user_data)
+                # user_data  = {
+                #     'employee_name': user.username,
+                #     'designation': user.designation,
+                #     'department_name': department_name,
+                #     'training_date': training_dates,
+                #     'training_name': title_classroom,
+                #     'status': final_result,
+                #     'document_number': document_number,
+                #     'current_version': version,
+                #     'trainer_name': trainer_name,
+                # }
+                # print(user_data)
+                # all_users_data.append(user_data)
             context = {'users_data': all_users_data}
 
             template = get_template('employee_record_log.html')
