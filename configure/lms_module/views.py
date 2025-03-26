@@ -3541,55 +3541,55 @@ class FailedUserViewSet(viewsets.ModelViewSet):
     queryset = QuizSession.objects.all()
     serializer_class = QuizSessionSerializer
 
-    def list(self, request, *args, **kwargs):
-        try:
-            document_id = kwargs.get('document_id')
-            document = Document.objects.get(id=document_id)
-    
-            # Fetch failed users for the given document
-            failed_users = QuizSession.objects.filter(
-                status='failed',
-                quiz__status=True,
-                quiz__document=document
-            ).values_list('user_id', flat=True)  # Extract user IDs only
-    
-            # Fetch assigned users who have taken classroom training
-            assigned_users = ClassroomTraining.objects.filter(
-                document=document
-            ).values_list('user', flat=True)  # Extract assigned user IDs
-    
-            # Filter remaining failed users who haven't completed assessment
-            remaining_failed_users = CustomUser.objects.filter(
-                id__in=failed_users
-            )
-    
-            serializer = CustomUserSerializer(remaining_failed_users, many=True)
-            return Response({'status': True, 'message': 'Failed users fetched successfully', 'data': serializer.data})
-    
-        except Document.DoesNotExist:
-            return Response({
-                'status': False,
-                'message': 'Document not found'
-            })
-        except Exception as e:
-            return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
-
     # def list(self, request, *args, **kwargs):
     #     try:
     #         document_id = kwargs.get('document_id')
     #         document = Document.objects.get(id=document_id)
-    #         failed_users = QuizSession.objects.filter(status='Failed', quiz__status=True,quiz__document = document)
-    #         assigned_users = ClassroomTraining.objects.filter(document=document)
-    #         remaining_failed_users = CustomUser.objects.filter(id__in=failed_users).exclude(id__in=assigned_users)
+    
+    #         # Fetch failed users for the given document
+    #         failed_users = QuizSession.objects.filter(
+    #             status='failed',
+    #             quiz__status=True,
+    #             quiz__document=document
+    #         ).values_list('user_id', flat=True)  # Extract user IDs only
+    
+    #         # Fetch assigned users who have taken classroom training
+    #         assigned_users = ClassroomTraining.objects.filter(
+    #             document=document
+    #         ).values_list('user', flat=True)  # Extract assigned user IDs
+    
+    #         # Filter remaining failed users who haven't completed assessment
+    #         remaining_failed_users = CustomUser.objects.filter(
+    #             id__in=failed_users
+    #         )
+    
     #         serializer = CustomUserSerializer(remaining_failed_users, many=True)
     #         return Response({'status': True, 'message': 'Failed users fetched successfully', 'data': serializer.data})
+    
     #     except Document.DoesNotExist:
     #         return Response({
     #             'status': False,
     #             'message': 'Document not found'
     #         })
     #     except Exception as e:
-    #         return Response({'status': False,'message': 'Something went wrong', 'error': str(e)})
+    #         return Response({'status': False, 'message': 'Something went wrong', 'error': str(e)})
+
+    def list(self, request, *args, **kwargs):
+        try:
+            document_id = kwargs.get('document_id')
+            document = Document.objects.get(id=document_id)
+            failed_users = QuizSession.objects.filter(status='Failed', quiz__status=True,quiz__document = document)
+            assigned_users = ClassroomTraining.objects.filter(document=document)
+            remaining_failed_users = QuizSession.objects.filter(quiz__document = document,user__in=failed_users.values_list('user', flat=True)).exclude(user__in=assigned_users.values_list('user', flat=True))
+            serializer = QuizSessionSerializer(remaining_failed_users, many=True)
+            return Response({'status': True, 'message': 'Failed users fetched successfully', 'data': serializer.data})
+        except Document.DoesNotExist:
+            return Response({
+                'status': False,
+                'message': 'Document not found'
+            })
+        except Exception as e:
+            return Response({'status': False,'message': 'Something went wrong', 'error': str(e)})
 
 class HrAcknowledgementViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
