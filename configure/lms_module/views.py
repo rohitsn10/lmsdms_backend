@@ -5147,37 +5147,44 @@ class EmployeeRecordLogExcelView(viewsets.ViewSet):
 
             # Define Headers
             headers = [
-                'Employeessss Name', 'Designation', 'Department',
-                'Training Date', 'Training Name', 'Status',
-                'Document Number', 'Current Version', 'Trainer Name'
+                'Employee Name', 'Designation', 'Department',
+                'Training Date', 'Training Name', 'Document Number',
+                'Current Version', 'Status', 'Trainer Name'
             ]
 
             # Add Headers to Sheet
             for col_num, header in enumerate(headers, 1):
                 ws[f'{get_column_letter(col_num)}1'] = header
 
-            # Populate Data Rows
-            for row_num, user in enumerate(users, 2):
+            row_num = 2  # Start writing from second row
+            for user in users:
                 department_name = user.department.department_name if user.department else "No Department"
-                datestatus = QuizSession.objects.filter(user=user).first()
-                training = TrainingCreate.objects.filter(created_by=user).first()
-                document = Document.objects.filter(user=user).first()
-                trainer = Trainer.objects.filter(user=user).first()
-                status = datestatus.status if datestatus else "No Status"
-                training_name = training.training_name if training else "No Training"
-                document_number = document.document_number if document else "No Document"
-                version = document.version if document else "No Version"
-                trainer_name = trainer.trainer_name if trainer else "No Trainer"
 
-                # Assign values to cells
-                ws[f'A{row_num}'] = user.username
-                ws[f'B{row_num}'] = user.designation
-                ws[f'C{row_num}'] = department_name
-                ws[f'E{row_num}'] = training_name
-                ws[f'F{row_num}'] = status
-                ws[f'G{row_num}'] = document_number
-                ws[f'H{row_num}'] = version
-                ws[f'I{row_num}'] = trainer_name
+                # Fetch AttemptedQuiz Data
+                for attempt in AttemptedQuiz.objects.filter(user=user):
+                    ws[f'A{row_num}'] = user.username
+                    ws[f'B{row_num}'] = user.designation
+                    ws[f'C{row_num}'] = department_name
+                    ws[f'D{row_num}'] = attempt.created_at.strftime("%Y-%m-%d")
+                    ws[f'E{row_num}'] = attempt.document.document_title if attempt.document else "No Title"
+                    ws[f'F{row_num}'] = attempt.document.document_number if attempt.document else "No Document"
+                    ws[f'G{row_num}'] = attempt.document.version if attempt.document else "No Version"
+                    ws[f'H{row_num}'] = "Passed" if attempt.is_pass else "Failed"
+                    ws[f'I{row_num}'] = "-"  # No trainer for AttemptedQuiz
+                    row_num += 1  # Move to next row
+
+                # Fetch ClassroomAttemptedQuiz Data
+                for classroom in ClassroomAttemptedQuiz.objects.filter(user=user):
+                    ws[f'A{row_num}'] = user.username
+                    ws[f'B{row_num}'] = user.designation
+                    ws[f'C{row_num}'] = department_name
+                    ws[f'D{row_num}'] = classroom.created_at.strftime("%Y-%m-%d")
+                    ws[f'E{row_num}'] = classroom.classroom.classroom_name if classroom.classroom else "No Classroom"
+                    ws[f'F{row_num}'] = classroom.classroom.document.document_number if classroom.classroom and classroom.classroom.document else "No Document"
+                    ws[f'G{row_num}'] = classroom.classroom.document.version if classroom.classroom and classroom.classroom.document else "No Version"
+                    ws[f'H{row_num}'] = "Passed" if classroom.is_pass else "Failed"
+                    ws[f'I{row_num}'] = classroom.classroom.trainer.trainer_name if classroom.classroom and classroom.classroom.trainer else "-"
+                    row_num += 1  # Move to next row
 
             # Adjust Column Widths
             for col_num in range(1, len(headers) + 1):
@@ -5185,7 +5192,7 @@ class EmployeeRecordLogExcelView(viewsets.ViewSet):
 
             # Generate Filename
             timestamp = time.strftime("%d_%m_%Y_%H_%M_%S")
-            filename = f"employee_excel_log_{timestamp}.xlsx"
+            filename = f"employee_excel_log{timestamp}.xlsx"
             file_path = os.path.join(settings.MEDIA_ROOT, 'employee_excel_log', filename)
 
             # Create Directory if Not Exists
@@ -5200,15 +5207,12 @@ class EmployeeRecordLogExcelView(viewsets.ViewSet):
                 f.write(file_stream.read())
 
             # Build File URL
-            base_url = request.build_absolute_uri('/')
-            file_url = base_url + f'media/employee_excel_log/{filename}'
+            file_url = f"{request.scheme}://{request.get_host()}{settings.MEDIA_URL}employee_excel_log/{filename}"
 
             return Response({"status": True, "message": "Excel report generated successfully.", "data": file_url})
 
         except Exception as e:
-            return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
-        
-
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)})
 class PendingTrainingReportView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
     
