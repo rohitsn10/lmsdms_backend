@@ -1088,7 +1088,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
     search_fields = ['document_title', 'document_number', 'document_description', 'document_type__name']
     ordering_fields = ['document_title', 'created_at']
 
-    def list(self, request):
+    def list(self, request, *args, **kwargs):
         try:
             user = self.request.user
             roles = self.kwargs.get('roles')

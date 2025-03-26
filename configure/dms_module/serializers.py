@@ -11,6 +11,7 @@ class PrintRequestSerializer(serializers.ModelSerializer):
     document_title = serializers.CharField(source='sop_document_id.document_title', read_only=True)
     document_status = serializers.CharField(source='sop_document_id.document_current_status.status', read_only=True)
     version = serializers.CharField(source='sop_document_id.version', read_only=True)
+    status_id = serializers.CharField(source='print_request_status.id', read_only=True)
     status = serializers.CharField(source='print_request_status.status', read_only=True)
     no_of_request_by_admin = serializers.SerializerMethodField()  # Include no_of_request_by_admin
     approved_date = serializers.SerializerMethodField()  # Rename created_at to approved_date
@@ -23,7 +24,7 @@ class PrintRequestSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'user', 'first_name', 'sop_document_id', 'document_title', 'document_status', 'version',
             'no_of_print', 'issue_type', 'reason_for_print',
-            'created_at', 'status',
+            'created_at', 'status_id', 'status',
             'no_of_request_by_admin', 'approved_date', 'printer_name',
             'approval_numbers',  # Add approval_numbers to the response
             'request_user_groups', 'print_count', 'no_of_retrival'
