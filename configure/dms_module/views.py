@@ -4980,6 +4980,8 @@ class EmployeeJobRoleView(viewsets.ViewSet):
     def list(self, request, *args, **kwargs):
         employee_id = kwargs.get('employee_id')
         try:
+            user = request.user
+            current_date = datetime.now().strftime('%d/%m/%Y')
             employee = CustomUser.objects.get(id=employee_id)
             department = Department.objects.filter(id=employee.department_id).first()
             job_assign = JobAssign.objects.filter(user=employee).first()
@@ -4992,7 +4994,9 @@ class EmployeeJobRoleView(viewsets.ViewSet):
                 'joining_date': employee.created_at.strftime('%d/%m/%Y'),
                 'company_name': 'Promount Technologies LLP',
                 'department_name': department.department_name if employee.department else 'N/A',
-                'job_role': job_roles
+                'job_role': job_roles,
+                'user': user,
+                'current_date': current_date
             }
             template = get_template('employee_job_role.html')
             html = template.render(context)

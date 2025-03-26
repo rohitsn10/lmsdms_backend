@@ -4609,7 +4609,7 @@ class TrainingCompletionViewSet(viewsets.ModelViewSet):
             user = CustomUser.objects.get(id=user_id)
             username = user.username
             print("username",username)
-            current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M")
+            current_datetime = datetime.now().strftime("%Y-%m-%d")
             job_assign = JobAssign.objects.filter(user=user).first()
             job_role = job_assign.job_roles.all().values_list('job_role_name', flat=True)
             if not job_assign:
