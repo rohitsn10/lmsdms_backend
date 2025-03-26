@@ -1091,6 +1091,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
     def list(self, request):
         try:
             user = self.request.user
+            roles = self.kwargs.get('roles')
             user_group_ids = list(user.groups.values_list('id', flat=True))
             department_id = self.request.query_params.get('department_id', None)
             document_current_status = request.query_params.get('document_current_status', None)
@@ -1107,10 +1108,10 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
 
              # Check if the user is in the "Admin" group
-            if user.groups.filter(name="Admin").exists():
+            if roles == "1":
                 # Admins can view all documents
                 queryset = Document.objects.all().exclude(document_current_status=15).order_by('-id')
-            elif user.groups.filter(name="Author").exists():
+            elif roles =="2":
                 # Authors can only see documents created by users in the same department
                 if department_id:
                     queryset = Document.objects.filter(
