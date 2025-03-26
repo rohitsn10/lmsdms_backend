@@ -5165,7 +5165,7 @@ class EmployeeRecordLogExcelView(viewsets.ViewSet):
                     ws[f'A{row_num}'] = user.username
                     ws[f'B{row_num}'] = user.designation
                     ws[f'C{row_num}'] = department_name
-                    ws[f'D{row_num}'] = attempt.created_at.strftime("%Y-%m-%d")
+                    ws[f'D{row_num}'] = attempt.created_at.strftime("%d-%m-%Y")
                     ws[f'E{row_num}'] = attempt.document.document_title if attempt.document else "No Title"
                     ws[f'F{row_num}'] = attempt.document.document_number if attempt.document else "No Document"
                     ws[f'G{row_num}'] = attempt.document.version if attempt.document else "No Version"
