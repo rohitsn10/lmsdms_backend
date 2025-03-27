@@ -3744,7 +3744,7 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
         try:
             # Fetch the document
             document = Document.objects.get(id=document_id)
-            revision_date = Document.objects.filter(id=document).first()
+            revision_date = Document.objects.filter(id=document.id).first()
             date_revise = revision_date.revision_date if revision_date else "---"
             # Fetch all actions for the document
             all_actions = self.get_document_actions(document)

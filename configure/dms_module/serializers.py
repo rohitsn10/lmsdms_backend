@@ -539,10 +539,12 @@ class DocumentEffectivenewActionSerializer(serializers.ModelSerializer):
 
 class DocumentRevisionActionSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source='user.username')
+    document_name = serializers.CharField(source='document.document_title', read_only=True)
     remarks = serializers.SerializerMethodField()
+    status_name = serializers.CharField(source='status_revision.status', read_only=True)
     class Meta:
         model = DocumentRevisionAction
-        fields = ['user','document', 'name','status_revision','remarks', 'remarks_revision','created_at']
+        fields = ['user','document','document_name', 'name','status_revision', 'status_name','remarks', 'remarks_revision','created_at']
     
     def get_remarks(self, obj):
         remark = DocumentRevisionRemarks.objects.filter(document=obj.document).order_by('-id').first()
