@@ -48,12 +48,17 @@ def get_training_document_upload_path(filename):
     return os.path.join('training_documents', new_filename)
 
 
+# def increment_version(version_str):
+#     major, minor = map(int, version_str.split('.'))
+#     minor += 1 
+#     if minor >= 10:
+#         minor = 0
+#         major += 1
+#     return f"{major}.{minor}"
+
 def increment_version(version_str):
     major, minor = map(int, version_str.split('.'))
-    minor += 1 
-    if minor >= 10:
-        minor = 0
-        major += 1
+    minor += 1  # Just increment minor without rolling over
     return f"{major}.{minor}"
 
 

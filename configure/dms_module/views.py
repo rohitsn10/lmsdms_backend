@@ -1217,7 +1217,7 @@ class DocumentExcelGenerateViewSet(viewsets.ModelViewSet):
             # Define the headers for the Excel file
             headers = [
                 'Document Title', 'Document Number', 'Document Type', 'Parent Document No.',
-                'Revision Date', 'Status','Assigned User FirstName','Assign User LastName','Created At', 'Effective Date', 'Version',
+                'Revision Date', 'Status','Product Code','Equipment ID','Created At', 'Effective Date', 'Version',
                 'Author Name', 'Approver Name','Doc Admin Name'
             ]
             # Add headers to the Excel sheet
@@ -1233,8 +1233,10 @@ class DocumentExcelGenerateViewSet(viewsets.ModelViewSet):
                 ws[f'D{row_num}'] = document.parent_document.id if document.parent_document else "-"
                 ws[f'E{row_num}'] = document.revision_date.strftime('%d-%m-%Y') if document.revision_date else "-"
                 ws[f'F{row_num}'] = document.document_current_status.status if document.document_current_status else "-"
-                ws[f'G{row_num}'] = document.assigned_to.first_name if document.assigned_to else "-"
-                ws[f'H{row_num}'] = document.assigned_to.last_name if document.assigned_to else "-"
+                ws[f'G{row_num}'] = document.product_code if document.product_code else "-"
+                ws[f'H{row_num}'] = document.equipment_id if document.equipment_id else "-"
+                # ws[f'G{row_num}'] = document.assigned_to.first_name if document.assigned_to else "-"
+                # ws[f'H{row_num}'] = document.assigned_to.last_name if document.assigned_to else "-"
                 ws[f'I{row_num}'] = document.created_at.strftime('%d-%m-%Y')
                 ws[f'J{row_num}'] = document.effective_date.strftime('%d-%m-%Y') if document.effective_date else "-"
                 ws[f'K{row_num}'] = document.version
