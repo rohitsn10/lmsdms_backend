@@ -2011,7 +2011,8 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
 
                         questions_list = list(questions)
                         print(questions_list, "jjj")
-                        selected_questions = random.sample(questions_list, count)
+                        # selected_questions = random.sample(questions_list, count)
+                        selected_questions = questions_list
 
                         potential_marks = total_marks_accumulated + (marks * count)
                         if potential_marks > total_marks:
