@@ -1907,17 +1907,46 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
 
 
 
+# class TrainingQuizList(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+#     lookup_field = 'document_id'
+#     def list(self, request, *args, **kwargs):
+#         try:
+#             document_id = kwargs.get('document_id')
+#             document = Document.objects.get(id=document_id)
+#             queryset = list(TrainingQuiz.objects.filter(document=document))
+#             random.shuffle(queryset)
+#             serializer = TrainingQuizSerializer(queryset, many=True, context={'request': request})
+#             return Response({"status": True, "message": "Quizzes retrieved successfully", "data": serializer.data})
+#         except Exception as e:
+#             return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+
 class TrainingQuizList(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'document_id'
+
     def list(self, request, *args, **kwargs):
         try:
             document_id = kwargs.get('document_id')
             document = Document.objects.get(id=document_id)
-            queryset = list(TrainingQuiz.objects.filter(document=document))
-            random.shuffle(queryset)
-            serializer = TrainingQuizSerializer(queryset, many=True, context={'request': request})
-            return Response({"status": True, "message": "Quizzes retrieved successfully", "data": serializer.data})
+
+            # Fetch all quizzes related to the document
+            quizzes = TrainingQuiz.objects.filter(document=document)
+
+            # Fetch all related quiz questions for these quizzes
+            quiz_ids = quizzes.values_list('id', flat=True)  # Extracting quiz IDs
+            quiz_questions = QuizQuestion.objects.filter(quiz_id__in=quiz_ids)  # Fetch all questions
+
+            # Serialize data
+            quiz_serializer = TrainingQuizSerializer(quizzes, many=True, context={'request': request})
+            question_serializer = QuizQuestionSerializer(quiz_questions, many=True, context={'request': request})
+
+            return Response({
+                "status": True,
+                "message": "Quizzes and questions retrieved successfully",
+                "quizzes": quiz_serializer.data,
+                "questions": question_serializer.data  # Sending all questions
+            })
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
 
@@ -5147,37 +5176,47 @@ class EmployeeRecordLogExcelView(viewsets.ViewSet):
 
             # Define Headers
             headers = [
-                'Employeessss Name', 'Designation', 'Department',
-                'Training Date', 'Training Name', 'Status',
-                'Document Number', 'Current Version', 'Trainer Name'
+                'Employee Name', 'Designation', 'Department',
+                'Training Date', 'Training Name', 'Document Number',
+                'Current Version', 'Status', 'Trainer Name'
             ]
 
             # Add Headers to Sheet
-            for col_num, header in enumerate(headers, 1):
-                ws[f'{get_column_letter(col_num)}1'] = header
+            ws.append(headers)
 
             # Populate Data Rows
-            for row_num, user in enumerate(users, 2):
+            for user in users:
                 department_name = user.department.department_name if user.department else "No Department"
-                datestatus = QuizSession.objects.filter(user=user).first()
-                training = TrainingCreate.objects.filter(created_by=user).first()
-                document = Document.objects.filter(user=user).first()
-                trainer = Trainer.objects.filter(user=user).first()
-                status = datestatus.status if datestatus else "No Status"
-                training_name = training.training_name if training else "No Training"
-                document_number = document.document_number if document else "No Document"
-                version = document.version if document else "No Version"
-                trainer_name = trainer.trainer_name if trainer else "No Trainer"
 
-                # Assign values to cells
-                ws[f'A{row_num}'] = user.username
-                ws[f'B{row_num}'] = user.designation
-                ws[f'C{row_num}'] = department_name
-                ws[f'E{row_num}'] = training_name
-                ws[f'F{row_num}'] = status
-                ws[f'G{row_num}'] = document_number
-                ws[f'H{row_num}'] = version
-                ws[f'I{row_num}'] = trainer_name
+                # Fetch Attempted Quiz Data
+                attempted_quizzes = AttemptedQuiz.objects.filter(user=user)
+                for attempt in attempted_quizzes:
+                    ws.append([
+                        user.username,
+                        user.designation,
+                        department_name,
+                        attempt.created_at.strftime("%d-%m-%Y"),
+                        attempt.document.document_title if attempt.document else "No Title",
+                        attempt.document.document_number if attempt.document else "No Document",
+                        attempt.document.version if attempt.document else "No Version",
+                        "Passed" if attempt.is_pass else "Failed",
+                        "-",  # No trainer for AttemptedQuiz
+                    ])
+
+                # Fetch Classroom Attempted Quiz Data
+                classroom_attempts = ClassroomAttemptedQuiz.objects.filter(user=user)
+                for classroom in classroom_attempts:
+                    ws.append([
+                        user.username,
+                        user.designation,
+                        department_name,
+                        classroom.created_at.strftime("%d-%m-%Y"),
+                        classroom.classroom.classroom_name if classroom.classroom else "No Classroom",
+                        classroom.classroom.document.document_number if classroom.classroom and classroom.classroom.document else "No Document",
+                        classroom.classroom.document.version if classroom.classroom and classroom.classroom.document else "No Version",
+                        "Passed" if classroom.is_pass else "Failed",
+                        classroom.classroom.trainer.trainer_name if classroom.classroom and classroom.classroom.trainer else "-",
+                    ])
 
             # Adjust Column Widths
             for col_num in range(1, len(headers) + 1):
@@ -5191,23 +5230,16 @@ class EmployeeRecordLogExcelView(viewsets.ViewSet):
             # Create Directory if Not Exists
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            # Save to File
-            file_stream = BytesIO()
-            wb.save(file_stream)
-            file_stream.seek(0)
-
-            with open(file_path, 'wb') as f:
-                f.write(file_stream.read())
+            # Save File
+            wb.save(file_path)
 
             # Build File URL
-            base_url = request.build_absolute_uri('/')
-            file_url = base_url + f'media/employee_excel_log/{filename}'
+            file_url = request.build_absolute_uri(settings.MEDIA_URL + f'employee_excel_log/{filename}')
 
             return Response({"status": True, "message": "Excel report generated successfully.", "data": file_url})
 
         except Exception as e:
             return Response({"status": False, 'message': 'Something went wrong', 'error': str(e)})
-        
 
 class PendingTrainingReportView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
