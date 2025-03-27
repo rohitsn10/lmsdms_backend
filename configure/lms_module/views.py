@@ -1792,64 +1792,38 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
             total_questions = 0  
 
             # # Handle auto-type quizzes
-            # if quiz_type == 'auto':
-            #     # Marks breakdown is a dictionary, iterate through it
-            #     for marks, count in marks_breakdown.items():
-            #         marks = int(marks)  # Ensure marks is an integer
-            #         count = int(count)  # Ensure count is an integer
-
-            #         questions = list(TrainingQuestions.objects.filter(
-            #             # training=training,  # The training filter
-            #             document=document,
-            #             marks=marks,        # Marks filter
-            #             status=True          # Only active questions
-            #         ))
-
-            #         if len(questions) < count:
-            #             return Response({"status": False,"message": f"Not enough questions with {marks} marks. Found {len(questions)} questions.","data": []})
-
-            #         random.shuffle(questions)
-            #         # Select the required number of questions
-            #         selected_questions = random.sample(questions, count)
-
-            #         potential_marks = total_marks_accumulated + (marks * count)
-            #         if potential_marks > total_marks:
-            #             return Response({"status": False,"message": f"Total marks exceeded. The selected questions' marks total {potential_marks}, which exceeds the input total_marks of {total_marks}.","data": []})
-
-            #         # Create QuizQuestion for each selected question
-            #         for question in selected_questions:
-            #             QuizQuestion.objects.create(quiz=quiz, question=question, marks=marks)
-
-            #         total_marks_accumulated += marks * count
-            #         total_questions += count
-
             if quiz_type == 'auto':
+                # Marks breakdown is a dictionary, iterate through it
                 for marks, count in marks_breakdown.items():
-                    marks = int(marks)
-                    count = int(count)
-            
+                    marks = int(marks)  # Ensure marks is an integer
+                    count = int(count)  # Ensure count is an integer
+
                     questions = list(TrainingQuestions.objects.filter(
+                        # training=training,  # The training filter
                         document=document,
-                        marks=marks,
-                        status=True
+                        marks=marks,        # Marks filter
+                        status=True          # Only active questions
                     ))
-            
+
                     if len(questions) < count:
-                        return Response({
-                            "status": False,
-                            "message": f"Not enough questions with {marks} marks. Found {len(questions)} questions.",
-                            "data": []
-                        })
-            
+                        return Response({"status": False,"message": f"Not enough questions with {marks} marks. Found {len(questions)} questions.","data": []})
+
                     random.shuffle(questions)
-                    # Select questions (earlier: limited to `count`, now includes all)
-                    selected_questions = questions[:count]  # Agar zyada hain toh bhi sab include honge
-            
+                    # Select the required number of questions
+                    # selected_questions = random.sample(questions, count)
+                    selected_questions = random.sample(questions)
+
+                    potential_marks = total_marks_accumulated + (marks * count)
+                    if potential_marks > total_marks:
+                        return Response({"status": False,"message": f"Total marks exceeded. The selected questions' marks total {potential_marks}, which exceeds the input total_marks of {total_marks}.","data": []})
+
+                    # Create QuizQuestion for each selected question
                     for question in selected_questions:
                         QuizQuestion.objects.create(quiz=quiz, question=question, marks=marks)
-            
-                    total_marks_accumulated += marks * len(selected_questions)  # Adjust total marks
-                    total_questions += len(selected_questions)
+
+                    total_marks_accumulated += marks * count
+                    total_questions += count
+
             
 
             # Handle manual-type quizzes
