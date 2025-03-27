@@ -1791,37 +1791,66 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
             total_marks_accumulated = 0  
             total_questions = 0  
 
-            # Handle auto-type quizzes
+            # # Handle auto-type quizzes
+            # if quiz_type == 'auto':
+            #     # Marks breakdown is a dictionary, iterate through it
+            #     for marks, count in marks_breakdown.items():
+            #         marks = int(marks)  # Ensure marks is an integer
+            #         count = int(count)  # Ensure count is an integer
+
+            #         questions = list(TrainingQuestions.objects.filter(
+            #             # training=training,  # The training filter
+            #             document=document,
+            #             marks=marks,        # Marks filter
+            #             status=True          # Only active questions
+            #         ))
+
+            #         if len(questions) < count:
+            #             return Response({"status": False,"message": f"Not enough questions with {marks} marks. Found {len(questions)} questions.","data": []})
+
+            #         random.shuffle(questions)
+            #         # Select the required number of questions
+            #         selected_questions = random.sample(questions, count)
+
+            #         potential_marks = total_marks_accumulated + (marks * count)
+            #         if potential_marks > total_marks:
+            #             return Response({"status": False,"message": f"Total marks exceeded. The selected questions' marks total {potential_marks}, which exceeds the input total_marks of {total_marks}.","data": []})
+
+            #         # Create QuizQuestion for each selected question
+            #         for question in selected_questions:
+            #             QuizQuestion.objects.create(quiz=quiz, question=question, marks=marks)
+
+            #         total_marks_accumulated += marks * count
+            #         total_questions += count
+
             if quiz_type == 'auto':
-                # Marks breakdown is a dictionary, iterate through it
                 for marks, count in marks_breakdown.items():
-                    marks = int(marks)  # Ensure marks is an integer
-                    count = int(count)  # Ensure count is an integer
-
+                    marks = int(marks)
+                    count = int(count)
+            
                     questions = list(TrainingQuestions.objects.filter(
-                        # training=training,  # The training filter
                         document=document,
-                        marks=marks,        # Marks filter
-                        status=True          # Only active questions
+                        marks=marks,
+                        status=True
                     ))
-
+            
                     if len(questions) < count:
-                        return Response({"status": False,"message": f"Not enough questions with {marks} marks. Found {len(questions)} questions.","data": []})
-
+                        return Response({
+                            "status": False,
+                            "message": f"Not enough questions with {marks} marks. Found {len(questions)} questions.",
+                            "data": []
+                        })
+            
                     random.shuffle(questions)
-                    # Select the required number of questions
-                    selected_questions = random.sample(questions, count)
-
-                    potential_marks = total_marks_accumulated + (marks * count)
-                    if potential_marks > total_marks:
-                        return Response({"status": False,"message": f"Total marks exceeded. The selected questions' marks total {potential_marks}, which exceeds the input total_marks of {total_marks}.","data": []})
-
-                    # Create QuizQuestion for each selected question
+                    # Select questions (earlier: limited to `count`, now includes all)
+                    selected_questions = questions[:count]  # Agar zyada hain toh bhi sab include honge
+            
                     for question in selected_questions:
                         QuizQuestion.objects.create(quiz=quiz, question=question, marks=marks)
-
-                    total_marks_accumulated += marks * count
-                    total_questions += count
+            
+                    total_marks_accumulated += marks * len(selected_questions)  # Adjust total marks
+                    total_questions += len(selected_questions)
+            
 
             # Handle manual-type quizzes
             elif quiz_type == 'manual':
@@ -1907,48 +1936,21 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
 
 
 
-# class TrainingQuizList(viewsets.ModelViewSet):
-#     permission_classes = [permissions.IsAuthenticated]
-#     lookup_field = 'document_id'
-#     def list(self, request, *args, **kwargs):
-#         try:
-#             document_id = kwargs.get('document_id')
-#             document = Document.objects.get(id=document_id)
-#             queryset = list(TrainingQuiz.objects.filter(document=document))
-#             random.shuffle(queryset)
-#             serializer = TrainingQuizSerializer(queryset, many=True, context={'request': request})
-#             return Response({"status": True, "message": "Quizzes retrieved successfully", "data": serializer.data})
-#         except Exception as e:
-#             return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
-
 class TrainingQuizList(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'document_id'
-
     def list(self, request, *args, **kwargs):
         try:
             document_id = kwargs.get('document_id')
             document = Document.objects.get(id=document_id)
-
-            # Fetch all quizzes related to the document
-            quizzes = TrainingQuiz.objects.filter(document=document)
-
-            # Fetch all related quiz questions for these quizzes
-            quiz_ids = quizzes.values_list('id', flat=True)  # Extracting quiz IDs
-            quiz_questions = QuizQuestion.objects.filter(quiz_id__in=quiz_ids)  # Fetch all questions
-
-            # Serialize data
-            quiz_serializer = TrainingQuizSerializer(quizzes, many=True, context={'request': request})
-            question_serializer = QuizQuestionSerializer(quiz_questions, many=True, context={'request': request})
-
-            return Response({
-                "status": True,
-                "message": "Quizzes and questions retrieved successfully",
-                "quizzes": quiz_serializer.data,
-                "questions": question_serializer.data  # Sending all questions
-            })
+            queryset = list(TrainingQuiz.objects.filter(document=document))
+            random.shuffle(queryset)
+            serializer = TrainingQuizSerializer(queryset, many=True, context={'request': request})
+            return Response({"status": True, "message": "Quizzes retrieved successfully", "data": serializer.data})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e), "data": []})
+
+
 
 class TrainingQuizUpdateView(viewsets.ModelViewSet):
     queryset = TrainingQuiz.objects.all()
