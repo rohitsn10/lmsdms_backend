@@ -1811,7 +1811,8 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
                     random.shuffle(questions)
                     # Select the required number of questions
                     # selected_questions = random.sample(questions, count)
-                    selected_questions = random.sample(questions)
+                    selected_questions = questions  # Select all available questions
+                    
 
                     potential_marks = total_marks_accumulated + (marks * count)
                     if potential_marks > total_marks:
