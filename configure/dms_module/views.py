@@ -3734,6 +3734,7 @@ class GetDocumentCertificateDataListViewSet(viewsets.ViewSet):
 
 from PyPDF2 import PdfMerger
 from docx2pdf import convert
+from collections import OrderedDict
 import platform
 class DocumentCertificatePdfExportView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -3841,8 +3842,14 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             actions.append(author_action)
     
         # 2️⃣ Get all Reviewer actions (Multiple reviewers can exist)
-        reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('created_at')[:2]
+        reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('created_at')
+        unique_users = OrderedDict()
         for action in reviewer_actions:
+            if action.user_id not in unique_users:
+                unique_users[action.user_id] = action
+            if len(unique_users) == 2:
+                break
+        for action in unique_users.values():
             action.role = "Reviewer"
             actions.append(action)
     

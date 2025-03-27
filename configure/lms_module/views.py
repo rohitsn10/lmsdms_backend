@@ -5228,9 +5228,14 @@ class PendingTrainingReportView(viewsets.ViewSet):
                 datestatus = AttemptedQuiz.objects.filter(user=user, document=training).first()
                 name = training.document_title if training else None
                 version = training.version if training else "No Version"
-                status = "Passed" if datestatus and datestatus.is_pass else ("Failed" if datestatus else "Pending")
+                doc_status = "Passed" if datestatus and datestatus.is_pass else ("Failed" if datestatus else "Pending")
                 document_number = training.document_number
-
+                classroom = ClassroomTraining.objects.filter(document=training).first()
+                class_status = ClassroomAttemptedQuiz.objects.filter(user=user, classroom=classroom, is_pass=True).exists()
+                if class_status:
+                    status = "Passed"
+                else:
+                    status = doc_status
                 user_data  = {
                     'employee_name': user.username,
                     'emp_no': user.employee_number,
@@ -5241,8 +5246,6 @@ class PendingTrainingReportView(viewsets.ViewSet):
                     'status': status,
                     'document_number': document_number,
                     'current_version': version,
-                    'log_user': log_user,
-                    'current_datetime': timezone.now().strftime('%d-%m-%Y %H:%M:%S'),
                     # 'trainer_name': trainer_name,
                 }
                 # print(user_data)
@@ -5252,7 +5255,9 @@ class PendingTrainingReportView(viewsets.ViewSet):
                 'training_no': training.document_number,
                 'training_version': training.version,
                 'training_title': training.document_title,
-                'users_data': all_users_data
+                'users_data': all_users_data,
+                'log_user': log_user,
+                'current_datetime': timezone.now().strftime('%d-%m-%Y %H:%M:%S'),
             }
 
             template = get_template('pending_training_report.html')
