@@ -3458,9 +3458,9 @@ class ParentDocumentViewSet(viewsets.ModelViewSet):
         document = Document.objects.filter(id=document_id).first()
         if not document:
             return Response({"message": "Document not found"})
-        title = document.document_number
+        title = document.document_title
         vers = document.version
-        title_filter = Document.objects.filter(document_number=title)
+        title_filter = Document.objects.filter(document_title=title)
         document_ids = title_filter.values_list('id', flat=True)
         # Filter queryset based on document_id
         if document_id:
