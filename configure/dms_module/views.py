@@ -397,7 +397,7 @@ class PrintRequestExcelGenerateViewSet(viewsets.ModelViewSet):
             user = self.request.user
 
             if user.groups.filter(name='QA').exists() or user.groups.filter(name='Doc Admin').exists():
-                queryset = PrintRequest.objects.filter(print_request_status__id=12).order_by('-created_at')
+                queryset = PrintRequest.objects.all().order_by('-created_at')
 
             elif status_id == 'all':
                 # If status_id is "all", fetch all data for the current user
