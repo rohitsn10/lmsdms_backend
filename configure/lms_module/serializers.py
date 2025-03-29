@@ -162,9 +162,10 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
     selected_file = serializers.SerializerMethodField()
     selected_file_type = serializers.CharField(source='question.selected_file_type')
     question_type = serializers.CharField(source='question.question_type')
+    status = serializers.BooleanField(source='question.status')  # Adding status field
     class Meta:
         model = QuizQuestion
-        fields = ['id','question', 'marks','question_text','options','correct_answer','selected_file_type','selected_file','question_type']
+        fields = ['id','question', 'marks','question_text','options','correct_answer','selected_file_type','selected_file','question_type','status']
     def get_options(self, obj):
         return obj.question.options
     
