@@ -3460,27 +3460,27 @@ class ParentDocumentViewSet(viewsets.ModelViewSet):
             return Response({"message": "Document not found"})
         title = document.document_title
         vers = document.version
-        print(vers)
-        def version_to_tuple(version_str):
-            return tuple(map(int, version_str.split('.')))
-        try:
-            vers_tuple = version_to_tuple(vers)
-        except ValueError:
-            return Response({"message": "Invalid version format"}, status=400)
+        # print(vers)
+        # def version_to_tuple(version_str):
+        #     return tuple(map(int, version_str.split('.')))
+        # try:
+        #     vers_tuple = version_to_tuple(vers)
+        # except ValueError:
+        #     return Response({"message": "Invalid version format"}, status=400)
         title_filter = Document.objects.filter(document_title=title)
         document_ids = title_filter.values_list('id', flat=True)
         # Filter queryset based on document_id
         if document_id:
             queryset = Document.objects.filter(parent_document_id__in=document_ids).order_by('id')
-            f_queryset = [doc for doc in queryset if version_to_tuple(doc.version) < vers_tuple]
+            # f_queryset = [doc for doc in queryset if version_to_tuple(doc.version) < vers_tuple]
             
             # Sort results by version
-            f_queryset = sorted(f_queryset, key=lambda doc: version_to_tuple(doc.version))
+            # f_queryset = sorted(f_queryset, key=lambda doc: version_to_tuple(doc.version))
         else:
             queryset = Document.objects.none()  
 
         # Serialize the filtered queryset
-        serializer = self.get_serializer(f_queryset, many=True)
+        serializer = self.get_serializer(queryset, many=True)
         
         return Response({
             "status": True,
