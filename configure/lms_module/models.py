@@ -30,6 +30,7 @@ class JobRole(models.Model):
 class JobAssign(models.Model):
     job_roles = models.ManyToManyField(JobRole,related_name='job_assigns')
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='job_assigns')
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
 class Assessment(models.Model):
     title = models.TextField(blank=True, null=True)
@@ -344,6 +345,7 @@ class QuizSession(models.Model):
 class HRacknowledgement(models.Model):
     remarks = models.TextField(null=True, blank=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
 class AttemptLog(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)

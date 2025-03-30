@@ -3648,7 +3648,8 @@ class InductionCertificateViewSet(viewsets.ViewSet):
             user_id = self.kwargs.get('user_id')
             user = CustomUser.objects.get(id=user_id)
             username = user.username
-
+            hr_date = HRacknowledgement.objects.filter(user=user).first()
+            completion_date = hr_date.created_at if hr_date else None
             # hr_acknowledgement = HRacknowledgement.objects.filter(user=user).order_by('-id').first()
             # hr_name = hr_acknowledgement.user.get_full_name() if hr_acknowledgement else "HR Manager"
 
@@ -3668,7 +3669,8 @@ class InductionCertificateViewSet(viewsets.ViewSet):
             # 🔹 Prepare user data for the template
             user_data = {
                 'username': username,
-                'date': today_date
+                'date': today_date,
+                'completion_date' : completion_date,
             }
             context = {'users_data': user_data}
             template = get_template('index.html') 

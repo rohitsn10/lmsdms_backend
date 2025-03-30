@@ -188,15 +188,6 @@ class PrintRequestViewSet(viewsets.ModelViewSet):
             reason_for_print = request.data.get('reason_for_print')
             printer_id = request.data.get('printer_id')
             dynamic_status = DynamicStatus.objects.get(id=13)
-
-            if not no_of_print:
-                return Response({'status': False, 'message': 'NO of print is required'})
-            if not issue_type:
-                return Response({'status': False, 'message': 'Issue type is required'})
-            if not reason_for_print:
-                return Response({'status': False, 'message': 'Reason is required'})
-            if not printer_id:
-                return Response({'status': False, 'message': 'Printer id is required'})
             
             try:
                 sop_document = Document.objects.get(id=sop_document_id)
@@ -276,6 +267,7 @@ class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
             sop_document_id = self.kwargs.get('sop_document_id')
             document_status = request.data.get('document_status')
             approval_numbers = request.data.get('approval_numbers', [])
+            issue_type = request.data.get('issue_type')
             sop_document_instance = PrintRequest.objects.filter(sop_document_id=sop_document_id).first()
 
             if not sop_document_instance:
@@ -319,7 +311,7 @@ class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
 
             # 🔹 Apply Watermark Every Time
             watermarked_pdf_path = pdf_output_path
-            add_watermark(pdf_output_path, watermarked_pdf_path, document_status, approval_number)
+            add_watermark(pdf_output_path, watermarked_pdf_path, document_status, approval_number, issue_type)
             # print_pdf_with_one_copy(watermarked_pdf_path)
             pdf_relative_path = os.path.relpath(watermarked_pdf_path, settings.MEDIA_ROOT)
             pdf_url = f"{settings.MEDIA_URL}{pdf_relative_path}"
@@ -330,7 +322,7 @@ class PrintRequestDocxConvertPDFViewSet(viewsets.ModelViewSet):
             return Response({'status': False, 'message': 'An error occurred while processing the document.', 'error': str(e)})
 
 from reportlab.lib.colors import black, lightgrey
-def add_watermark(input_pdf_path, output_pdf_path, watermark_text="CONFIDENTIAL", approval_number=""):
+def add_watermark(input_pdf_path, output_pdf_path, watermark_text="CONFIDENTIAL", approval_number="", issue_type=""):
     """ Adds a diagonal watermark and places the approval number at the bottom-right of each page with improvements """
 
     existing_pdf = PdfReader(open(input_pdf_path, "rb"))
@@ -368,6 +360,23 @@ def add_watermark(input_pdf_path, output_pdf_path, watermark_text="CONFIDENTIAL"
             # Add approval number text
             can.setFillColor(black)  # Reset text color to black
             can.drawString(width - box_width + padding - 10, 20, approval_number)
+
+            can.restoreState()
+        
+        if issue_type:
+            can.saveState()
+            can.setFont("Courier-Bold", 14)  # Use "Courier-Bold" for better clarity
+            can.setFillColor(black)  # Black color
+            box_width, box_height = 140, 25  # Size of background box
+            padding = 5
+
+            # Draw background box for better visibility
+            can.setFillColor(lightgrey)  # Light grey background
+            can.rect(10, 10, box_width, box_height, fill=1, stroke=0)
+
+            # Add approval number text
+            can.setFillColor(black)  # Reset text color to black
+            can.drawString(10 + padding, 20, issue_type)
 
             can.restoreState()
 
@@ -5127,6 +5136,8 @@ class EmployeeTrainingNeedIdentyView(viewsets.ViewSet):
         try:
             employee = CustomUser.objects.get(id=employee_id)
             user_job_roles = JobRole.objects.filter(job_assigns__user=employee)
+            period_from = (JobAssign.objects.filter(user=employee).order_by('created_at').values_list('created_at', flat=True).first())
+            update_date = (JobAssign.objects.filter(user=employee).order_by('-created_at').values_list('created_at', flat=True).first())
             print(user_job_roles, "fffffffffffff")
             trainings = Document.objects.filter(job_roles__in=user_job_roles).distinct()
             print(trainings, "fffffffffffff")
@@ -5147,11 +5158,11 @@ class EmployeeTrainingNeedIdentyView(viewsets.ViewSet):
                 user_training_data = []
                 
                 for training in trainings:
-                    if failed_quiz_sessions.filter(document=training).exists():
-                        user_training_data.append({
-                            'training_name': training.document_title,
-                            'training_number': training.document_number
-                        })
+                    # if failed_quiz_sessions.filter(document=training).exists():
+                    user_training_data.append({
+                        'training_name': training.document_title,
+                        'training_number': training.document_number,
+                    })
                 print(user_training_data)
                 status = "Pass" if user_failed_sessions.first().is_pass else "Failed"
                 
@@ -5161,6 +5172,8 @@ class EmployeeTrainingNeedIdentyView(viewsets.ViewSet):
                     'department_name': department_name,
                     'status': status,
                     'trainings': user_training_data, 
+                    'period_from': period_from,
+                    'update_date': update_date,
                 }
                 all_users_data.append(user_data)
 
