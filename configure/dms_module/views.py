@@ -1108,7 +1108,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 end_date_obj = timezone.make_aware(datetime.combine(end_date_obj, datetime.max.time()))
 
              # Check if the user is in the "Admin" group
-            if roles == "1":
+            if roles == "1" or roles == "5":
                 # Admins can view all documents
                 queryset = Document.objects.all().exclude(document_current_status=15).order_by('-id')
             elif roles =="2":
@@ -3461,25 +3461,24 @@ class ParentDocumentViewSet(viewsets.ModelViewSet):
         title = document.document_title
         vers = document.version
         # print(vers)
-        # def version_to_tuple(version_str):
-        #     return tuple(map(int, version_str.split('.')))
-        # try:
-        #     vers_tuple = version_to_tuple(vers)
-        # except ValueError:
-        #     return Response({"message": "Invalid version format"}, status=400)
-        title_filter = Document.objects.filter(document_title=title)
-        document_ids = title_filter.values_list('id', flat=True)
-        # Filter queryset based on document_id
-        if document_id:
-            queryset = Document.objects.filter(parent_document_id__in=document_ids).order_by('id')
-            # f_queryset = [doc for doc in queryset if version_to_tuple(doc.version) < vers_tuple]
-            
-            # Sort results by version
-            # f_queryset = sorted(f_queryset, key=lambda doc: version_to_tuple(doc.version))
-        else:
-            queryset = Document.objects.none()  
+        def version_to_tuple(version_str):
+            return tuple(map(int, version_str.split('.')))
+        try:
+            vers_tuple = version_to_tuple(vers)
+        except ValueError:
+            return Response({"message": "Invalid version format"}, status=400)
+        all_versions = Document.objects.filter(document_title=title).order_by('id')
 
-        # Serialize the filtered queryset
+        # Find older versions (<= current version)
+        older_versions = [doc.id for doc in all_versions if version_to_tuple(doc.version) <= vers_tuple]
+
+        # If this is the latest version (newer than others), include all child docs
+        if vers_tuple == max([version_to_tuple(doc.version) for doc in all_versions]):
+            document_ids = older_versions  # Include all previous versions
+        else:
+            document_ids = [document.id]  # Only include this specific version
+
+        queryset = Document.objects.filter(parent_document_id__in=document_ids).order_by('id')
         serializer = self.get_serializer(queryset, many=True)
         
         return Response({
