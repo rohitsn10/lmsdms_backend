@@ -1857,12 +1857,12 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
                         "data": []
                     })
 
-                questions = TrainingQuestions.objects.filter(
+                questions = list(TrainingQuestions.objects.filter(
                     id__in=selected_questions,  
                     # training=training,  
                     document=document,  
                     status=True
-                )
+                ))
 
                 if len(questions) != len(selected_questions):
                     return Response({
