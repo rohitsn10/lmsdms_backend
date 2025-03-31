@@ -1919,7 +1919,7 @@ class TrainingQuizList(viewsets.ModelViewSet):
         try:
             document_id = kwargs.get('document_id')
             document = Document.objects.get(id=document_id)
-            queryset = list(TrainingQuiz.objects.filter(document=document))
+            queryset = list(TrainingQuiz.objects.filter(document=document, status=True))
             random.shuffle(queryset)
             serializer = TrainingQuizSerializer(queryset, many=True, context={'request': request})
             return Response({"status": True, "message": "Quizzes retrieved successfully", "data": serializer.data})
@@ -3945,9 +3945,9 @@ class ClassroomQuizList(viewsets.ModelViewSet):
             document_id = classroom.document.id if classroom.document else None
             # training_quizzes = list(TrainingQuiz.objects.filter(document=document_id))
             if document_id:
-                queryset = list(TrainingQuiz.objects.filter(document_id=document_id))
+                queryset = list(TrainingQuiz.objects.filter(document_id=document_id, status=True))
             else:
-                queryset = list(ClassroomQuiz.objects.filter(classroom=classroom))
+                queryset = list(ClassroomQuiz.objects.filter(classroom=classroom, status=True))
             random.shuffle(queryset)
             serializer = TrainingQuizSerializer(queryset, many=True, context={'request': request})
             return Response({"status": True, "message": "Quizzes retrieved successfully", "data": serializer.data})
