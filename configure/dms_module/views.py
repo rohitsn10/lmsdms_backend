@@ -3487,7 +3487,7 @@ class ParentDocumentViewSet(viewsets.ModelViewSet):
         else:
             document_ids = [document.id]  # Only include this specific version
 
-        queryset = Document.objects.filter(parent_document_id__in=document_ids).order_by('id')
+        queryset = Document.objects.filter(parent_document_id__in=document_ids).exclude(document_current_status=15).exclude(document_current_status=12).order_by('id')
         serializer = self.get_serializer(queryset, many=True)
         
         return Response({
