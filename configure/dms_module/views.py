@@ -3863,7 +3863,7 @@ class DocumentCertificatePdfExportView(viewsets.ViewSet):
             actions.append(author_action)
     
         # 2️⃣ Get all Reviewer actions (Multiple reviewers can exist)
-        reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('-created_at')
+        reviewer_actions = DocumentReviewerAction.objects.filter(document=document).order_by('created_at')
         unique_users = OrderedDict()
         for action in reviewer_actions:
             if action.user_id not in unique_users:
