@@ -1786,6 +1786,7 @@ class TrainingQuizCreateViewSet(viewsets.ModelViewSet):
                 created_by=user,
                 # training=training,
                 document=document,
+                marks_breakdown=marks_breakdown,
             )
 
             total_marks_accumulated = 0  

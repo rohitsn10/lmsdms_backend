@@ -178,6 +178,7 @@ class TrainingQuiz(models.Model):
     quiz_time = models.PositiveIntegerField(null=True, blank=True)  # Time in minutes
     total_marks = models.PositiveIntegerField(null=True, blank=True)
     total_questions = models.PositiveIntegerField(null=True, blank=True)
+    marks_breakdown = models.JSONField(null=True, blank=True)  # Store marks breakdown for each question type (if needed)
     quiz_type = models.CharField(max_length=10, choices=QUIZ_TYPE_CHOICES,null=True, blank=True)
     created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='training_quizzes_created', null=True, blank=True)
     updated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='training_quizzes_updated', null=True, blank=True)
