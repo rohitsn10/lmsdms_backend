@@ -2016,9 +2016,9 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
                         selected_questions = questions_list
                         # selected_questions = questions_list
 
-                        potential_marks = total_marks_accumulated + (marks * count)
-                        if potential_marks > total_marks:
-                            return Response({"status": False, "message": f"Total marks exceeded. The selected questions' marks total {potential_marks}, which exceeds the input total_marks of {total_marks}.", "data": []})
+                        # potential_marks = total_marks_accumulated + (marks * count)
+                        # if potential_marks > total_marks:
+                        #     return Response({"status": False, "message": f"Total marks exceeded. The selected questions' marks total {potential_marks}, which exceeds the input total_marks of {total_marks}.", "data": []})
 
                         # For each selected question, update or add it
                         for question in selected_questions:
