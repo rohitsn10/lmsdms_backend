@@ -151,4 +151,6 @@ urlpatterns = [
    path('convert_docx_pdf/<int:document_id>', DocxConvertPDFViewSet.as_view({'put': 'update'}), name='convert_docx_pdf'),
 
    path('id_wise_document_list/<int:document_id>', IDWiSeDocumentListViewSet.as_view({'get':'list'}),name='id_wise_document_list'),
+
+   path('archived_print_convert_pdf/<int:sop_document_id>', ArchivedDocxConvertPDFViewSet.as_view({'put': 'update'}), name='archived_print_convert_pdf'),
 ]

@@ -5474,3 +5474,138 @@ class IDWiSeDocumentListViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'status': False,'message': 'Error fetching documents', 'error': str(e)})
     
+
+class ArchivedDocxConvertPDFViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = PrintRequest.objects.all().order_by('-created_at')
+    serializer_class = PrintRequestSerializer
+
+    def update(self, request, *args, **kwargs):
+        try:
+            sop_document_id = self.kwargs.get('sop_document_id')
+            document_status = request.data.get('document_status')
+            # approval_numbers = request.data.get('approval_numbers', [])
+            # issue_type = request.data.get('issue_type')
+            sop_document_instance = Document.objects.filter(id=sop_document_id).first()
+
+            if not sop_document_instance:
+                return Response({'status': False, 'message': 'Print request not found.'})
+
+            # 🔹 Increase print count
+            # sop_document_instance.print_count += 1
+            # sop_document_instance.save()
+            # print_count = sop_document_instance.print_count - 1 
+
+            # 🔹 Select the correct approval number
+            # if print_count < len(approval_numbers):
+            #     approval_number = approval_numbers[print_count]
+            # else:
+            #     approval_number = approval_numbers[-1] if approval_numbers else ""
+
+            # sop_document_file = sop_document_instance.sop_document_id
+            sop_document = sop_document_instance.generatefile
+            print('Sop document:', sop_document)
+
+            if not sop_document.endswith('.docx'):
+                return Response({'status': False, 'message': 'Invalid document type. Only .docx files are supported.'})
+
+            base_directory = os.path.join(settings.MEDIA_ROOT, 'generated_docs')
+            docx_file_path = os.path.join(base_directory, sop_document)
+            pdf_output_path = docx_file_path.replace('.docx', '.pdf')
+
+            if not os.path.exists(docx_file_path):
+                return Response({'status': False, 'message': f"Document file not found at {docx_file_path}."})
+
+            try:
+                # 🔹 Always Convert DOCX to PDF
+                libreoffice_path = "libreoffice"
+                if os.name == "nt":
+                    libreoffice_path = r"C:\Program Files\LibreOffice\program\soffice.exe"
+
+                command = [libreoffice_path, "--headless", "--convert-to", "pdf", "--outdir", os.path.dirname(pdf_output_path), docx_file_path]
+                subprocess.run(command, check=True)
+            except subprocess.CalledProcessError as e:
+                return Response({'status': False, 'message': 'Error during conversion.', 'error': str(e)})
+
+            # 🔹 Apply Watermark Every Time
+            watermarked_pdf_path = pdf_output_path
+            add_watermark(pdf_output_path, watermarked_pdf_path, document_status)
+            # print_pdf_with_one_copy(watermarked_pdf_path)
+            pdf_relative_path = os.path.relpath(watermarked_pdf_path, settings.MEDIA_ROOT)
+            pdf_url = f"{settings.MEDIA_URL}{pdf_relative_path}"
+
+            return Response({'status': True, 'message': 'Document successfully converted with watermark.', 'pdf_link': request.build_absolute_uri(pdf_url)})
+
+        except Exception as e:
+            return Response({'status': False, 'message': 'An error occurred while processing the document.', 'error': str(e)})
+
+from reportlab.lib.colors import black, lightgrey
+def add_watermark(input_pdf_path, output_pdf_path, watermark_text="CONFIDENTIAL", approval_number="", issue_type=""):
+    """ Adds a diagonal watermark and places the approval number at the bottom-right of each page with improvements """
+
+    existing_pdf = PdfReader(open(input_pdf_path, "rb"))
+    output = PdfWriter()
+
+    for i in range(len(existing_pdf.pages)):
+        page = existing_pdf.pages[i]
+
+        # Create a new PDF for watermark & approval number
+        packet = BytesIO()
+        can = canvas.Canvas(packet, pagesize=letter)
+        width, height = letter  # Get PDF page size dynamically
+
+        # 🔹 Add Semi-Transparent Watermark (Diagonal)
+        can.saveState()
+        can.setFont("Helvetica-Bold", 50)
+        can.setFillColorRGB(0.8, 0.1, 0.1, alpha=0.3)  # Red, semi-transparent
+        can.translate(width / 3, height / 2)
+        can.rotate(45)
+        can.drawString(0, 0, watermark_text)
+        can.restoreState()  # Restore to avoid affecting approval number
+
+        # 🔹 Add Black Approval Number at **Bottom-Right** of Each Page
+        if approval_number:
+            can.saveState()
+            can.setFont("Courier-Bold", 14)  # Use "Courier-Bold" for better clarity
+            can.setFillColor(black)  # Black color
+            box_width, box_height = 140, 25  # Size of background box
+            padding = 5
+
+            # Draw background box for better visibility
+            can.setFillColor(lightgrey)  # Light grey background
+            can.rect(width - box_width - 10, 10, box_width, box_height, fill=1, stroke=0)
+
+            # Add approval number text
+            can.setFillColor(black)  # Reset text color to black
+            can.drawString(width - box_width + padding - 10, 20, approval_number)
+
+            can.restoreState()
+        
+        if issue_type:
+            can.saveState()
+            can.setFont("Courier-Bold", 14)  # Use "Courier-Bold" for better clarity
+            can.setFillColor(black)  # Black color
+            box_width, box_height = 140, 25  # Size of background box
+            padding = 5
+
+            # Draw background box for better visibility
+            can.setFillColor(lightgrey)  # Light grey background
+            can.rect(10, 10, box_width, box_height, fill=1, stroke=0)
+
+            # Add approval number text
+            can.setFillColor(black)  # Reset text color to black
+            can.drawString(10 + padding, 20, issue_type)
+
+            can.restoreState()
+
+        can.save()
+        packet.seek(0)
+        watermark_pdf = PdfReader(packet)
+
+        # Merge the watermark layer with the existing page
+        page.merge_page(watermark_pdf.pages[0])
+        output.add_page(page)
+
+    # Save the final PDF
+    with open(output_pdf_path, "wb") as outputStream:
+        output.write(outputStream)
