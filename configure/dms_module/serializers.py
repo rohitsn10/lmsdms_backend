@@ -361,6 +361,7 @@ class DocumentSerializer(serializers.ModelSerializer):
         model = Document
         fields = [
             'document_id',
+            'document_number',
             'select_template',
             'document_title',
             'document_current_status',
