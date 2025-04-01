@@ -1969,6 +1969,7 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
             # quiz.document = document
             quiz.quiz_name = quiz_name
             quiz.pass_criteria = pass_criteria
+            quiz.marks_breakdown = marks_breakdown
             quiz.quiz_time = quiz_time
             quiz.quiz_type = quiz_type
             quiz.updated_by = user
@@ -2012,7 +2013,7 @@ class TrainingQuizUpdateView(viewsets.ModelViewSet):
 
                         questions_list = list(questions)
                         print(questions_list, "jjj")
-                        selected_questions = random.sample(questions_list, count)
+                        selected_questions = questions_list
                         # selected_questions = questions_list
 
                         potential_marks = total_marks_accumulated + (marks * count)
