@@ -5564,39 +5564,39 @@ def add_watermark(input_pdf_path, output_pdf_path, watermark_text="CONFIDENTIAL"
         can.restoreState()  # Restore to avoid affecting approval number
 
         # 🔹 Add Black Approval Number at **Bottom-Right** of Each Page
-        if approval_number:
-            can.saveState()
-            can.setFont("Courier-Bold", 14)  # Use "Courier-Bold" for better clarity
-            can.setFillColor(black)  # Black color
-            box_width, box_height = 140, 25  # Size of background box
-            padding = 5
+        # if approval_number:
+        #     can.saveState()
+        #     can.setFont("Courier-Bold", 14)  # Use "Courier-Bold" for better clarity
+        #     can.setFillColor(black)  # Black color
+        #     box_width, box_height = 140, 25  # Size of background box
+        #     padding = 5
 
-            # Draw background box for better visibility
-            can.setFillColor(lightgrey)  # Light grey background
-            can.rect(width - box_width - 10, 10, box_width, box_height, fill=1, stroke=0)
+        #     # Draw background box for better visibility
+        #     can.setFillColor(lightgrey)  # Light grey background
+        #     can.rect(width - box_width - 10, 10, box_width, box_height, fill=1, stroke=0)
 
-            # Add approval number text
-            can.setFillColor(black)  # Reset text color to black
-            can.drawString(width - box_width + padding - 10, 20, approval_number)
+        #     # Add approval number text
+        #     can.setFillColor(black)  # Reset text color to black
+        #     can.drawString(width - box_width + padding - 10, 20, approval_number)
 
-            can.restoreState()
+        #     can.restoreState()
         
-        if issue_type:
-            can.saveState()
-            can.setFont("Courier-Bold", 14)  # Use "Courier-Bold" for better clarity
-            can.setFillColor(black)  # Black color
-            box_width, box_height = 140, 25  # Size of background box
-            padding = 5
+        # if issue_type:
+        #     can.saveState()
+        #     can.setFont("Courier-Bold", 14)  # Use "Courier-Bold" for better clarity
+        #     can.setFillColor(black)  # Black color
+        #     box_width, box_height = 140, 25  # Size of background box
+        #     padding = 5
 
-            # Draw background box for better visibility
-            can.setFillColor(lightgrey)  # Light grey background
-            can.rect(10, 10, box_width, box_height, fill=1, stroke=0)
+        #     # Draw background box for better visibility
+        #     can.setFillColor(lightgrey)  # Light grey background
+        #     can.rect(10, 10, box_width, box_height, fill=1, stroke=0)
 
-            # Add approval number text
-            can.setFillColor(black)  # Reset text color to black
-            can.drawString(10 + padding, 20, issue_type)
+        #     # Add approval number text
+        #     can.setFillColor(black)  # Reset text color to black
+        #     can.drawString(10 + padding, 20, issue_type)
 
-            can.restoreState()
+        #     can.restoreState()
 
         can.save()
         packet.seek(0)
