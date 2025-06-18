@@ -19,9 +19,16 @@ from django.urls import path,include
 from django.conf import settings
 from django.conf.urls.static import static
 
+# urlpatterns = [
+#     path('admin/', admin.site.urls),
+#     path('user_profile/',include('user_profile.urls')),
+#     path('lms_module/',include('lms_module.urls')),
+#     path('dms_module/',include('dms_module.urls')),
+# ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('user_profile/',include('user_profile.urls')),
-    path('lms_module/',include('lms_module.urls')),
-    path('dms_module/',include('dms_module.urls')),
-]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('api/admin/', admin.site.urls),
+    path('api/user_profile/', include('user_profile.urls')),
+    path('api/lms_module/', include('lms_module.urls')),
+    path('api/dms_module/', include('dms_module.urls')),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
