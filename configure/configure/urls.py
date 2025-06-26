@@ -33,7 +33,8 @@ urlpatterns = [
     path('api/user_profile/', include('user_profile.urls')),
     path('api/lms_module/', include('lms_module.urls')),
     path('api/dms_module/', include('dms_module.urls')),
+    path('dms_module/', include('dms_module.urls')),
 
-    path('dms_module/onlyoffice_callback', onlyoffice_callback),
+    
     
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
