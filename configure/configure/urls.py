@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.urls import path,include
 from django.conf import settings
 from django.conf.urls.static import static
+from dms_module.views import onlyoffice_callback
+
 
 # urlpatterns = [
 #     path('admin/', admin.site.urls),
@@ -31,4 +33,7 @@ urlpatterns = [
     path('api/user_profile/', include('user_profile.urls')),
     path('api/lms_module/', include('lms_module.urls')),
     path('api/dms_module/', include('dms_module.urls')),
+
+    path('dms_module/onlyoffice_callback', onlyoffice_callback),
+    
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
