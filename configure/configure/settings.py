@@ -156,7 +156,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 # EMAIL_HOST_USER = 'support@n10tech.com'
 # EMAIL_HOST_PASSWORD = 'lbfiuicmvmutfosn'
-EMAIL_HOST_USER = 'kalpesh.g@n10tech.com'
+EMAIL_HOST_USER = 'rohit27july2001@gmail.com'
 EMAIL_HOST_PASSWORD = 'tpahwwdnkbacwxqw'
 
 

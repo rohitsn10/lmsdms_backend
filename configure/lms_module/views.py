@@ -4910,6 +4910,10 @@ class ClassroomAttemptedQuizViewSet(viewsets.ModelViewSet):
                 is_pass=is_pass,
                 classroom_attempted=True
             )
+            # ✅ If quiz is passed, mark user as qualified
+            if attempted_quiz.is_pass is True:
+                user.is_qualification = True
+                user.save()
             # if is_pass:
             #     quiz_session = QuizSession.objects.get(user=user, quiz=quiz)
             #     quiz_session.status = 'passed'
@@ -5036,6 +5040,45 @@ class OnceClassroomAttemptedViewSet(viewsets.ModelViewSet):
             return Response({"status": False, "message": "Something went wrong", "error": str(e)}, status=500)
 
 
+# class OnceTrainingAttemptedViewSet(viewsets.ModelViewSet):
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def update(self, request, *args, **kwargs):
+#         try:
+#             user = request.user
+#             document_id = request.data.get('document_id')
+#             quiz_id = request.data.get('quiz_id')
+
+#             if not document_id or not quiz_id:
+#                 return Response({"status": False, "message": "classroom_id and quiz_id are required"}, status=400)
+
+#             # Fetch ClassroomTraining and ClassroomQuiz objects
+#             try:
+#                 document = Document.objects.get(id=document_id)
+#             except Document.DoesNotExist:
+#                 return Response({"status": False, "message": "Classroom training not found"}, status=404)
+
+#             try:
+#                 quiz = TrainingQuiz.objects.get(id=quiz_id)
+#             except TrainingQuiz.DoesNotExist:
+#                 return Response({"status": False, "message": "Quiz not found"}, status=404)
+
+#             # 🔹 Check if an attempted quiz entry exists
+#             attempted_quiz = AttemptedQuiz.objects.filter(user=user, document=document, quiz=quiz).first()
+
+#             if attempted_quiz:
+#                 # 🔹 If multiple records exist, update all of them
+#                 AttemptedQuiz.objects.filter(user=user, document=document, quiz=quiz).update(training_assesment_attempted=True)
+#             else:
+#                 # 🔹 Create a new record if it doesn't exist
+#                 pass
+
+#             return Response({"status": True, "message": "Attempted quiz updated successfully"})
+
+#         except Exception as e:
+#             return Response({"status": False, "message": "Something went wrong", "error": str(e)}, status=500)
+
+
 class OnceTrainingAttemptedViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -5046,34 +5089,44 @@ class OnceTrainingAttemptedViewSet(viewsets.ModelViewSet):
             quiz_id = request.data.get('quiz_id')
 
             if not document_id or not quiz_id:
-                return Response({"status": False, "message": "classroom_id and quiz_id are required"}, status=400)
+                return Response({"status": False, "message": "document_id and quiz_id are required"}, status=400)
 
-            # Fetch ClassroomTraining and ClassroomQuiz objects
+            # Get Document and Quiz
             try:
                 document = Document.objects.get(id=document_id)
             except Document.DoesNotExist:
-                return Response({"status": False, "message": "Classroom training not found"}, status=404)
+                return Response({"status": False, "message": "Document not found"}, status=404)
 
             try:
                 quiz = TrainingQuiz.objects.get(id=quiz_id)
             except TrainingQuiz.DoesNotExist:
                 return Response({"status": False, "message": "Quiz not found"}, status=404)
 
-            # 🔹 Check if an attempted quiz entry exists
-            attempted_quiz = AttemptedQuiz.objects.filter(user=user, document=document, quiz=quiz).first()
+            # Get or create the AttemptedQuiz record
+            attempted_quiz, created = AttemptedQuiz.objects.get_or_create(
+                user=user,
+                document=document,
+                quiz=quiz,
+                defaults={"training_assesment_attempted": True, "attempt_count": 1}
+            )
 
-            if attempted_quiz:
-                # 🔹 If multiple records exist, update all of them
-                AttemptedQuiz.objects.filter(user=user, document=document, quiz=quiz).update(training_assesment_attempted=True)
-            else:
-                # 🔹 Create a new record if it doesn't exist
-                pass
+            if not created:
+                attempted_quiz.attempt_count += 1  # ⬅️ Increment attempt
+                attempted_quiz.training_assesment_attempted = True
+                attempted_quiz.save()
 
-            return Response({"status": True, "message": "Attempted quiz updated successfully"})
+            return Response({
+                "status": True,
+                "message": "Attempt recorded successfully",
+                "attempt_count": attempted_quiz.attempt_count
+            })
 
         except Exception as e:
-            return Response({"status": False, "message": "Something went wrong", "error": str(e)}, status=500)
-
+            return Response({
+                "status": False,
+                "message": "Something went wrong",
+                "error": str(e)
+            }, status=500)
 
 class TrainingWiseUsersViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]

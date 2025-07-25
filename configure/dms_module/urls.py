@@ -65,6 +65,10 @@ urlpatterns = [
 
    path('document_id_wise_author_reviewer_approver_doc_admin/<int:document_id>', DocumentIdwiseAuthorReviewerApproverDocAdminViewSet.as_view({'get': 'list'}),name='document_id_wise_author_reviewer_approver_doc_admin'),
 
+   #new update reviewer api
+   path('update_document_reviewers/<int:document_id>',DocumentIdwiseUpdateReviewerViewSet.as_view({'put': 'update'}),name='update_document_reviewers'),
+   
+
    path('UserDropdownMasterCopy', MasterCopyUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownMasterCopy'),
    path('UserDropdownOtherUser', OtherUserDropdownViewSet.as_view({'get':'list'}),name='UserDropdownOtherUser'),
 

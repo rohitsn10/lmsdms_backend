@@ -2348,6 +2348,40 @@ class DocumentIdwiseAuthorReviewerApproverDocAdminViewSet(viewsets.ModelViewSet)
                 return Response({"status": False, "message": "Invalid Document ID", "data": []})
         except Exception as e:
             return Response({"status": False, "message": "Something went wrong", "error": str(e)})
+        
+
+#update reviewer
+class DocumentIdwiseUpdateReviewerViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def update(self, request, *args, **kwargs):
+        try:
+            document_id = self.kwargs.get('document_id')
+            reviewer_ids = request.data.get('reviewer_ids')
+
+            if not document_id:
+                return Response({"status": False, "message": "Document ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+            if not reviewer_ids:
+                return Response({"status": False, "message": "Reviewer IDs are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                document = Document.objects.get(id=document_id)
+            except Document.DoesNotExist:
+                return Response({"status": False, "message": "Document not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            # Validate reviewers
+            reviewers = User.objects.filter(id__in=reviewer_ids)
+            if reviewers.count() != len(reviewer_ids):
+                return Response({"status": False, "message": "Some reviewer IDs are invalid"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Update reviewers
+            document.visible_to_users.set(reviewers)
+            document.save()
+
+            return Response({"status": True, "message": "Reviewers updated successfully"})
+
+        except Exception as e:
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)}, status=500)        
             
 
 class DocumentSendBackActionCreateViewSet(viewsets.ViewSet):
@@ -5136,48 +5170,44 @@ class EmployeeTrainingNeedIdentyView(viewsets.ViewSet):
         try:
             employee = CustomUser.objects.get(id=employee_id)
             user_job_roles = JobRole.objects.filter(job_assigns__user=employee)
-            period_from = (JobAssign.objects.filter(user=employee).order_by('created_at').values_list('created_at', flat=True).first())
-            update_date = (JobAssign.objects.filter(user=employee).order_by('-created_at').values_list('created_at', flat=True).first())
-            print(user_job_roles, "fffffffffffff")
+            period_from = JobAssign.objects.filter(user=employee).order_by('created_at').values_list('created_at', flat=True).first()
+            update_date = JobAssign.objects.filter(user=employee).order_by('-created_at').values_list('created_at', flat=True).first()
+
             trainings = Document.objects.filter(job_roles__in=user_job_roles).distinct()
-            print(trainings, "fffffffffffff")
             failed_quiz_sessions = AttemptedQuiz.objects.filter(user=employee, is_pass=False)
-            # if not failed_quiz_sessions.exists():
-            #     return Response({"status": True, "message": "User has passed all quizzes"})
-            print(failed_quiz_sessions,"gggggggggggggg")
             users = CustomUser.objects.filter(id__in=failed_quiz_sessions.values_list('user_id', flat=True))
-            print(users,"ffffffvvvvv")
+
             all_users_data = []
             for user in users:
-                if user.department:
-                    department_name = user.department.department_name
-                else:
-                    department_name = "No Department"
-
+                department_name = user.department.department_name if user.department else "No Department"
                 user_failed_sessions = failed_quiz_sessions.filter(user=user)
-                user_training_data = []
-                
-                for training in trainings:
-                    # if failed_quiz_sessions.filter(document=training).exists():
-                    user_training_data.append({
-                        'training_name': training.document_title,
-                        'training_number': training.document_number,
-                    })
-                print(user_training_data)
+                user_training_data = [{
+                    'training_name': training.document_title,
+                    'training_number': training.document_number,
+                } for training in trainings]
+
                 status = "Pass" if user_failed_sessions.first().is_pass else "Failed"
-                
+
                 user_data = {
-                    'employee_name': user.username,
+                    'employee_number': user.employee_number,
+                    'employee_name': f"{user.first_name} {user.last_name}",
                     'designation': user.designation,
                     'department_name': department_name,
                     'status': status,
-                    'trainings': user_training_data, 
-                    'period_from': period_from,
-                    'update_date': update_date,
+                    'trainings': user_training_data,
                 }
                 all_users_data.append(user_data)
 
-            context = {'users_data': all_users_data}
+            context = {
+                'printed_by': f"{request.user.first_name} {request.user.last_name}",
+                'employee_number': employee.employee_number,
+                'employee_name': f"{employee.first_name} {employee.last_name}",
+                'period_from': localtime(period_from).strftime('%d/%m/%Y') if period_from else 'N/A',
+                'update_date': localtime(update_date).strftime('%d/%m/%Y') if update_date else 'N/A',
+                'users_data': all_users_data,
+                'current_date': datetime.now().strftime('%d/%m/%Y'),
+            }
+
             template = get_template('training_need_identy.html')
             html = template.render(context)
 
@@ -5200,6 +5230,7 @@ class EmployeeTrainingNeedIdentyView(viewsets.ViewSet):
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": ""})
         
+
 @csrf_exempt
 def download_and_save_docx(request):
     url = request.POST.get('url')  
