@@ -5089,45 +5089,42 @@ class OnceTrainingAttemptedViewSet(viewsets.ModelViewSet):
             quiz_id = request.data.get('quiz_id')
 
             if not document_id or not quiz_id:
-                return Response({"status": False, "message": "document_id and quiz_id are required"}, status=400)
+                return Response({"status": False, "message": "classroom_id and quiz_id are required"}, status=400)
 
-            # Get Document and Quiz
             try:
                 document = Document.objects.get(id=document_id)
             except Document.DoesNotExist:
-                return Response({"status": False, "message": "Document not found"}, status=404)
+                return Response({"status": False, "message": "Classroom training not found"}, status=404)
 
             try:
                 quiz = TrainingQuiz.objects.get(id=quiz_id)
             except TrainingQuiz.DoesNotExist:
                 return Response({"status": False, "message": "Quiz not found"}, status=404)
 
-            # Get or create the AttemptedQuiz record
-            attempted_quiz, created = AttemptedQuiz.objects.get_or_create(
-                user=user,
-                document=document,
-                quiz=quiz,
-                defaults={"training_assesment_attempted": True, "attempt_count": 1}
-            )
+            # Check if attempted quiz entry exists
+            attempted_quiz = AttemptedQuiz.objects.filter(user=user, document=document, quiz=quiz).first()
 
-            if not created:
-                attempted_quiz.attempt_count += 1  # ⬅️ Increment attempt
+            if attempted_quiz:
+                # Increment attempt count and update flag
+                attempted_quiz.attempt_count = (attempted_quiz.attempt_count or 0) + 1
                 attempted_quiz.training_assesment_attempted = True
                 attempted_quiz.save()
+            else:
+                # Create a new record with attempt_count = 1
+                AttemptedQuiz.objects.create(
+                    user=user,
+                    document=document,
+                    quiz=quiz,
+                    training_assesment_attempted=True,
+                    attempt_count=1
+                )
 
-            return Response({
-                "status": True,
-                "message": "Attempt recorded successfully",
-                "attempt_count": attempted_quiz.attempt_count
-            })
+            return Response({"status": True, "message": "Attempted quiz updated successfully"})
 
         except Exception as e:
-            return Response({
-                "status": False,
-                "message": "Something went wrong",
-                "error": str(e)
-            }, status=500)
-
+            return Response({"status": False, "message": "Something went wrong", "error": str(e)}, status=500)
+        
+        
 class TrainingWiseUsersViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
