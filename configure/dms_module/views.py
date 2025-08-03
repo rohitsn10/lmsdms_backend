@@ -4709,6 +4709,48 @@ class DocumentDataOfStatusIdEleven(viewsets.ModelViewSet):
             return Response({"status": False,"message": "Something went wrong","error": str(e)})
         
 
+#printreject data
+class PrintRejectDataStatusIdEleven(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ApprovedPrintRequestSerializer
+    queryset = PrintRequestApproval.objects.all().order_by('-id')
+
+    def list(self, request, *args, **kwargs):
+        try:
+            fixed_status_id = 11
+            status_obj = DynamicStatus.objects.filter(id=fixed_status_id).first()
+            if not status_obj:
+                return Response({
+                    "status": False,
+                    "message": "Status not found",
+                    "data": []
+                })
+
+            print_reject = PrintRequestApproval.objects.filter(status=status_obj).order_by('-id')
+            print_reject_count = print_reject.count()
+            print_reject_serializer = ApprovedPrintRequestSerializer(print_reject, many=True, context={'request': request})
+
+            if print_reject.exists():
+                return Response({
+                    "status": True,
+                    "message": "Print reject data fetched successfully",
+                    "data_count": print_reject_count,
+                    "data": print_reject_serializer.data
+                })
+            else:
+                return Response({
+                    "status": True,
+                    "message": "No print reject data found",
+                    "data": []
+                })
+
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": "Something went wrong",
+                "error": str(e)
+            })        
+
 class DocumentDataOfStatusIdTwelve(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DocumentviewSerializer

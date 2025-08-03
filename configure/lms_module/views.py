@@ -1005,15 +1005,35 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
                 if quiz_id not in quiz_sessions_dict:
                     quiz_sessions_dict[quiz_id] = []
                 quiz_sessions_dict[quiz_id].append(quiz)
+
+            # Fetch AttemptedQuiz data for user
+            attempted_quiz_data = AttemptedQuiz.objects.filter(user=user)
+            # Map (document_id, quiz_id) => attempt_count
+            attempt_count_map = {}
+            for attempt in attempted_quiz_data:
+                key = (attempt.document_id, attempt.quiz_id)
+                attempt_count_map[key] = attempt.attempt_count    
     
-            # Merging quiz session data into document data
+             # Merge quiz sessions and attempt_count into document data
             for document in document_data:
-                training_quiz_ids = document.get("training_quiz_ids", [])
+                document_id = document.get("id")
+                training_quiz_ids = document.get("training_quiz_ids") or []
                 document["quiz_sessions"] = []
+
+            for quiz_id in training_quiz_ids:
+                quiz_session_list = quiz_sessions_dict.get(quiz_id, [])
+                for quiz_session in quiz_session_list:
+                    # Add attempt_count if exists for this document and quiz
+                    quiz_session["attempt_count"] = attempt_count_map.get((document_id, quiz_id), 0)
+                    document["quiz_sessions"].append(quiz_session)# Merging quiz session data into document data
+            
+            # for document in document_data:
+            #     training_quiz_ids = document.get("training_quiz_ids", [])
+            #     document["quiz_sessions"] = []
     
-                for quiz_id in training_quiz_ids:
-                    if quiz_id in quiz_sessions_dict:
-                        document["quiz_sessions"].extend(quiz_sessions_dict[quiz_id])
+            #     for quiz_id in training_quiz_ids:
+            #         if quiz_id in quiz_sessions_dict:
+            #             document["quiz_sessions"].extend(quiz_sessions_dict[quiz_id])
     
             response_data = {
                 "documents": document_data,
@@ -4913,6 +4933,7 @@ class ClassroomAttemptedQuizViewSet(viewsets.ModelViewSet):
             # ✅ If quiz is passed, mark user as qualified
             if attempted_quiz.is_pass is True:
                 user.is_qualification = True
+                user.is_tni_generate = True
                 user.save()
             # if is_pass:
             #     quiz_session = QuizSession.objects.get(user=user, quiz=quiz)
