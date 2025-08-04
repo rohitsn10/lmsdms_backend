@@ -84,6 +84,7 @@ class Document(models.Model):
     approver = models.ForeignKey(CustomUser,related_name="approver_documents",on_delete=models.SET_NULL,blank=True,null=True)
     doc_admin = models.ForeignKey(CustomUser,related_name="doc_admin_documents",on_delete=models.SET_NULL,blank=True,null=True)
     author = models.ForeignKey(CustomUser,related_name="author_documents",on_delete=models.SET_NULL,blank=True,null=True)
+    reviewer = models.ForeignKey(CustomUser,related_name="reviewer_documents",on_delete=models.SET_NULL,blank=True,null=True)
     job_roles = models.ManyToManyField('lms_module.JobRole', related_name='documents', blank=True)
     generatefile = models.CharField(max_length=255,blank=True, null=True) 
     equipment_id = models.CharField(max_length=255,blank=True, null=True)

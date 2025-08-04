@@ -1186,6 +1186,7 @@ class DocumentExcelGenerateViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['document_title', 'document_number', 'document_description', 'document_type__name']
     ordering_fields = ['document_title', 'created_at'] 
+    
 
     def list(self, request, *args, **kwargs):
         try:
@@ -1224,34 +1225,74 @@ class DocumentExcelGenerateViewSet(viewsets.ModelViewSet):
             ws.title = "Documents Report Excel Sheet"
 
             # Define the headers for the Excel file
+            # headers = [
+            #     'Document Title', 'Document Number', 'Document Type', 'Parent Document No.',
+            #     'Revision Date', 'Status','Product Code','Equipment ID','Created At', 'Effective Date', 'Version',
+            #     'Author Name', 'Approver Name','Doc Admin Name'
+            # ]
             headers = [
-                'Document Title', 'Document Number', 'Document Type', 'Parent Document No.',
-                'Revision Date', 'Status','Product Code','Equipment ID','Created At', 'Effective Date', 'Version',
-                'Author Name', 'Approver Name','Doc Admin Name'
+                    'Department', 'Document Type', 'Document Title', 'Document No', 'Parent Document No', 'Version',
+                    'Effective Date', 'Next Review Date', 'Equipment ID', 'Product Code', 'Current Status',
+                    'Task', 'Task Start Date/Time', 'Last Action',
+                    'Author Name', 'Reviewer Name', 'Approver Name', 'Name of Doc. Admin'
             ]
+            
+        
+        
+
+
             # Add headers to the Excel sheet
             for col_num, header in enumerate(headers, 1):
                 col_letter = get_column_letter(col_num)
                 ws[f'{col_letter}1'] = header
 
-            # Add data rows from the queryset
             for row_num, document in enumerate(queryset, 2):
-                ws[f'A{row_num}'] = document.document_title
-                ws[f'B{row_num}'] = document.document_number
-                ws[f'C{row_num}'] = document.document_type.document_name if document.document_type else "-"
-                ws[f'D{row_num}'] = document.parent_document.id if document.parent_document else "-"
-                ws[f'E{row_num}'] = document.revision_date.strftime('%d-%m-%Y') if document.revision_date else "-"
-                ws[f'F{row_num}'] = document.document_current_status.status if document.document_current_status else "-"
-                ws[f'G{row_num}'] = document.product_code if document.product_code else "-"
-                ws[f'H{row_num}'] = document.equipment_id if document.equipment_id else "-"
-                # ws[f'G{row_num}'] = document.assigned_to.first_name if document.assigned_to else "-"
-                # ws[f'H{row_num}'] = document.assigned_to.last_name if document.assigned_to else "-"
-                ws[f'I{row_num}'] = document.created_at.strftime('%d-%m-%Y')
-                ws[f'J{row_num}'] = document.effective_date.strftime('%d-%m-%Y') if document.effective_date else "-"
-                ws[f'K{row_num}'] = document.version
-                ws[f'L{row_num}'] = document.author.username if document.author else "-"
-                ws[f'M{row_num}'] = document.approver.username if document.approver else "-"
-                ws[f'N{row_num}'] = document.doc_admin.username if document.doc_admin else "-"
+                # Status-based logic
+                status_id = document.document_current_status.id if document.document_current_status else None
+                if status_id == 3:
+                    task = "Reviewer Task"
+                    last_task = "Author"
+                elif status_id == 4:
+                    task = "Approver Task"
+                    last_task = "Reviewer"
+                elif status_id in [5, 9]:
+                    task = "Doc Admin Task"
+                    last_task = "Approver"
+                elif status_id == 6:
+                    task = "Doc Admin Task"
+                    last_task = "Doc Admin"
+                elif status_id == 7:
+                    task = "Completed"
+                    last_task = "Doc Admin"
+                elif status_id in [1, 2]:
+                    task = "Author Task"
+                    last_task = "Author"
+                else:
+                    task = "-"
+                    last_task = "-"
+            
+
+                task_start = document.last_action_time.strftime('%d-%m-%Y %H:%M:%S') if document.last_action_time else "-"
+
+                # Write to Excel
+                ws[f'A{row_num}'] = document.user.department.department_name if document.user and document.user.department else "-"
+                ws[f'B{row_num}'] = document.document_type.document_name if document.document_type else "-"
+                ws[f'C{row_num}'] = document.document_title
+                ws[f'D{row_num}'] = document.document_number
+                ws[f'E{row_num}'] = document.parent_document.document_number if document.parent_document else "-"
+                ws[f'F{row_num}'] = document.version
+                ws[f'G{row_num}'] = document.effective_date.strftime('%d-%m-%Y') if document.effective_date else "-"
+                ws[f'H{row_num}'] = document.revision_date.strftime('%d-%m-%Y') if document.revision_date else "-"
+                ws[f'I{row_num}'] = document.equipment_id if document.equipment_id else "-"
+                ws[f'J{row_num}'] = document.product_code if document.product_code else "-"
+                ws[f'K{row_num}'] = document.document_current_status if document.document_current_status else "-"
+                ws[f'L{row_num}'] = task
+                ws[f'M{row_num}'] = task_start
+                ws[f'N{row_num}'] = last_task
+                ws[f'O{row_num}'] = document.author.username if document.author else "-"
+                ws[f'P{row_num}'] = document.reviewer.username if document.reviewer else "-"
+                ws[f'Q{row_num}'] = document.approver.username if document.approver else "-"
+                ws[f'R{row_num}'] = document.doc_admin.username if document.doc_admin else "-"
 
                 user_groups = document.user.groups.all()
                 group_names = ', '.join([group.name for group in user_groups]) if user_groups else '-'
