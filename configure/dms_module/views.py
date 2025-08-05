@@ -2745,23 +2745,42 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
                     child.save()
 
 
-                source_document = document.parent_document if document.parent_document else document
-                old_questions = TrainingQuestions.objects.filter(document=source_document)    
+                   
                 # old_questions = TrainingQuestions.objects.filter(document=document)
 
+                # for question in old_questions:
+                #     TrainingQuestions.objects.create(
+                #         document=new_document,  # Assign the new document
+                #         question_type=question.question_type,
+                #         question_text=question.question_text,
+                #         options=question.options,
+                #         correct_answer=question.correct_answer,
+                #         marks=question.marks,
+                #         created_by=user,  # Set the user who initiated the revision
+                #         selected_file_type=question.selected_file_type,
+                #         selected_file=question.selected_file,
+                #         question_created_at=timezone.now()
+                #     )
+                
+                source_document = document.parent_document if document.parent_document else document
+                old_questions = TrainingQuestions.objects.filter(document=source_document) 
+                
                 for question in old_questions:
                     TrainingQuestions.objects.create(
-                        document=new_document,  # Assign the new document
+                        document=new_document,
+                        training=question.training,  # ✅ Add this line to keep training_id linked
                         question_type=question.question_type,
                         question_text=question.question_text,
                         options=question.options,
                         correct_answer=question.correct_answer,
                         marks=question.marks,
-                        created_by=user,  # Set the user who initiated the revision
+                        created_by=user,
                         selected_file_type=question.selected_file_type,
                         selected_file=question.selected_file,
                         question_created_at=timezone.now()
                     )
+
+                    
                 message = "Revision request successfully approved, and questions were copied."
 
             elif status_id == 11:  # If rejected, just update the document status
