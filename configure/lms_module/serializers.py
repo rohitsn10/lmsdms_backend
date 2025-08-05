@@ -73,8 +73,19 @@ class TrainingCreateSerializer(serializers.ModelSerializer):
             'id', 'plant', 'plant_name', 'training_name', 'training_type', 'training_type_name',
             'training_number', 'training_version', 'refresher_time',
             'training_document', 'methodology', 'created_by', 'created_by_name','job_roles','job_roles_name',
-            'training_created_at', 'training_updated_at','schedule_date','number_of_attempts','training_status','start_time','end_time', 'training_assesment_attempted'
+            'training_created_at', 'training_updated_at','schedule_date','number_of_attempts','training_status','start_time','end_time', 'training_assesment_attempted','attempt_count'
         ]
+
+        
+    def get_attempt_count(self, obj):
+        user = self.context['request'].user
+        document = obj.document
+        quiz = obj.quiz
+        try:
+            attempted = AttemptedQuiz.objects.get(user=user, document=document, quiz=quiz)
+            return attempted.attempt_count
+        except AttemptedQuiz.DoesNotExist:
+            return 0    
 
     def get_training_assesment_attempted(self, obj):
         request = self.context.get('request')

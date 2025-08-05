@@ -1020,12 +1020,12 @@ class TrainingCreateViewSet(viewsets.ModelViewSet):
                 training_quiz_ids = document.get("training_quiz_ids") or []
                 document["quiz_sessions"] = []
 
-            for quiz_id in training_quiz_ids:
-                quiz_session_list = quiz_sessions_dict.get(quiz_id, [])
-                for quiz_session in quiz_session_list:
-                    # Add attempt_count if exists for this document and quiz
-                    quiz_session["attempt_count"] = attempt_count_map.get((document_id, quiz_id), 0)
-                    document["quiz_sessions"].append(quiz_session)# Merging quiz session data into document data
+                for quiz_id in training_quiz_ids:
+                    quiz_session_list = quiz_sessions_dict.get(quiz_id, [])
+                    for quiz_session in quiz_session_list:
+                        # Add attempt_count if exists for this document and quiz
+                        quiz_session["attempt_count"] = attempt_count_map.get((document_id, quiz_id), 0)
+                        document["quiz_sessions"].append(quiz_session)# Merging quiz session data into document data
             
             # for document in document_data:
             #     training_quiz_ids = document.get("training_quiz_ids", [])
@@ -5099,7 +5099,12 @@ class OnceClassroomAttemptedViewSet(viewsets.ModelViewSet):
 #         except Exception as e:
 #             return Response({"status": False, "message": "Something went wrong", "error": str(e)}, status=500)
 
-
+def get_attempt_count(user, document_id, quiz_id):
+    try:
+        attempted = AttemptedQuiz.objects.get(user=user, document_id=document_id, quiz_id=quiz_id)
+        return attempted.attempt_count
+    except AttemptedQuiz.DoesNotExist:
+        return 0
 class OnceTrainingAttemptedViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
