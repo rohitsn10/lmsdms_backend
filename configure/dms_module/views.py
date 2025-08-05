@@ -2743,7 +2743,12 @@ class DocumentReviseActionViewSet(viewsets.ModelViewSet):
                 for child in child_documents:
                     child.parent_document.add(new_document)
                     child.save()
-                old_questions = TrainingQuestions.objects.filter(document=document)
+
+
+                source_document = document.parent_document if document.parent_document else document
+                old_questions = TrainingQuestions.objects.filter(document=source_document)    
+                # old_questions = TrainingQuestions.objects.filter(document=document)
+
                 for question in old_questions:
                     TrainingQuestions.objects.create(
                         document=new_document,  # Assign the new document
