@@ -5127,22 +5127,22 @@ class OnceTrainingAttemptedViewSet(viewsets.ModelViewSet):
             except TrainingQuiz.DoesNotExist:
                 return Response({"status": False, "message": "Quiz not found"}, status=404)
 
-            # Check if attempted quiz entry exists
-            attempted_quiz = AttemptedQuiz.objects.filter(user=user, document=document, quiz=quiz).first()
+            # Try to get or create the AttemptedQuiz record
+            attempted_quiz, created = AttemptedQuiz.objects.get_or_create(
+                user=user,
+                document=document,
+                quiz=quiz,
+                defaults={
+                    'training_assesment_attempted': True,
+                    'attempt_count': 1
+                }
+            )
 
-            if attempted_quiz:
-                # Increment attempt count and update flag
-                attempted_quiz.attempt_count = (attempted_quiz.attempt_count or 0) + 1
-                attempted_quiz.training_assesment_attempted = True
-                attempted_quiz.save()
-            else:
-                # Create a new record with attempt_count = 1
-                AttemptedQuiz.objects.create(
-                    user=user,
-                    document=document,
-                    quiz=quiz,
-                    training_assesment_attempted=True,
-                    attempt_count=1
+            if not created:
+                # If it already exists, increment attempt_count using F() expression
+                AttemptedQuiz.objects.filter(id=attempted_quiz.id).update(
+                    attempt_count=F('attempt_count') + 1,
+                    training_assesment_attempted=True
                 )
 
             return Response({"status": True, "message": "Attempted quiz updated successfully"})
