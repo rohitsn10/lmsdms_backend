@@ -5128,23 +5128,24 @@ class OnceTrainingAttemptedViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "Quiz not found"}, status=404)
 
             # Try to get or create the AttemptedQuiz record
-            attempted_quiz, created = AttemptedQuiz.objects.get_or_create(
-                user=user,
-                document=document,
-                quiz=quiz,
-                defaults={
-                    'training_assesment_attempted': True,
-                    'attempt_count': 1
-                }
-            )
-
-            if not created:
-                # If it already exists, increment attempt_count using F() expression
-                AttemptedQuiz.objects.filter(id=attempted_quiz.id).update(
-                    attempt_count=F('attempt_count') + 1,
-                    training_assesment_attempted=True
+            # Try to get one entry, if multiple exist, handle safely
+            attempted_quizzes = AttemptedQuiz.objects.filter(user=user, document=document, quiz=quiz)
+            
+            if attempted_quizzes.exists():
+                # Increment the latest entry (or pick one consistently)
+                attempted_quiz = attempted_quizzes.latest('created_at')
+                attempted_quiz.attempt_count += 1
+                attempted_quiz.training_assesment_attempted = True
+                attempted_quiz.save()
+            else:
+                # Create new entry
+                AttemptedQuiz.objects.create(
+                    user=user,
+                    document=document,
+                    quiz=quiz,
+                    training_assesment_attempted=True,
+                    attempt_count=1
                 )
-
             return Response({"status": True, "message": "Attempted quiz updated successfully"})
 
         except Exception as e:
