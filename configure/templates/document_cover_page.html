@@ -108,16 +108,16 @@
 
         <table>
             <colgroup>
-                <col>
-                <col>
+                <col style="width: 30%;">
+                <col style="width: 70%;">
             </colgroup>
             <tr>
-                <td>Effective Date</td>
-                <td contenteditable="true">{{document.effective_date|default:"--" |date:"d-m-Y"}}</td>
+                <td><strong>Effective Date</strong></td>
+                <td contenteditable="true">{{ document.effective_date|default:"--" |date:"d-m-Y" }}</td>
             </tr>
             <tr>
-                <td>Revision Date</td>
-                <td contenteditable="true">{{document.revision_date|default:"--" |date:"d-m-Y"}}</td>
+                <td><strong>Revision Date</strong></td>
+                <td contenteditable="true">{{ document.revision_date|default:"--" |date:"d-m-Y" }}</td>
             </tr>
         </table>
         
