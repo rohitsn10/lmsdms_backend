@@ -5471,7 +5471,8 @@ class AddNewDocumentCommentsdataViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
 
-
+from dateutil.relativedelta import relativedelta
+from datetime import datetime
 class DocumentEffectiveViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DocumentEffectiveSerializer
@@ -5481,6 +5482,7 @@ class DocumentEffectiveViewSet(viewsets.ModelViewSet):
             user = request.user
             document_id = request.data.get('document')
             status = request.data.get('status')
+            revision_month = request.data.get('revision_month')  # <-- new input
 
             if not document_id or not status:
                 return Response({"status": False, "message": "document_id and effective_date are required", "data": []})
@@ -5496,6 +5498,15 @@ class DocumentEffectiveViewSet(viewsets.ModelViewSet):
             
             document_data.document_current_status = status_data
             document_data.effective_date = datetime.now()
+
+            # Set revision_date based on revision_month
+            if revision_month:
+                try:
+                    revision_month = int(revision_month)
+                    document_data.revision_date = document_data.effective_date + relativedelta(months=revision_month)
+                except ValueError:
+                    return Response({"status": False, "message": "Invalid revision_month value", "data": []})
+
             document_data.save()
             if document_data.version and document_data.version.endswith(".0"): 
                 previous_major_version = str(int(document_data.version.split(".")[0]) - 1) + ".0"
