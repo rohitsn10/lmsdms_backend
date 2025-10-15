@@ -47,7 +47,7 @@ class CustomUserdataSerializer(serializers.ModelSerializer):
         fields = ['id','email','full_name','first_name','last_name','phone','username','created_at','groups_list',
                    'is_user_created', 'is_department_assigned', 'is_induction_complete', 'is_induction_certificate',
                    'is_description', 'is_jr_assign', 'is_jr_approve', 'is_tni_generate', 'is_tni_consent', 
-                   'is_qualification', 'quiz_attemted', 'job_role', 'depratment','department_name','remarks']
+                   'is_qualification', 'quiz_attemted', 'job_role', 'depratment','department_name','remarks','designation','is_dms_user','employee_number']
         
     def get_department_name(self, obj):
         return obj.department.department_name if obj.department else "N/A"

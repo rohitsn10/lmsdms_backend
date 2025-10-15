@@ -43,6 +43,31 @@ def send_email_forgot_password(email, first_name, otp):
     }
     send_dynamic_email('FORGOT_PASSWORD', email, context)
 
+def send_email_update_notification(email, first_name):
+    """
+    Send notification email when a user's email is updated.
+    email: New email ID
+    first_name: User's first name (or username fallback)
+    """
+    context = {
+        'first_name': first_name,
+        'email': email,
+    }
+    send_dynamic_email('EMAIL_UPDATE_NOTIFICATION', email, context)
+
+
+def send_email_password_changed(email, first_name):
+    """
+    Send notification email when a user's password is successfully changed.
+    email: User's email
+    first_name: User's first name (or username fallback)
+    """
+    context = {
+        'first_name': first_name,
+    }
+    send_dynamic_email('PASSWORD_CHANGED', email, context)    
+
+
 def send_email_with_credentials(email, username, password, first_name):
     context = {
         'first_name': first_name,

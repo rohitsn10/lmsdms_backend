@@ -1,6 +1,6 @@
 from django.db import models
 from user_profile.models import *
-from lms_module.models import *
+# from lms_module.models import *
 class WorkFlowModel(models.Model):
     workflow_name = models.TextField(blank=True, null=True)
     workflow_description = models.TextField(blank=True, null=True)

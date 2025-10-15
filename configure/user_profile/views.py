@@ -267,12 +267,16 @@ class CreateUserViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            email = request.data.get('email').lower()
+            # email = request.data.get('email').lower()
+            email = request.data.get('email', '').lower() if request.data.get('email') else None
             username = request.data.get('username')
             first_name = request.data.get('first_name')
             last_name = request.data.get('last_name')
             phone = request.data.get('phone')
             group_ids  = request.data.get('user_role')
+            designation = request.data.get('designation')
+            employee_number = request.data.get('employee_number')
+            is_dms_user = request.data.get('is_dms_user', False)
 
             
             if not email:
@@ -302,7 +306,11 @@ class CreateUserViewSet(viewsets.ModelViewSet):
                 username=username,
                 first_name=first_name,
                 last_name=last_name,
-                phone=phone
+                phone=phone,
+                designation=designation,
+                employee_number=employee_number,
+                is_dms_user=is_dms_user,
+                is_reset_password=False
             )
             user.set_password(password)
             user.save()
@@ -375,27 +383,42 @@ class UpdateUserViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         try:
             user_id = kwargs.get('user_id')
-            first_name = request.data.get('first_name')
-            last_name = request.data.get('last_name')
-            phone = request.data.get('phone')
-            is_active = request.data.get('is_active')
-            groups = request.data.get('groups', [])
-            is_dms_user = request.data.get('is_dms_user')
-            
             if not user_id:
                 return Response({"status": False, 'message': 'User ID is required', 'data': []})
 
-            user = CustomUser.objects.filter(id=user_id).first()  # Get user by ID
+            user = CustomUser.objects.filter(id=user_id).first()
             if not user:
                 return Response({"status": False, "message": "User not found!", "data": []})
 
-            # Update fields only if the value is not an empty string
-            if first_name != "":
+            # Store old email to check later
+            old_email = user.email
+
+            # Extract incoming fields
+            email = request.data.get('email')
+            first_name = request.data.get('first_name')
+            last_name = request.data.get('last_name')
+            phone = request.data.get('phone')
+            designation = request.data.get('designation')
+            employee_number = request.data.get('employee_number')
+            is_active = request.data.get('is_active')
+            is_dms_user = request.data.get('is_dms_user')
+            groups = request.data.get('groups', [])
+
+            # --- Update text fields ---
+            if first_name not in [None, ""]:
                 user.first_name = first_name
-            if last_name != "":
+            if last_name not in [None, ""]:
                 user.last_name = last_name
-            if phone != "":
+            if phone not in [None, ""]:
                 user.phone = phone
+            if designation not in [None, ""]:
+                user.designation = designation
+            if employee_number not in [None, ""]:
+                user.employee_number = employee_number
+            if email not in [None, ""]:
+                user.email = email.lower()
+
+            # --- Update boolean fields safely ---
             if is_active is not None:
                 if isinstance(is_active, str):
                     is_active = is_active.lower() in ('true', '1')
@@ -406,47 +429,120 @@ class UpdateUserViewSet(viewsets.ModelViewSet):
                     is_dms_user = is_dms_user.lower() in ('true', '1')
                 user.is_dms_user = is_dms_user
 
-            # Update groups and permissions only if groups list is not empty
+            # --- Update groups safely ---
             if groups is not None:
-                if groups:  # Check if groups list is not empty
-                    user.groups.clear()
-                    user.user_permissions.clear()
+                user.groups.clear()
+                user.user_permissions.clear()
+                for group_id in groups:
+                    try:
+                        group = Group.objects.get(id=group_id)
+                        user.groups.add(group)
+                        for permission in group.permissions.all():
+                            user.user_permissions.add(permission)
+                    except Group.DoesNotExist:
+                        return Response({
+                            "status": False,
+                            "message": f"Group with ID {group_id} does not exist!",
+                            "data": []
+                        })
 
-                    for group_id in groups:
-                        try:
-                            group = Group.objects.get(id=group_id)
-                            user.groups.add(group)
-
-                            for permission in group.permissions.all():
-                                user.user_permissions.add(permission)
-
-                        except Group.DoesNotExist:
-                            return Response({"status": False, "message": f"Group with ID {group_id} does not exist!", "data": []})
-
+            # Save user
             user.save()
-            serializer = CustomUserSerializer(user,context={'request': request})
-            data = serializer.data
-            return Response({"status": True, "message": "User updated successfully!", "data": data})
+
+            # --- Send email notification if email changed ---
+            if email and old_email != email:
+                send_email_update_notification(user, old_email, email)
+
+            # Serialize response
+            serializer = CustomUserSerializer(user, context={'request': request})
+            return Response({
+                "status": True,
+                "message": "User updated successfully!",
+                "data": serializer.data
+            })
+
         except Exception as e:
             return Response({"status": False, "message": str(e), "data": []})
 
+# class UpdateUserViewSet(viewsets.ModelViewSet):
+#     queryset = CustomUser.objects.all()
+#     serializer_class = CustomUserSerializer
 
-# class LoginAPIView(viewsets.ModelViewSet):
-#     def create(self, request):
-#         serializer = LoginSerializer(data=request.data)
-#         if serializer.is_valid():
-#             user = serializer.validated_data
-#             if not user.is_reset_password:
-#                 user.increment_login_count()
-#                 if user.login_count >= 3:
-#                     return Response({"status": False,"message": "Your account is blocked.", "data": []})
-#             login(request, user)
-#             refresh = RefreshToken.for_user(user)
+#     def update(self, request, *args, **kwargs):
+#         try:
+#             user_id = kwargs.get('user_id')
+#             first_name = request.data.get('first_name')
+#             last_name = request.data.get('last_name')
+#             phone = request.data.get('phone')
+#             is_active = request.data.get('is_active')
+#             groups = request.data.get('groups', [])
+#             is_dms_user = request.data.get('is_dms_user')
+            
+#             if not user_id:
+#                 return Response({"status": False, 'message': 'User ID is required', 'data': []})
+
+#             user = CustomUser.objects.filter(id=user_id).first()  # Get user by ID
+#             if not user:
+#                 return Response({"status": False, "message": "User not found!", "data": []})
+
+#             # Update fields only if the value is not an empty string
+#             if first_name != "":
+#                 user.first_name = first_name
+#             if last_name != "":
+#                 user.last_name = last_name
+#             if phone != "":
+#                 user.phone = phone
+#             if is_active is not None:
+#                 if isinstance(is_active, str):
+#                     is_active = is_active.lower() in ('true', '1')
+#                 user.is_active = is_active
+
+#             if is_dms_user is not None:
+#                 if isinstance(is_dms_user, str):
+#                     is_dms_user = is_dms_user.lower() in ('true', '1')
+#                 user.is_dms_user = is_dms_user
+
+#             # Update groups and permissions only if groups list is not empty
+#             if groups is not None:
+#                 if groups:  # Check if groups list is not empty
+#                     user.groups.clear()
+#                     user.user_permissions.clear()
+
+#                     for group_id in groups:
+#                         try:
+#                             group = Group.objects.get(id=group_id)
+#                             user.groups.add(group)
+
+#                             for permission in group.permissions.all():
+#                                 user.user_permissions.add(permission)
+
+#                         except Group.DoesNotExist:
+#                             return Response({"status": False, "message": f"Group with ID {group_id} does not exist!", "data": []})
+
+#             user.save()
 #             serializer = CustomUserSerializer(user,context={'request': request})
 #             data = serializer.data
-#             data['token'] = str(refresh.access_token)
-#             return Response({"message": "Login successfully", "data": data})
-#         return Response({"status": False,"message": "Invalid credentials", "data": []})
+#             return Response({"status": True, "message": "User updated successfully!", "data": data})
+#         except Exception as e:
+#             return Response({"status": False, "message": str(e), "data": []})
+
+
+class LoginAPIView(viewsets.ModelViewSet):
+    def create(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data
+            if not user.is_reset_password:
+                user.increment_login_count()
+                if user.login_count >= 3:
+                    return Response({"status": False,"message": "Your account is blocked.", "data": []})
+            login(request, user)
+            refresh = RefreshToken.for_user(user)
+            serializer = CustomUserSerializer(user,context={'request': request})
+            data = serializer.data
+            data['token'] = str(refresh.access_token)
+            return Response({"message": "Login successfully", "data": data})
+        return Response({"status": False,"message": "Invalid credentials", "data": []})
 
 class LoginAPIView(viewsets.ViewSet):
     def create(self, request):
@@ -508,6 +604,77 @@ class LoginAPIView(viewsets.ViewSet):
             logger.error(f"Login error: {str(e)}", exc_info=True)
             return Response({"status": False, 'message': "Something went wrong!", 'data': []})
 
+# class LoginAPIView(viewsets.ViewSet):
+#     def create(self, request):
+#         try:
+#             username = request.data.get('username', '').strip()
+#             password = request.data.get('password', '').strip()
+#             group_id = request.data.get('group_id', None)
+
+#             if not username:
+#                 return Response({"status": False, 'message': 'Username is required', "data": []})
+#             if not password:
+#                 return Response({"status": False, 'message': 'Password is required', "data": []})
+#             if not group_id:
+#                 return Response({"status": False, 'message': 'Group ID is required', "data": []})
+
+#             user = CustomUser.objects.filter(username=username).first()
+#             if not user:
+#                 return Response({"status": False, "message": "Invalid username or password!", "data": []})
+
+#             if not user.is_active:
+#                 return Response({"status": False, "message": "Your account is blocked. Please contact support.", "data": []})
+
+#             if user.is_password_expired():
+#                 return Response({
+#                     "status": False,
+#                     "message": "Your password has expired. Please reset it.",
+#                     "data": [],
+#                     "is_password_expired": True
+#                 })
+
+#             if not user.groups.filter(id=group_id).exists():
+#                 return Response({"status": False, "message": "Invalid group ID.", "data": []})
+
+#             user_auth = authenticate(username=username, password=password)
+#             if not user_auth:
+#                 # Increment failed login count
+#                 user.login_count += 1
+#                 user.save()
+#                 if user.login_count >= 3:
+#                     user.is_blocked = True
+#                     user.save()
+#                     return Response({"status": False, "message": "Your account is blocked.", "data": []})
+#                 return Response({"status": False, "message": "Invalid username or password!", "data": []})
+
+#             # --- Force password reset check ---
+#             if not user_auth.is_reset_password:
+#                 serializer = LoginUserSerializer(user_auth, context={'request': request})
+#                 data = serializer.data
+#                 return Response({
+#                     "status": True,
+#                     "message": "First login detected. Please change your password.",
+#                     "data": data,
+#                     "force_password_reset": True  # frontend will redirect to change password page
+#                 })
+
+#             # --- Normal login ---
+#             user.login_count = 0
+#             user.is_login = True
+#             user.save()
+
+#             refresh = RefreshToken.for_user(user_auth)
+#             serializer = LoginUserSerializer(user_auth, context={'request': request})
+#             data = serializer.data
+#             data['token'] = str(refresh.access_token)
+#             return Response({"status": True, "message": "You are logged in!", "data": data})
+
+#         except Exception as e:
+#             import logging
+#             logger = logging.getLogger(__name__)
+#             logger.error(f"Login error: {str(e)}", exc_info=True)
+#             return Response({"status": False, 'message': "Something went wrong!", 'data': []})
+
 class ResetPasswordAPIView(viewsets.ModelViewSet):
     def update(self, request):
         user = self.request.user
@@ -527,38 +694,73 @@ class ResetPasswordAPIView(viewsets.ModelViewSet):
             return Response({"status": True,"message": "Otp genrate successfully", "data": []})
         except CustomUser.DoesNotExist:
             return Response({"status": False,"message": "User not found", "data": []})
+        
 
-class ConfirmOTPAndSetPassword(viewsets.ModelViewSet):
+class ConfirmAndSetPassword(viewsets.ModelViewSet):
+    """
+    Allows user to set a new password without OTP.
+    Handles first login or normal password change.
+    """
     def update(self, request):
         user = request.user
         if user.is_anonymous:
             return Response({"status": False, "message": "User is not authenticated", "data": []})
 
-        otp = request.data.get('otp')
         new_password = request.data.get('password')
         confirm_password = request.data.get('confirm_password')
 
-        if not otp or not new_password or not confirm_password:
-            return Response({"status": False, "message": "OTP, new password, and confirm password are required", "data": []})
-
-        if otp != user.otp:
-            return Response({"status": False, "message": "Invalid OTP", "data": []})
+        if not new_password or not confirm_password:
+            return Response({"status": False, "message": "New password and confirm password are required", "data": []})
 
         if new_password != confirm_password:
             return Response({"status": False, "message": "Password and confirm password do not match", "data": []})
 
-        if check_password(new_password, user.old_password):
+        # Prevent setting same password as old password
+        if user.old_password and check_password(new_password, user.old_password):
             return Response({"status": False, "message": "New password cannot be the same as the old password", "data": []})
 
-        user.old_password = new_password
+        # Update password and first-login flag
+        user.old_password = make_password(new_password)  # store hashed old password
         user.password = make_password(new_password)
         user.password_updated_at = now()
-        user.otp = None
-        user.is_reset_password = True
+        user.is_reset_password = True  # mark first login complete
         user.login_count = 0
         user.save()
+        send_email_password_changed(user.email, user.first_name or user.username)
 
-        return Response({"status": True, "message": "Password reset successfully", "data": []})
+        return Response({"status": True, "message": "Password set successfully", "data": []})        
+
+# class ConfirmOTPAndSetPassword(viewsets.ModelViewSet):
+#     def update(self, request):
+#         user = request.user
+#         if user.is_anonymous:
+#             return Response({"status": False, "message": "User is not authenticated", "data": []})
+
+#         otp = request.data.get('otp')
+#         new_password = request.data.get('password')
+#         confirm_password = request.data.get('confirm_password')
+
+#         if not otp or not new_password or not confirm_password:
+#             return Response({"status": False, "message": "OTP, new password, and confirm password are required", "data": []})
+
+#         if otp != user.otp:
+#             return Response({"status": False, "message": "Invalid OTP", "data": []})
+
+#         if new_password != confirm_password:
+#             return Response({"status": False, "message": "Password and confirm password do not match", "data": []})
+
+#         if check_password(new_password, user.old_password):
+#             return Response({"status": False, "message": "New password cannot be the same as the old password", "data": []})
+
+#         user.old_password = new_password
+#         user.password = make_password(new_password)
+#         user.password_updated_at = now()
+#         user.otp = None
+#         user.is_reset_password = True
+#         user.login_count = 0
+#         user.save()
+
+#         return Response({"status": True, "message": "Password reset successfully", "data": []})
 
 class RequestOTPViewSet(viewsets.ModelViewSet):
     def create(self, request):
