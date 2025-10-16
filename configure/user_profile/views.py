@@ -281,8 +281,8 @@ class CreateUserViewSet(viewsets.ModelViewSet):
             
             if not email:
                 return Response({"status": False, 'message': 'Email is required', 'data': []})
-            if CustomUser.objects.filter(email=email).exists():
-                return Response({"status": False, 'message': 'Email already exists', 'data': []})
+            if CustomUser.objects.filter(employee_number=employee_number).exists():
+                return Response({"status": False, 'message': 'Employee number already exists', 'data': []})
             if CustomUser.objects.filter(username=username).exists():
                 return Response({"status": False, 'message': 'Username already exists', 'data': []})
             if not username:
