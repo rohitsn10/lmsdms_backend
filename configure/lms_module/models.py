@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from user_profile.models import CustomUser,Department
-from dms_module.models import *
+
 
 class Plant(models.Model):
     plant_name = models.TextField()
@@ -94,7 +94,7 @@ class TrainingCreate(models.Model):
 
 class TrainingSection(models.Model):
     training = models.ForeignKey(TrainingCreate, related_name='sections', on_delete=models.CASCADE,null=True, blank=True)
-    document = models.ForeignKey(Document, related_name='document_train', on_delete=models.CASCADE,null=True, blank=True)
+    document = models.ForeignKey('dms_module.Document', related_name='document_train', on_delete=models.CASCADE,null=True, blank=True)
     section_name = models.CharField(max_length=255)
     section_description = models.TextField(null=True, blank=True)
     section_order = models.CharField(max_length=255, default='1')
@@ -149,7 +149,7 @@ class TrainingQuestions(models.Model):
         ('fill_in_the_blank', 'Fill in the blank'),
         ('true_false', 'True/False'),
     )
-    document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
+    document = models.ForeignKey('dms_module.Document', on_delete=models.CASCADE, null=True, blank=True)
     training = models.ForeignKey(TrainingCreate, related_name='questions', on_delete=models.CASCADE, null=True, blank=True)
     question_type = models.CharField(max_length=50, choices=QUESTION_TYPE_CHOICES)
     selected_file_type = models.CharField(max_length=50, null=True, blank=True)
@@ -172,7 +172,7 @@ class TrainingQuiz(models.Model):
         ('manual', 'Manual'),
     )
     training = models.ForeignKey(TrainingCreate, related_name='quizzes', on_delete=models.CASCADE,null=True, blank=True)
-    document = models.ForeignKey(Document,on_delete=models.CASCADE,null=True, blank=True)
+    document = models.ForeignKey('dms_module.Document',on_delete=models.CASCADE,null=True, blank=True)
     quiz_name = models.CharField(max_length=255)
     pass_criteria = models.DecimalField(max_digits=5, decimal_places=2)  # For example, pass if >= 50%
     quiz_time = models.PositiveIntegerField(null=True, blank=True)  # Time in minutes
@@ -248,7 +248,7 @@ class ClassroomTraining(models.Model):
         ('in_progress', 'In Progress'),
     ]
     user = models.ManyToManyField(CustomUser)
-    document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
+    document = models.ForeignKey('dms_module.Document', on_delete=models.CASCADE, null=True, blank=True)
     # classroom_training_type = models.CharField(max_length=20, choices=TRAINING_TYPE_CHOICES)
     # title = models.CharField(max_length=255)
     # description = models.TextField()
@@ -444,7 +444,7 @@ class HODRemark(models.Model):
 class AttemptedQuiz(models.Model):
     quiz_session = models.ForeignKey(QuizSession, on_delete=models.CASCADE, null=True, blank=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
-    document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
+    document = models.ForeignKey('dms_module.Document', on_delete=models.CASCADE, null=True, blank=True)
     quiz = models.ForeignKey(TrainingQuiz, on_delete=models.CASCADE, null=True, blank=True)
     obtain_marks = models.CharField(max_length=500, null=True, blank=True)
     total_marks = models.CharField(max_length=500, null=True, blank=True)
@@ -477,7 +477,7 @@ class AttemptedCorrectAnswer(models.Model):
 
 class UserCompleteViewDocument(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
-    document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
+    document = models.ForeignKey('dms_module.Document', on_delete=models.CASCADE, null=True, blank=True)
 
 
 
