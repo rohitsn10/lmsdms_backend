@@ -227,7 +227,7 @@ def generate_document_number(user, document_type, parent_document_instance=None)
             "Artwork": "SPART",
             "Information & Technology": "SPITD",
         },
-        2: {
+        3: {
             "General Manufacturing Tablet Section": "FGTA",
             "General Manufacturing Capsule Section": "FGCA",
             "General Manufacturing Injection Section": "FGIN",
