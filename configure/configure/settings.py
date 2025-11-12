@@ -157,7 +157,7 @@ EMAIL_USE_TLS = True
 # EMAIL_HOST_USER = 'support@n10tech.com'
 # EMAIL_HOST_PASSWORD = 'lbfiuicmvmutfosn'
 EMAIL_HOST_USER = 'rohit27july2001@gmail.com'
-EMAIL_HOST_PASSWORD = 'tpahwwdnkbacwxqw'
+EMAIL_HOST_PASSWORD = 'iobq imkg nnmu ygtw'
 
 
 ONLYOFFICE_SECRET = "45540a6bfecc97ab6d06c436a74c333b1b54447c4de5fd41b8ad0b8361a395c6"
