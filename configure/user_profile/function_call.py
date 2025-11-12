@@ -133,46 +133,228 @@ def get_new_version(version_str):
 
 
 
-def generate_document_number(user, document_type, parent_document_instance=None):
-    # Access the department name
-    if user.department:
-        department_name = user.department.department_name  # Access department_name correctly
-    else:
-        department_name = 'UnknownDepartment'
+# def generate_document_number(user, document_type, parent_document_instance=None):
+#     # Access the department name
+#     if user.department:
+#         department_name = user.department.department_name  # Access department_name correctly
+#     else:
+#         department_name = 'UnknownDepartment'
     
-    document_title = "BPL"
-    base_number = f"{document_title}/{department_name}/"
+#     document_title = "BPL"
+#     base_number = f"{document_title}/{department_name}/"
     
-    # Case 1: Parent document is None (or blank), and document_type.id == 1
-    if parent_document_instance is None and document_type.id == 1:
-        # Get the document with the largest number for document_type.id == 1
-        last_document = Document.objects.filter(document_type=document_type).order_by('-document_number').first()
+#     # Case 1: Parent document is None (or blank), and document_type.id == 1
+#     if parent_document_instance is None and document_type.id == 1:
+#         # Get the document with the largest number for document_type.id == 1
+#         last_document = Document.objects.filter(document_type=document_type).order_by('-document_number').first()
         
-        # Extract the numeric part from the last document number
-        if last_document:
-            last_suffix = last_document.document_number.split('/')[-1]  # Get the number part after the last "/"
-            if last_suffix.isdigit():
-                # Increment the number by 1 and zero-pad it to 3 digits
-                next_suffix = str(int(last_suffix) + 1).zfill(3)
-            else:
-                # Handle cases where suffix might have non-numeric characters (e.g., "A001")
-                prefix = last_suffix[0]
-                num_part = int(last_suffix[1:])
-                next_suffix = f"{prefix}{str(num_part + 1).zfill(3)}"
-        else:
-            # Default starting point if no documents exist
-            next_suffix = "001"  # Start with 001 if no document of this type exists
+#         # Extract the numeric part from the last document number
+#         if last_document:
+#             last_suffix = last_document.document_number.split('/')[-1]  # Get the number part after the last "/"
+#             if last_suffix.isdigit():
+#                 # Increment the number by 1 and zero-pad it to 3 digits
+#                 next_suffix = str(int(last_suffix) + 1).zfill(3)
+#             else:
+#                 # Handle cases where suffix might have non-numeric characters (e.g., "A001")
+#                 prefix = last_suffix[0]
+#                 num_part = int(last_suffix[1:])
+#                 next_suffix = f"{prefix}{str(num_part + 1).zfill(3)}"
+#         else:
+#             # Default starting point if no documents exist
+#             next_suffix = "001"  # Start with 001 if no document of this type exists
         
-        document_number = base_number + next_suffix
+#         document_number = base_number + next_suffix
 
-    else:
-        # Case 2: Parent document is provided (for document types 2 or 3)
+#     else:
+#         # Case 2: Parent document is provided (for document types 2 or 3)
+#         parent_document_number = parent_document_instance.document_number
+#         suffix_prefix = ""
+
+#         if document_type.id == 2:  # DocumentType 2 => "A001"
+#             suffix_prefix = "A"
+#         elif document_type.id == 3:  # DocumentType 3 => "F001"
+#             suffix_prefix = "F"
+
+#         last_document = Document.objects.filter(
+#             parent_document=parent_document_instance,
+#             document_type=document_type
+#         ).order_by('-document_number').first()
+
+#         if last_document:
+#             last_suffix = last_document.document_number.split('/')[-1]
+#             if last_suffix.isdigit():
+#                 next_suffix = f"{suffix_prefix}{str(int(last_suffix[1:]) + 1).zfill(3)}"
+#             else:
+#                 prefix = last_suffix[0]
+#                 num_part = int(last_suffix[1:])
+#                 next_suffix = f"{prefix}{str(num_part + 1).zfill(3)}"
+#         else:
+#             next_suffix = f"{suffix_prefix}001"  # Starting with A001 or F001
+
+#         document_number = f"{parent_document_number}/{next_suffix}"
+
+#     return document_number
+
+
+def generate_document_number(user, document_type, parent_document_instance=None):
+    department_name = user.department.department_name if user.department else "UnknownDepartment"
+
+    # SOP (1) and Format (2)
+    prefix_mapping = {
+        1: {
+            "General Manufacturing Tablet Section": "SPGTA",
+            "General Manufacturing Capsule Section": "SPGCA",
+            "General Manufacturing Injection Section": "SPGIN",
+            "General Manufacturing Liquid Orals Section": "SPGLI",
+            "General Manufacturing Dry Powder/Oral Powder Section": "SPGDP",
+            "External Preparation": "SPGEP",
+            "General Manufacturing Store": "SPGST",
+            "Beta-Lactam Manufacturing Tablet Section": "SPBTA",
+            "Beta-Lactam Manufacturing Capsule Section": "SPBCA",
+            "Beta-Lactam Manufacturing Injection Section": "SPBIN",
+            "Beta-Lactam Manufacturing Dry Powder/Oral Powder Section": "SPBDP",
+            "Beta-Lactam Manufacturing Store": "SPBST",
+            "Cephalosporins Manufacturing Tablet Section": "SPCTA",
+            "Cephalosporins Manufacturing Capsule Section": "SPCCA",
+            "Cephalosporins Manufacturing Injection Section": "SPCIN",
+            "Cephalosporins Manufacturing Dry Powder/Oral Powder Section": "SPCDP",
+            "Cephalosporins Manufacturing Store": "SPCST",
+            "Quality Control Chemical": "SPQCC",
+            "Quality Control - Micro": "SPQCM",
+            "Quality Assurnace": "SPQAD",
+            "Enginerring": "SPENG",
+            "HR & Admin": "SPHRA",
+            "Artwork": "SPART",
+            "Information & Technology": "SPITD",
+        },
+        2: {
+            "General Manufacturing Tablet Section": "FGTA",
+            "General Manufacturing Capsule Section": "FGCA",
+            "General Manufacturing Injection Section": "FGIN",
+            "General Manufacturing Liquid Orals Section": "FGLI",
+            "General Manufacturing Dry Powder/Oral Powder Section": "FGDP",
+            "External Preparation": "FGEP",
+            "General Manufacturing Store": "FGST",
+            "Beta-Lactam Manufacturing Tablet Section": "FBTA",
+            "Beta-Lactam Manufacturing Capsule Section": "FBCA",
+            "Beta-Lactam Manufacturing Injection Section": "FBIN",
+            "Beta-Lactam Manufacturing Dry Powder/Oral Powder Section": "FBDP",
+            "Beta-Lactam Manufacturing Store": "FBST",
+            "Cephalosporins Manufacturing Tablet Section": "FCTA",
+            "Cephalosporins Manufacturing Capsule Section": "FCCA",
+            "Cephalosporins Manufacturing Injection Section": "FCIN",
+            "Cephalosporins Manufacturing Dry Powder/Oral Powder Section": "FCDP",
+            "Cephalosporins Manufacturing Store": "FCST",
+            "Quality Control Chemical": "FQC",
+            "Quality Control - Micro": "FQM",
+            "Quality Assurnace": "FQA",
+            "Enginerring": "FENG",
+            "HR & Admin": "FHRA",
+            "Artwork": "FART",
+            "Information & Technology": "FITD",
+        },
+        14: {  # BMR Docs
+            "General Manufacturing Tablet Section": "BMRGTA",
+            "General Manufacturing Capsule Section": "BMRGCA",
+            "General Manufacturing Injection Section": "BMRGIN",
+            "General Manufacturing Liquid Orals Section": "BMRGLI",
+            "General Manufacturing Dry Powder/Oral Powder Section": "BMRGDP",
+            "External Preparation": "BMRGEP",
+            "Beta-Lactam Manufacturing Tablet Section": "BMRBTA",
+            "Beta-Lactam Manufacturing Capsule Section": "BMRBCA",
+            "Beta-Lactam Manufacturing Injection Section": "BMRBIN",
+            "Beta-Lactam Manufacturing Dry Powder/Oral Powder Section": "BMRBDP",
+            "Cephalosporins Manufacturing Tablet Section": "BMRCTA",
+            "Cephalosporins Manufacturing Capsule Section": "BMRCCA",
+            "Cephalosporins Manufacturing Injection Section": "BMRCIN",
+            "Cephalosporins Manufacturing Dry Powder/Oral Powder Section": "BMRCDP",
+        }
+    }
+
+    # QA special (4–13)
+    qa_special_mapping = {
+        4: "IQ",
+        5: "OQ",
+        6: "PQ",
+        7: "IOQ",
+        8: "OPQ",
+        9: "RQ",
+        10: "PVPR",
+        11: "HTPR",
+        12: "CVP",
+        13: "CVR"
+    }
+
+    # Fixed (15–21) - no department condition
+    fixed_document_type_mapping = {
+        15: "RMSPC",
+        16: "PMSPC",
+        17: "FPSPC",
+        18: "RMSTP",
+        19: "PMSTP",
+        20: "FPSTP",
+        21: "MISPR"
+    }
+
+    # Check fixed types first
+    if document_type.id in fixed_document_type_mapping:
+        prefix = fixed_document_type_mapping[document_type.id]
+
+        last_document = Document.objects.filter(
+            document_type=document_type,
+            document_number__startswith=prefix
+        ).order_by('-document_number').first()
+
+        if last_document:
+            last_suffix = last_document.document_number.replace(prefix, "")
+            next_number = str(int(last_suffix) + 1).zfill(4)
+        else:
+            next_number = "0001"
+
+        return f"{prefix}{next_number}"
+
+    # QA Special case (4–13) for QA dept
+    if department_name == "Quality Assurance" and document_type.id in qa_special_mapping:
+        prefix = qa_special_mapping[document_type.id]
+
+        last_document = Document.objects.filter(
+            document_type=document_type,
+            document_number__startswith=prefix
+        ).order_by('-document_number').first()
+
+        if last_document:
+            last_suffix = last_document.document_number.replace(prefix, "")
+            next_number = str(int(last_suffix) + 1).zfill(4)
+        else:
+            next_number = "0001"
+
+        return f"{prefix}{next_number}"
+
+    # SOP / Format / BMR (top level)
+    if parent_document_instance is None and document_type.id in prefix_mapping:
+        prefix = prefix_mapping.get(document_type.id, {}).get(department_name, "UNKNOWN")
+
+        last_document = Document.objects.filter(
+            document_type=document_type,
+            document_number__startswith=prefix
+        ).order_by('-document_number').first()
+
+        if last_document:
+            last_suffix = last_document.document_number.replace(prefix, "")
+            next_number = str(int(last_suffix) + 1).zfill(4)
+        else:
+            next_number = "0001"
+
+        return f"{prefix}{next_number}"
+
+    # Sub-documents: types like id=2 or 3 that go under parent
+    if parent_document_instance:
         parent_document_number = parent_document_instance.document_number
         suffix_prefix = ""
 
-        if document_type.id == 2:  # DocumentType 2 => "A001"
+        if document_type.id == 2:
             suffix_prefix = "A"
-        elif document_type.id == 3:  # DocumentType 3 => "F001"
+        elif document_type.id == 3:
             suffix_prefix = "F"
 
         last_document = Document.objects.filter(
@@ -182,18 +364,14 @@ def generate_document_number(user, document_type, parent_document_instance=None)
 
         if last_document:
             last_suffix = last_document.document_number.split('/')[-1]
-            if last_suffix.isdigit():
-                next_suffix = f"{suffix_prefix}{str(int(last_suffix[1:]) + 1).zfill(3)}"
-            else:
-                prefix = last_suffix[0]
-                num_part = int(last_suffix[1:])
-                next_suffix = f"{prefix}{str(num_part + 1).zfill(3)}"
+            next_suffix = f"{suffix_prefix}{str(int(last_suffix[1:]) + 1).zfill(3)}"
         else:
-            next_suffix = f"{suffix_prefix}001"  # Starting with A001 or F001
+            next_suffix = f"{suffix_prefix}001"
 
-        document_number = f"{parent_document_number}/{next_suffix}"
+        return f"{parent_document_number}/{next_suffix}"
 
-    return document_number
+    # Fallback
+    return "UNKNOWN0001"
 
 
 
