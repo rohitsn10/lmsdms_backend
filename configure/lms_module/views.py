@@ -239,22 +239,11 @@ class JobRoleAddView(viewsets.ModelViewSet):
             
             if not job_role_name:
                 return Response({'status': False, 'message': 'Job role name is required'})
-            if not plant:
-                return Response({'status': False, 'message': 'plant is required'})
-            if not area:
-                return Response({'status': False, 'message': 'area is required'})
+            
             if not department:
                 return Response({'status': False, 'message': 'department is required'})
             
-            try:
-                plant = Plant.objects.get(id=plant)
-            except Plant.DoesNotExist:
-                return Response({"status": False, "message": "plant not found", "data": []})
- 
-            try:
-                area = Area.objects.get(id=area)
-            except Area.DoesNotExist:
-                return Response({"status": False, "message": "Area not found", "data": []})
+            
  
             try:
                 department = Department.objects.get(id=department)
@@ -3693,6 +3682,7 @@ class InductionCertificateViewSet(viewsets.ViewSet):
                 'username': username,
                 'date': today_date,
                 'completion_date' : completion_date,
+                'employee_number': user.employee_number, 
             }
             context = {'users_data': user_data}
             template = get_template('index.html') 
@@ -4291,13 +4281,16 @@ class JobDescriptionCreateViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "You don't have permission to create job description."})
             user_id = request.data.get('user_id')
             # job_role_id = request.data.get('job_role_id')
+            job_role_id = request.data.get('job_role_id')
             employee_job_description = request.data.get('employee_job_description')
 
             # job_role = JobRole.objects.get(id=job_role_id)
+            job_role = JobRole.objects.get(id=job_role_id)
 
             job_description = JobDescription.objects.create(
                 user_id=user_id,
                 # job_role=job_role,
+                job_role=job_role,
                 employee_job_description=employee_job_description,
                 status='pending'
             )
@@ -4324,21 +4317,25 @@ class SaveJobDescriptionViewSet(viewsets.ModelViewSet):
                 return Response({"status": False, "message": "You don't have permission to create job description."})
             user_id = request.data.get('user_id')
             # job_role_id = request.data.get('job_role_id')
+            job_role_id = request.data.get('job_role_id')
             employee_job_description = request.data.get('employee_job_description')
 
             # job_role = JobRole.objects.get(id=job_role_id)
+            job_role = JobRole.objects.get(id=job_role_id)
 
             job_description = JobDescription.objects.filter(user_id=user_id).order_by('-created_at').first()
 
             if job_description:
                 # Update the existing draft job description
                 job_description.employee_job_description = employee_job_description
+                job_role=job_role
                 job_description.status = 'draft'
                 job_description.save()
             else:
                 # Create a new draft job description
                 job_description = JobDescription.objects.create(
                     user_id=user_id,
+                    job_role=job_role,
                     employee_job_description=employee_job_description,
                     status='draft'
                 )
