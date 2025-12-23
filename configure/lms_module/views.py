@@ -3658,65 +3658,121 @@ class InductionCertificateViewSet(viewsets.ViewSet):
         try:
             user_id = self.kwargs.get('user_id')
             user = CustomUser.objects.get(id=user_id)
-            username = user.username
-            hr_date = HRacknowledgement.objects.filter(user=user).first()
-            completion_date = hr_date.created_at if hr_date else None
-            # hr_acknowledgement = HRacknowledgement.objects.filter(user=user).order_by('-id').first()
-            # hr_name = hr_acknowledgement.user.get_full_name() if hr_acknowledgement else "HR Manager"
-
-            today_date = date.today().strftime("%d-%m-%Y")  # Format: DD-MM-YYYY
-
-            # 🔹 Define filename based on user & date (to check if already exists)
-            filename = f"induction_certificate_{user_id}_{today_date}.pdf"
+    
+            today_date = date.today().strftime("%d-%m-%Y")
+    
+            # 🔹 Unique filename (NO overwrite)
+            timestamp = int(time.time())
+            filename = f"induction_certificate_{user.employee_number}_{timestamp}.pdf"
+    
             file_path = os.path.join(settings.MEDIA_ROOT, 'induction_certificate', filename)
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-            # ✅ If the PDF already exists, return the existing file
-            if os.path.exists(file_path):
-                pdf_file_url = f"{settings.MEDIA_URL}induction_certificate/{filename}"
-                full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
-                return Response({"status": True, "message": "Certificate already generated.", "data": full_pdf_file_url})
-
-            # 🔹 Prepare user data for the template
+    
+            # 🔹 Template context
             user_data = {
-                'username': username,
+                'username': user.username,
                 'date': today_date,
-                'completion_date' : completion_date,
-                'employee_number': user.employee_number, 
+                'completion_date': HRacknowledgement.objects.filter(user=user).first().created_at if HRacknowledgement.objects.filter(user=user).exists() else None,
+                'employee_number': user.employee_number,
             }
+    
             context = {'users_data': user_data}
-            template = get_template('index.html') 
+    
+            template = get_template('index.html')
             html_content = template.render(context)
-
-            # 🔹 Find wkhtmltopdf path
-            wkhtmltopdf_path = shutil.which("wkhtmltopdf")
-            if not wkhtmltopdf_path:
-                wkhtmltopdf_path = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"  # Windows
-                # wkhtmltopdf_path = "/usr/bin/wkhtmltopdf"  # Linux
-
+    
+            wkhtmltopdf_path = shutil.which("wkhtmltopdf") or r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
             config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
-
-            # 🔹 Generate PDF
-            pdfkit.from_string(html_content, file_path, options={
-                'page-size': 'Letter',
-                'encoding': 'UTF-8',
-                'quiet': '',
-                '--enable-local-file-access': ''
-            }, configuration=config)
-
-            # ✅ Return the PDF URL
+    
+            pdfkit.from_string(
+                html_content,
+                file_path,
+                options={
+                    'page-size': 'Letter',
+                    'encoding': 'UTF-8',
+                    '--enable-local-file-access': ''
+                },
+                configuration=config
+            )
+    
             pdf_file_url = f"{settings.MEDIA_URL}induction_certificate/{filename}"
             full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
-
+    
             user.is_induction_certificate = True
             user.save()
-
-            return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
-
+    
+            return Response({
+                "status": True,
+                "message": "PDF generated successfully",
+                "data": full_pdf_file_url
+            })
+    
         except CustomUser.DoesNotExist:
             return Response({"status": False, "message": "User not found", "data": ""})
-        except Exception as e:
-            return Response({"status": False, "message": str(e), "data": ""})
+
+    # def create(self, request, *args, **kwargs):
+    #     try:
+    #         user_id = self.kwargs.get('user_id')
+    #         user = CustomUser.objects.get(id=user_id)
+    #         username = user.username
+    #         hr_date = HRacknowledgement.objects.filter(user=user).first()
+    #         completion_date = hr_date.created_at if hr_date else None
+    #         # hr_acknowledgement = HRacknowledgement.objects.filter(user=user).order_by('-id').first()
+    #         # hr_name = hr_acknowledgement.user.get_full_name() if hr_acknowledgement else "HR Manager"
+
+    #         today_date = date.today().strftime("%d-%m-%Y")  # Format: DD-MM-YYYY
+
+    #         # 🔹 Define filename based on user & date (to check if already exists)
+    #         filename = f"induction_certificate_{user_id}_{today_date}.pdf"
+    #         file_path = os.path.join(settings.MEDIA_ROOT, 'induction_certificate', filename)
+    #         os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    #         # ✅ If the PDF already exists, return the existing file
+    #         if os.path.exists(file_path):
+    #             pdf_file_url = f"{settings.MEDIA_URL}induction_certificate/{filename}"
+    #             full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+    #             return Response({"status": True, "message": "Certificate already generated.", "data": full_pdf_file_url})
+
+    #         # 🔹 Prepare user data for the template
+    #         user_data = {
+    #             'username': username,
+    #             'date': today_date,
+    #             'completion_date' : completion_date,
+    #             'employee_number': user.employee_number, 
+    #         }
+    #         context = {'users_data': user_data}
+    #         template = get_template('index.html') 
+    #         html_content = template.render(context)
+
+    #         # 🔹 Find wkhtmltopdf path
+    #         wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+    #         if not wkhtmltopdf_path:
+    #             wkhtmltopdf_path = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"  # Windows
+    #             # wkhtmltopdf_path = "/usr/bin/wkhtmltopdf"  # Linux
+
+    #         config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+
+    #         # 🔹 Generate PDF
+    #         pdfkit.from_string(html_content, file_path, options={
+    #             'page-size': 'Letter',
+    #             'encoding': 'UTF-8',
+    #             'quiet': '',
+    #             '--enable-local-file-access': ''
+    #         }, configuration=config)
+
+    #         # ✅ Return the PDF URL
+    #         pdf_file_url = f"{settings.MEDIA_URL}induction_certificate/{filename}"
+    #         full_pdf_file_url = f"{request.scheme}://{request.get_host()}{pdf_file_url}"
+
+    #         user.is_induction_certificate = True
+    #         user.save()
+
+    #         return Response({"status": True, "message": "PDF generated successfully", "data": full_pdf_file_url})
+
+    #     except CustomUser.DoesNotExist:
+    #         return Response({"status": False, "message": "User not found", "data": ""})
+    #     except Exception as e:
+    #         return Response({"status": False, "message": str(e), "data": ""})
         
 class TrainerViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -4328,7 +4384,7 @@ class SaveJobDescriptionViewSet(viewsets.ModelViewSet):
             if job_description:
                 # Update the existing draft job description
                 job_description.employee_job_description = employee_job_description
-                job_role=job_role
+                job_description.job_role = job_role
                 job_description.status = 'draft'
                 job_description.save()
             else:
@@ -4637,7 +4693,7 @@ class TrainingCompletionViewSet(viewsets.ModelViewSet):
             user = CustomUser.objects.get(id=user_id)
             username = user.username
             print("username",username)
-            current_datetime = datetime.now().strftime("%Y-%m-%d")
+            current_datetime = datetime.now()
             job_assign = JobAssign.objects.filter(user=user).first()
             job_role = job_assign.job_roles.all().values_list('job_role_name', flat=True)
             if not job_assign:

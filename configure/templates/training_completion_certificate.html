@@ -148,8 +148,11 @@
             {{ users_data.job_assign }}
         </div>
 
-        <div class="date-time">
+        {% comment %} <div class="date-time">
             Date of Certificate Generation: {{ users_data.date_time }}
+        </div> {% endcomment %}
+        <div class="date-time">
+            Date of Certificate Generation: {{ users_data.date_time|date:"d/m/Y" }}
         </div>
 
         <!-- Footer Note -->
